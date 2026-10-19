@@ -1,0 +1,95 @@
+/* Leaflet CSS must come before tailwind directives */
+@import 'leaflet/dist/leaflet.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Custom map pin styles */
+.musician-pin {
+  width: 36px;
+  height: 36px;
+  background: #3b82f6;
+  border: 3px solid white;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.musician-pin:hover { transform: scale(1.15); }
+
+.craigslist-pin {
+  width: 36px;
+  height: 36px;
+  background: #f97316;
+  border: 3px solid white;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.craigslist-pin:hover { transform: scale(1.15); }
+
+/* Leaflet popup override */
+.leaflet-popup-content-wrapper {
+  border-radius: 12px !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2) !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  width: 280px !important;
+}
+
+.leaflet-popup-tip-container {
+  margin-top: -1px;
+}
+
+/* Scrollable map overlay panels */
+.map-panel {
+  position: absolute;
+  z-index: 1000;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  overflow-y: auto;
+  max-height: calc(100vh - 120px);
+}
+
+/* Tag badge */
+.tag {
+  @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+  @apply fixed inset-0 bg-black/50 backdrop-blur-sm z-[2000] flex items-center justify-center p-4;
+}
+
+.modal-box {
+  @apply bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
