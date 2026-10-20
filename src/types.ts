@@ -35,7 +35,7 @@ export interface City {
   lng: number
 }
 
-export type ActiveModal = 'auth' | 'profile' | 'musician-detail' | 'craigslist-detail' | null
+export type ActiveModal = 'auth' | 'profile' | 'musician-detail' | 'craigslist-detail' | 'reset-password' | null
 
 export const INSTRUMENT_OPTIONS = [
   'Guitar', 'Bass', 'Drums', 'Keyboard / Piano', 'Vocals', 'Violin',

@@ -8,11 +8,12 @@ import ProfileModal from './components/ProfileModal'
 import MusicianDetail from './components/MusicianDetail'
 import CraigslistDetail from './components/CraigslistDetail'
 import AdminPanel from './components/AdminPanel'
+import ResetPasswordModal from './components/ResetPasswordModal'
 
 type Modal = 'auth' | 'profile' | 'musician' | 'post' | 'admin' | null
 
 export default function App() {
-  const { currentUser, initAuth } = useStore()
+  const { currentUser, initAuth, needsPasswordReset } = useStore()
   const [modal, setModal] = useState<Modal>(null)
   const [selectedMusician, setSelectedMusician] = useState<Musician | null>(null)
   const [selectedPost, setSelectedPost] = useState<CraigslistPost | null>(null)
@@ -74,6 +75,10 @@ export default function App() {
 
       {modal === 'admin' && isAdmin && (
         <AdminPanel onClose={() => setModal(null)} />
+      )}
+
+      {needsPasswordReset && (
+        <ResetPasswordModal onClose={() => useStore.setState({ needsPasswordReset: false })} />
       )}
 
       {!currentUser && (

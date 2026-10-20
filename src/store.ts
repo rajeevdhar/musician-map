@@ -141,6 +141,7 @@ interface AppStore {
   // ── Auth ──────────────────────────────────────────────────────────────────
   currentUser: AppUser | null
   isAuthReady: boolean
+  needsPasswordReset: boolean
   initAuth: () => void
   register: (email: string, password: string, displayName: string) => Promise<{ ok: boolean; error?: string }>
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>
@@ -174,6 +175,7 @@ export const useStore = create<AppStore>()((set, get) => ({
   // ── Auth ─────────────────────────────────────────────────────────────────
   currentUser: null,
   isAuthReady: false,
+  needsPasswordReset: false,
 
   initAuth: () => {
     // Restore existing session, then listen for future changes
@@ -196,7 +198,9 @@ export const useStore = create<AppStore>()((set, get) => ({
     })
 
     supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
+      if (event === 'PASSWORD_RECOVERY') {
+        set({ needsPasswordReset: true })
+      } else if (event === 'SIGNED_IN' && session?.user) {
         const u = session.user
         set({
           currentUser: {
