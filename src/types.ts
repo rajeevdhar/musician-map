@@ -12,6 +12,7 @@ export interface Musician {
   avatarUrl?: string
   lookingFor: string   // e.g. "band", "session work", "jam partner"
   createdAt: string
+  lastSeenAt?: string
 }
 
 export interface CraigslistPost {

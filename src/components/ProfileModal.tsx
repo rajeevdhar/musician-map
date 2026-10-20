@@ -1,9 +1,13 @@
 import { useState } from 'react'
 import { useStore } from '../store'
 import { INSTRUMENT_OPTIONS, GENRE_OPTIONS, LOOKING_FOR_OPTIONS } from '../types'
+import type { Musician } from '../types'
+import { supabase } from '../lib/supabase'
 
 interface Props {
   onClose: () => void
+  adminTarget?: Musician
+  onAdminSaved?: () => void
 }
 
 type GeoStatus = 'idle' | 'searching' | 'found' | 'error'
@@ -61,24 +65,27 @@ function TagSelector({
   )
 }
 
-export default function ProfileModal({ onClose }: Props) {
+export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Props) {
   const [confirmRemove, setConfirmRemove] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const [saving, setSaving] = useState(false)
-  const { currentUser, saveProfile, currentProfile, removeProfile } = useStore()
-  const existing = currentProfile()
+  const { currentUser, saveProfile, currentProfile, removeProfile, deleteAccount, fetchMusicians } = useStore()
 
-  const [displayName, setDisplayName] = useState(existing?.displayName ?? currentUser?.displayName ?? '')
-  const [bio, setBio] = useState(existing?.bio ?? '')
-  const [instruments, setInstruments] = useState<string[]>(existing?.instruments ?? [])
-  const [genres, setGenres] = useState<string[]>(existing?.genres ?? [])
+  const isAdminMode = !!adminTarget
+  const source = adminTarget ?? currentProfile()
+
+  const [displayName, setDisplayName] = useState(source?.displayName ?? currentUser?.displayName ?? '')
+  const [bio, setBio] = useState(source?.bio ?? '')
+  const [instruments, setInstruments] = useState<string[]>(source?.instruments ?? [])
+  const [genres, setGenres] = useState<string[]>(source?.genres ?? [])
   const [lookingFor, setLookingFor] = useState<string[]>(
-    existing?.lookingFor ? existing.lookingFor.split(',').map(s => s.trim()) : []
+    source?.lookingFor ? source.lookingFor.split(',').map(s => s.trim()).filter(Boolean) : []
   )
-  const [contactEmail, setContactEmail] = useState(existing?.contactEmail ?? currentUser?.email ?? '')
-  const [locationQuery, setLocationQuery] = useState(existing?.locationName ?? '')
-  const [lat, setLat] = useState<number | null>(existing?.lat ?? null)
-  const [lng, setLng] = useState<number | null>(existing?.lng ?? null)
-  const [locationName, setLocationName] = useState(existing?.locationName ?? '')
+  const [contactEmail, setContactEmail] = useState(source?.contactEmail ?? currentUser?.email ?? '')
+  const [locationQuery, setLocationQuery] = useState(source?.locationName ?? '')
+  const [lat, setLat] = useState<number | null>(source?.lat ?? null)
+  const [lng, setLng] = useState<number | null>(source?.lng ?? null)
+  const [locationName, setLocationName] = useState(source?.locationName ?? '')
   const [geoStatus, setGeoStatus] = useState<GeoStatus>('idle')
   const [error, setError] = useState('')
 
@@ -127,17 +134,45 @@ export default function ProfileModal({ onClose }: Props) {
     if (!lat || !lng) { setError('Please set your location'); return }
 
     setSaving(true)
-    await saveProfile({
-      displayName: displayName.trim(),
-      bio: bio.trim(),
-      instruments,
-      genres,
-      contactEmail: contactEmail.trim(),
-      lat,
-      lng,
-      locationName,
-      lookingFor: lookingFor.join(', '),
-    })
+
+    if (isAdminMode && adminTarget) {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(`/api/admin/profile/${adminTarget.id}`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          display_name: displayName.trim(),
+          bio: bio.trim(),
+          instruments,
+          genres,
+          contact_email: contactEmail.trim(),
+          lat,
+          lng,
+          location_name: locationName,
+          looking_for: lookingFor.join(', '),
+        }),
+      })
+      const result = await res.json()
+      if (!result.ok) { setError(result.error ?? 'Save failed'); setSaving(false); return }
+      await fetchMusicians()
+      onAdminSaved?.()
+    } else {
+      await saveProfile({
+        displayName: displayName.trim(),
+        bio: bio.trim(),
+        instruments,
+        genres,
+        contactEmail: contactEmail.trim(),
+        lat,
+        lng,
+        locationName,
+        lookingFor: lookingFor.join(', '),
+      })
+    }
+
     setSaving(false)
     onClose()
   }
@@ -147,13 +182,25 @@ export default function ProfileModal({ onClose }: Props) {
     onClose()
   }
 
+  const handleDeleteAccount = async () => {
+    await deleteAccount()
+    onClose()
+  }
+
   return (
     <div className="modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
       <div className="modal-box">
         <div className="sticky top-0 bg-white flex items-center justify-between px-6 pt-5 pb-3 border-b border-gray-100 z-10">
-          <h2 className="text-xl font-bold text-gray-900">
-            {existing ? 'Edit Your Profile' : 'Set Up Your Profile'}
-          </h2>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">
+              {isAdminMode
+                ? `Admin: ${source ? 'Edit Profile' : 'No Profile'}`
+                : source ? 'Edit Your Profile' : 'Set Up Your Profile'}
+            </h2>
+            {isAdminMode && adminTarget && (
+              <p className="text-xs text-indigo-500 mt-0.5">Editing {adminTarget.displayName}</p>
+            )}
+          </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
         </div>
 
@@ -258,11 +305,12 @@ export default function ProfileModal({ onClose }: Props) {
               disabled={saving}
               className="flex-1 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium transition-colors"
             >
-              {saving ? 'Saving…' : existing ? 'Save Changes' : 'Add Me to the Map'}
+              {saving ? 'Saving…' : source ? 'Save Changes' : 'Add Me to the Map'}
             </button>
           </div>
 
-          {existing && (
+          {/* Remove profile (not shown in admin mode — admin has its own controls) */}
+          {source && !isAdminMode && (
             <div className="border-t border-gray-100 pt-4 mt-2">
               {!confirmRemove ? (
                 <button
@@ -290,6 +338,42 @@ export default function ProfileModal({ onClose }: Props) {
                       className="flex-1 py-2 text-xs rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium"
                     >
                       Yes, remove me
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Delete account (only for self, not admin mode) */}
+          {!isAdminMode && (
+            <div className="border-t border-gray-100 pt-3">
+              {!confirmDelete ? (
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(true)}
+                  className="w-full py-2 text-sm text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  🗑️ Delete my account permanently
+                </button>
+              ) : (
+                <div className="bg-red-50 rounded-lg p-3 space-y-2">
+                  <p className="text-sm text-red-700 font-medium">Delete account permanently?</p>
+                  <p className="text-xs text-red-500">This cannot be undone. Your profile, map pin and account will be deleted.</p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDelete(false)}
+                      className="flex-1 py-2 text-xs rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDeleteAccount}
+                      className="flex-1 py-2 text-xs rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium"
+                    >
+                      Delete Everything
                     </button>
                   </div>
                 </div>

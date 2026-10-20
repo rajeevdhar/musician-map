@@ -2,30 +2,65 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Musician } from '../types'
 import { useStore } from '../store'
+import ProfileModal from './ProfileModal'
 
 interface Props {
   onClose: () => void
 }
 
-type ActionKey = string // musician.id or `del-${musician.id}`
+type ActionKey = string
+
+interface UserStat {
+  id: string
+  lastSignInAt: string | null
+}
+
+function isOnline(lastSeenAt?: string): boolean {
+  if (!lastSeenAt) return false
+  return Date.now() - new Date(lastSeenAt).getTime() < 5 * 60 * 1000
+}
+
+function relativeTime(iso?: string | null): string {
+  if (!iso) return 'Never'
+  const diff = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(diff / 60_000)
+  if (mins < 2) return 'Just now'
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  const days = Math.floor(hrs / 24)
+  if (days < 30) return `${days}d ago`
+  return new Date(iso).toLocaleDateString()
+}
 
 export default function AdminPanel({ onClose }: Props) {
   const { musicians, fetchMusicians } = useStore()
   const [dbProfiles, setDbProfiles] = useState<Musician[]>([])
+  const [userStats, setUserStats] = useState<Record<string, UserStat>>({})
   const [isLoading, setIsLoading] = useState(true)
   const [actionState, setActionState] = useState<Record<ActionKey, boolean>>({})
   const [search, setSearch] = useState('')
+  const [editTarget, setEditTarget] = useState<Musician | null>(null)
 
-  useEffect(() => { loadProfiles() }, [])
+  useEffect(() => { loadAll() }, [])
 
-  const loadProfiles = async () => {
+  const adminFetch = async (path: string, method: string) => {
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch(path, {
+      method,
+      headers: { Authorization: `Bearer ${session?.access_token}` },
+    })
+    return res.json()
+  }
+
+  const loadAll = async () => {
     setIsLoading(true)
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false })
+    const [profilesResult, statsResult] = await Promise.all([
+      supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+      adminFetch('/api/admin/user-stats', 'GET'),
+    ])
 
-    setDbProfiles((data ?? []).map(row => ({
+    setDbProfiles((profilesResult.data ?? []).map(row => ({
       id: row.id,
       email: row.email,
       displayName: row.display_name,
@@ -39,17 +74,16 @@ export default function AdminPanel({ onClose }: Props) {
       lookingFor: row.looking_for ?? '',
       avatarUrl: row.avatar_url ?? undefined,
       createdAt: row.created_at,
+      lastSeenAt: row.last_seen_at ?? undefined,
     })))
-    setIsLoading(false)
-  }
 
-  const adminFetch = async (path: string, method: string) => {
-    const { data: { session } } = await supabase.auth.getSession()
-    const res = await fetch(path, {
-      method,
-      headers: { Authorization: `Bearer ${session?.access_token}` },
-    })
-    return res.json()
+    if (statsResult.users) {
+      const map: Record<string, UserStat> = {}
+      for (const u of statsResult.users) map[u.id] = u
+      setUserStats(map)
+    }
+
+    setIsLoading(false)
   }
 
   const handleDeleteProfile = async (id: string) => {
@@ -73,6 +107,7 @@ export default function AdminPanel({ onClose }: Props) {
   }
 
   const registeredOnMap = musicians.filter(m => !m.id.startsWith('seed-')).length
+  const onlineCount = dbProfiles.filter(m => isOnline(m.lastSeenAt)).length
 
   const filtered = dbProfiles.filter(m =>
     !search.trim() ||
@@ -82,96 +117,114 @@ export default function AdminPanel({ onClose }: Props) {
   )
 
   return (
-    <div className="modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="modal-box" style={{ maxWidth: '720px' }}>
-        {/* Header */}
-        <div className="sticky top-0 bg-white flex items-center justify-between px-6 pt-5 pb-3 border-b border-gray-100 z-10">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">🛡️</span>
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Admin Panel</h2>
-              <p className="text-xs text-gray-500">{dbProfiles.length} profile{dbProfiles.length !== 1 ? 's' : ''} in database</p>
+    <>
+      <div className="modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+        <div className="modal-box" style={{ maxWidth: '720px' }}>
+          <div className="sticky top-0 bg-white flex items-center justify-between px-6 pt-5 pb-3 border-b border-gray-100 z-10">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🛡️</span>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Admin Panel</h2>
+                <p className="text-xs text-gray-500">{dbProfiles.length} profile{dbProfiles.length !== 1 ? 's' : ''} in database</p>
+              </div>
             </div>
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
-        </div>
-
-        <div className="p-6 space-y-5">
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-indigo-50 rounded-xl p-3 text-center">
-              <p className="text-2xl font-bold text-indigo-700">{dbProfiles.length}</p>
-              <p className="text-xs text-indigo-500 mt-0.5">Registered Users</p>
-            </div>
-            <div className="bg-emerald-50 rounded-xl p-3 text-center">
-              <p className="text-2xl font-bold text-emerald-700">{registeredOnMap}</p>
-              <p className="text-xs text-emerald-500 mt-0.5">Profiles on Map</p>
-            </div>
-            <div className="bg-orange-50 rounded-xl p-3 text-center">
-              <p className="text-2xl font-bold text-orange-700">8</p>
-              <p className="text-xs text-orange-500 mt-0.5">Seed Profiles</p>
-            </div>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
           </div>
 
-          {/* Search */}
-          <input
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search by name, email, or city…"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-
-          {/* Profile list */}
-          {isLoading ? (
-            <div className="text-center py-10 text-gray-400 text-sm">Loading profiles…</div>
-          ) : filtered.length === 0 ? (
-            <div className="text-center py-10 text-gray-400 text-sm">
-              {dbProfiles.length === 0
-                ? 'No registered profiles yet. Seed musicians are client-side only.'
-                : 'No profiles match your search.'}
+          <div className="p-6 space-y-5">
+            <div className="grid grid-cols-4 gap-3">
+              <div className="bg-indigo-50 rounded-xl p-3 text-center">
+                <p className="text-2xl font-bold text-indigo-700">{dbProfiles.length}</p>
+                <p className="text-xs text-indigo-500 mt-0.5">Registered</p>
+              </div>
+              <div className="bg-emerald-50 rounded-xl p-3 text-center">
+                <p className="text-2xl font-bold text-emerald-700">{registeredOnMap}</p>
+                <p className="text-xs text-emerald-500 mt-0.5">On Map</p>
+              </div>
+              <div className="bg-green-50 rounded-xl p-3 text-center">
+                <p className="text-2xl font-bold text-green-700">{onlineCount}</p>
+                <p className="text-xs text-green-500 mt-0.5">Online Now</p>
+              </div>
+              <div className="bg-orange-50 rounded-xl p-3 text-center">
+                <p className="text-2xl font-bold text-orange-700">8</p>
+                <p className="text-xs text-orange-500 mt-0.5">Seeds</p>
+              </div>
             </div>
-          ) : (
-            <div className="space-y-2">
-              {filtered.map(m => (
-                <ProfileRow
-                  key={m.id}
-                  musician={m}
-                  removingProfile={actionState[m.id] ?? false}
-                  deletingAccount={actionState[`del-${m.id}`] ?? false}
-                  onDeleteProfile={() => handleDeleteProfile(m.id)}
-                  onDeleteAccount={() => handleDeleteAccount(m.id)}
-                />
-              ))}
-            </div>
-          )}
 
-          <p className="text-xs text-gray-400 border-t border-gray-100 pt-3">
-            Seed musicians (Maya Chen, Darius Knight, etc.) are hard-coded client-side and not in the database — they won't appear here.
-            Only real registered users with saved profiles are listed.
-          </p>
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search by name, email, or city…"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+
+            {isLoading ? (
+              <div className="text-center py-10 text-gray-400 text-sm">Loading profiles…</div>
+            ) : filtered.length === 0 ? (
+              <div className="text-center py-10 text-gray-400 text-sm">
+                {dbProfiles.length === 0
+                  ? 'No registered profiles yet. Seed musicians are client-side only.'
+                  : 'No profiles match your search.'}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filtered.map(m => (
+                  <ProfileRow
+                    key={m.id}
+                    musician={m}
+                    lastSignInAt={userStats[m.id]?.lastSignInAt ?? null}
+                    removingProfile={actionState[m.id] ?? false}
+                    deletingAccount={actionState[`del-${m.id}`] ?? false}
+                    onEdit={() => setEditTarget(m)}
+                    onDeleteProfile={() => handleDeleteProfile(m.id)}
+                    onDeleteAccount={() => handleDeleteAccount(m.id)}
+                  />
+                ))}
+              </div>
+            )}
+
+            <p className="text-xs text-gray-400 border-t border-gray-100 pt-3">
+              Seed musicians (Maya Chen, Darius Knight, etc.) are hard-coded client-side and not in the database.
+              Only real registered users with saved profiles are listed. Online = active within last 5 minutes.
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+
+      {editTarget && (
+        <ProfileModal
+          adminTarget={editTarget}
+          onAdminSaved={async () => { setEditTarget(null); await loadAll() }}
+          onClose={() => setEditTarget(null)}
+        />
+      )}
+    </>
   )
 }
 
 function ProfileRow({
-  musician, removingProfile, deletingAccount, onDeleteProfile, onDeleteAccount,
+  musician, lastSignInAt, removingProfile, deletingAccount, onEdit, onDeleteProfile, onDeleteAccount,
 }: {
   musician: Musician
+  lastSignInAt: string | null
   removingProfile: boolean
   deletingAccount: boolean
+  onEdit: () => void
   onDeleteProfile: () => void
   onDeleteAccount: () => void
 }) {
   const [confirm, setConfirm] = useState<'profile' | 'account' | null>(null)
+  const online = isOnline(musician.lastSeenAt)
 
   return (
     <div className="border border-gray-200 rounded-xl p-3 hover:border-gray-300 transition-colors">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
+            {online && (
+              <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" title="Online now" />
+            )}
             <span className="font-semibold text-sm text-gray-900">{musician.displayName}</span>
             <span className="text-xs text-gray-400">{musician.email}</span>
           </div>
@@ -179,9 +232,19 @@ function ProfileRow({
             {musician.locationName}
             {musician.instruments.length > 0 && ` · ${musician.instruments.slice(0, 2).join(', ')}`}
           </p>
-          <p className="text-[10px] text-gray-400 mt-0.5">
-            Joined {new Date(musician.createdAt).toLocaleDateString()}
-          </p>
+          <div className="flex gap-3 mt-0.5">
+            <p className="text-[10px] text-gray-400">
+              Joined {new Date(musician.createdAt).toLocaleDateString()}
+            </p>
+            <p className="text-[10px] text-gray-400">
+              Last login: {relativeTime(lastSignInAt)}
+            </p>
+            {musician.lastSeenAt && (
+              <p className="text-[10px] text-gray-400">
+                Last seen: {relativeTime(musician.lastSeenAt)}
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="flex-shrink-0 flex flex-col gap-1.5 items-end">
@@ -213,6 +276,12 @@ function ProfileRow({
             </div>
           ) : (
             <>
+              <button
+                onClick={onEdit}
+                className="px-2.5 py-1 text-xs rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200"
+              >
+                Edit
+              </button>
               <button
                 onClick={() => setConfirm('profile')}
                 className="px-2.5 py-1 text-xs rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200"

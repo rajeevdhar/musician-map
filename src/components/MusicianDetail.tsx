@@ -4,9 +4,10 @@ import { useStore } from '../store'
 interface Props {
   musician: Musician
   onClose: () => void
+  onEditProfile?: () => void
 }
 
-export default function MusicianDetail({ musician, onClose }: Props) {
+export default function MusicianDetail({ musician, onClose, onEditProfile }: Props) {
   const { currentUser } = useStore()
   const isOwnProfile = currentUser?.id === musician.id
 
@@ -81,8 +82,13 @@ export default function MusicianDetail({ musician, onClose }: Props) {
             </a>
           )}
 
-          {isOwnProfile && (
-            <p className="text-xs text-center text-gray-400">This is your profile</p>
+          {isOwnProfile && onEditProfile && (
+            <button
+              onClick={() => { onClose(); onEditProfile() }}
+              className="block w-full text-center bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium py-2.5 rounded-xl transition-colors text-sm"
+            >
+              ✏️ Edit My Profile
+            </button>
           )}
 
           {!currentUser && (

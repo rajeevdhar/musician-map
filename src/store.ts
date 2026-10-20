@@ -2,6 +2,18 @@ import { create } from 'zustand'
 import { supabase } from './lib/supabase'
 import type { Musician, CraigslistPost, ActiveModal } from './types'
 
+let heartbeatTimer: ReturnType<typeof setInterval> | null = null
+function startHeartbeat(userId: string) {
+  if (heartbeatTimer) clearInterval(heartbeatTimer)
+  const ping = () =>
+    supabase.from('profiles').update({ last_seen_at: new Date().toISOString() }).eq('id', userId)
+  ping()
+  heartbeatTimer = setInterval(ping, 60_000)
+}
+function stopHeartbeat() {
+  if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null }
+}
+
 // Seed musicians rendered client-side — not stored in the DB.
 // Real registered users go into Supabase's `profiles` table.
 const SEED_MUSICIANS: Musician[] = [
@@ -176,6 +188,7 @@ export const useStore = create<AppStore>()((set, get) => ({
           },
           isAuthReady: true,
         })
+        startHeartbeat(u.id)
       } else {
         set({ isAuthReady: true })
       }
@@ -192,8 +205,10 @@ export const useStore = create<AppStore>()((set, get) => ({
             displayName: u.user_metadata?.displayName ?? u.email!,
           },
         })
+        startHeartbeat(u.id)
         get().fetchMusicians()
       } else if (event === 'SIGNED_OUT') {
+        stopHeartbeat()
         set({ currentUser: null })
         get().fetchMusicians()
       }
@@ -246,6 +261,7 @@ export const useStore = create<AppStore>()((set, get) => ({
         lookingFor: row.looking_for ?? '',
         avatarUrl: row.avatar_url ?? undefined,
         createdAt: row.created_at,
+        lastSeenAt: row.last_seen_at ?? undefined,
       }))
       // Seed ids never collide with UUID-based DB ids, but guard anyway
       const dbIds = new Set(dbMusicians.map(m => m.id))

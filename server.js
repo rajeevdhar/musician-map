@@ -194,6 +194,29 @@ async function requireAdmin(req, res, next) {
   next()
 }
 
+// Get auth user stats (last sign-in time for each user)
+app.get('/api/admin/user-stats', requireAdmin, async (req, res) => {
+  if (!supabaseAdmin) return res.status(503).json({ error: 'Admin client not configured' })
+  const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 })
+  if (error) return res.status(500).json({ error: error.message })
+  res.json({
+    users: users.map(u => ({ id: u.id, lastSignInAt: u.last_sign_in_at })),
+  })
+})
+
+// Admin: update any profile (bypasses RLS via service role)
+app.patch('/api/admin/profile/:id', requireAdmin, async (req, res) => {
+  if (!supabaseAdmin) return res.status(503).json({ error: 'Admin client not configured' })
+  const allowed = ['display_name','bio','instruments','genres','contact_email','lat','lng','location_name','looking_for']
+  const update = {}
+  for (const key of allowed) {
+    if (req.body[key] !== undefined) update[key] = req.body[key]
+  }
+  const { error } = await supabaseAdmin.from('profiles').update(update).eq('id', req.params.id)
+  if (error) return res.status(500).json({ error: error.message })
+  res.json({ ok: true })
+})
+
 // Remove a musician profile (keeps the auth account)
 app.delete('/api/admin/profile/:id', requireAdmin, async (req, res) => {
   if (!supabaseAdmin) return res.status(503).json({ error: 'Admin client not configured' })

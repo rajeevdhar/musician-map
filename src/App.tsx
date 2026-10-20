@@ -61,6 +61,7 @@ export default function App() {
         <MusicianDetail
           musician={selectedMusician}
           onClose={() => { setModal(null); setSelectedMusician(null) }}
+          onEditProfile={currentUser ? () => setModal('profile') : undefined}
         />
       )}
 
