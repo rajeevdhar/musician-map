@@ -198,9 +198,19 @@ export const useStore = create<AppStore>()((set, get) => ({
     })
 
     supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        set({ needsPasswordReset: true })
-      } else if (event === 'SIGNED_IN' && session?.user) {
+      if (event === 'PASSWORD_RECOVERY' && session?.user) {
+        const u = session.user
+        set({
+          needsPasswordReset: true,
+          currentUser: {
+            id: u.id,
+            email: u.email!,
+            displayName: u.user_metadata?.displayName ?? u.email!,
+          },
+        })
+        startHeartbeat(u.id)
+        get().fetchMusicians()
+      } else if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session?.user) {
         const u = session.user
         set({
           currentUser: {

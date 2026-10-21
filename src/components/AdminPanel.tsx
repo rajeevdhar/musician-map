@@ -128,7 +128,12 @@ export default function AdminPanel({ onClose }: Props) {
                 <p className="text-xs text-gray-500">{dbProfiles.length} profile{dbProfiles.length !== 1 ? 's' : ''} in database</p>
               </div>
             </div>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+            <div className="flex items-center gap-2">
+              <button onClick={loadAll} disabled={isLoading} className="text-xs text-indigo-500 hover:text-indigo-700 disabled:opacity-50 px-2 py-1 rounded hover:bg-indigo-50 transition-colors">
+                ↻ Refresh
+              </button>
+              <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+            </div>
           </div>
 
           <div className="p-6 space-y-5">
