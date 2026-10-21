@@ -7,9 +7,27 @@ interface Props {
   onEditProfile?: () => void
 }
 
+function isOnline(lastSeenAt?: string): boolean {
+  if (!lastSeenAt) return false
+  return Date.now() - new Date(lastSeenAt).getTime() < 5 * 60 * 1000
+}
+
+function lastSeenLabel(lastSeenAt?: string): string | null {
+  if (!lastSeenAt) return null
+  const diff = Date.now() - new Date(lastSeenAt).getTime()
+  const mins = Math.floor(diff / 60_000)
+  if (mins < 2) return 'Online now'
+  if (mins < 60) return `Active ${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `Active ${hrs}h ago`
+  return null
+}
+
 export default function MusicianDetail({ musician, onClose, onEditProfile }: Props) {
   const { currentUser } = useStore()
   const isOwnProfile = currentUser?.id === musician.id
+  const online = isOnline(musician.lastSeenAt)
+  const seenLabel = lastSeenLabel(musician.lastSeenAt)
 
   return (
     <div className="modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
@@ -25,10 +43,21 @@ export default function MusicianDetail({ musician, onClose, onEditProfile }: Pro
         <div className="pt-9 px-5 pb-5 space-y-4">
           {/* Name & location */}
           <div>
-            <h2 className="text-lg font-bold text-gray-900">{musician.displayName}</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-bold text-gray-900">{musician.displayName}</h2>
+              {online && (
+                <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
+                  <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
+                  Online
+                </span>
+              )}
+            </div>
             <p className="text-sm text-gray-500 flex items-center gap-1 mt-0.5">
               <span>📍</span> {musician.locationName}
             </p>
+            {!online && seenLabel && (
+              <p className="text-xs text-gray-400 mt-0.5">{seenLabel}</p>
+            )}
           </div>
 
           {/* Instruments */}

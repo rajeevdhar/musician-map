@@ -5,8 +5,13 @@ import type { Musician, CraigslistPost, ActiveModal } from './types'
 let heartbeatTimer: ReturnType<typeof setInterval> | null = null
 function startHeartbeat(userId: string) {
   if (heartbeatTimer) clearInterval(heartbeatTimer)
-  const ping = () =>
-    supabase.from('profiles').update({ last_seen_at: new Date().toISOString() }).eq('id', userId)
+  const ping = async () => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ last_seen_at: new Date().toISOString() })
+      .eq('id', userId)
+    if (error) console.warn('Heartbeat failed:', error.message)
+  }
   ping()
   heartbeatTimer = setInterval(ping, 60_000)
 }
@@ -300,6 +305,7 @@ export const useStore = create<AppStore>()((set, get) => ({
       lng: profile.lng,
       location_name: profile.locationName,
       looking_for: profile.lookingFor,
+      last_seen_at: new Date().toISOString(),
     })
     if (!error) await get().fetchMusicians()
   },
