@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useStore } from '../store'
-import type { City } from '../types'
 import { Music2, User, Pencil, Plus, LogOut, Trash2, Shield } from 'lucide-react'
 
 interface Props {
@@ -11,22 +10,10 @@ interface Props {
 }
 
 export default function Header({ onShowAuth, onShowProfile, onShowAdmin, isAdmin }: Props) {
-  const { currentUser, logout, deleteAccount, selectedCityId, fetchCraigslist, currentProfile } = useStore()
+  const { currentUser, logout, deleteAccount, currentProfile } = useStore()
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const [cities, setCities] = useState<City[]>([])
   const [menuOpen, setMenuOpen] = useState(false)
   const profile = currentProfile()
-
-  useEffect(() => {
-    fetch('/api/cities')
-      .then(r => r.json())
-      .then(setCities)
-      .catch(() => {})
-  }, [])
-
-  const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    fetchCraigslist(e.target.value)
-  }
 
   const handleDeleteAccount = async () => {
     setMenuOpen(false)
@@ -40,21 +27,6 @@ export default function Header({ onShowAuth, onShowProfile, onShowAdmin, isAdmin
       <div className="pointer-events-auto flex items-center gap-2 bg-ink text-white px-3 py-2 shadow-sm">
         <Music2 size={16} />
         <span className="font-extrabold text-sm hidden sm:block tracking-tight">MUSICIANMAPPER.</span>
-      </div>
-
-      {/* City picker for Craigslist */}
-      <div className="pointer-events-auto bg-ground border-2 border-ink px-2 py-1.5 flex items-center gap-2 shadow-sm">
-        <select
-          value={selectedCityId}
-          onChange={handleCityChange}
-          className="text-sm text-ink bg-transparent border-none outline-none cursor-pointer pr-1"
-          title="Craigslist city"
-        >
-          {cities.length === 0 && <option value="newyork">New York</option>}
-          {cities.map(c => (
-            <option key={c.id} value={c.id}>{c.label}</option>
-          ))}
-        </select>
       </div>
 
       <div className="flex-1" />

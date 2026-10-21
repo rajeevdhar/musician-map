@@ -31,7 +31,7 @@ Set in Railway dashboard and locally in `.env.local` (gitignored):
 ```
 src/
   App.tsx              — root, modal routing via local `modal` state + store `needsPasswordReset`
-  store.ts             — Zustand store: auth, musicians, craigslist, UI state
+  store.ts             — Zustand store: auth, musicians, UI state
   types.ts             — shared TypeScript types (Musician, ActiveModal, etc.)
   lib/supabase.ts      — Supabase client (uses VITE_ env vars)
   components/
@@ -42,7 +42,6 @@ src/
     AuthModal.tsx      — sign in / register / forgot password tabs
     ResetPasswordModal.tsx — shown after clicking a password reset email link
     AdminPanel.tsx     — admin-only panel: all profiles, online status, edit/delete
-    CraigslistDetail.tsx — Craigslist post detail modal
     MapLegend.tsx      — map legend overlay
 
 server.js              — Express API server (served at /api/*)
@@ -56,12 +55,13 @@ supabase/schema.sql    — full DB schema + RLS policies
 - **Password recovery**: Supabase fires `PASSWORD_RECOVERY` auth event (not `SIGNED_IN`) when a user clicks a reset link. The store handles this by setting `needsPasswordReset: true` and showing `ResetPasswordModal`, which calls `supabase.auth.updateUser({ password })`.
 - **Admin profile editing**: `ProfileModal` accepts an `adminTarget?: Musician` prop. In admin mode it saves via `PATCH /api/admin/profile/:id` with the admin's JWT, bypassing RLS via the service role key.
 
+- **No Craigslist data** (removed Oct 2026): the app previously pulled posts from Craigslist's musicians RSS feed. Removed because Craigslist's terms prohibit scraping and it has sued apps for republishing listings (Craigslist v. 3Taps/PadMapper). Don't reintroduce scraping; listings should come from users of this app.
+
 ## Server API endpoints
 All admin endpoints require `Authorization: Bearer <jwt>` where the JWT belongs to the admin email.
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/craigslist?city=X` | Fetch Craigslist musician posts |
 | GET | `/api/admin/user-stats` | List all auth users with `last_sign_in_at` |
 | PATCH | `/api/admin/profile/:id` | Update any profile (admin only) |
 | DELETE | `/api/admin/profile/:id` | Delete a profile row (admin only) |
