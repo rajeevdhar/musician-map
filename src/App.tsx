@@ -6,6 +6,7 @@ import FilterBar from './components/FilterBar'
 import MusicianMap from './components/MusicianMap'
 import MusicianList from './components/MusicianList'
 import MusicianDetail from './components/MusicianDetail'
+import FilterPanel from './components/FilterPanel'
 import AuthModal from './components/AuthModal'
 import ProfileModal from './components/ProfileModal'
 import AdminPanel from './components/AdminPanel'
@@ -22,7 +23,7 @@ const BOTTOM_TABS = [
 ]
 
 export default function App() {
-  const { currentUser, initAuth, needsPasswordReset, musicians, selectedId, setSelectedId, activeTab, setActiveTab } = useStore()
+  const { currentUser, initAuth, needsPasswordReset, musicians, selectedId, setSelectedId, activeTab, setActiveTab, showFilterPanel } = useStore()
   const [modal, setModal] = useState<Modal>(null)
   const [showMobileDetail, setShowMobileDetail] = useState(false)
 
@@ -68,8 +69,16 @@ export default function App() {
         <div className={`flex-col border-r-2 border-ink overflow-hidden flex-shrink-0 ${
           activeTab === 'list' ? 'flex w-full' : 'hidden'
         } lg:flex lg:w-[380px]`}>
+          {showFilterPanel && <FilterPanel />}
           <MusicianList onViewProfile={(m) => { openMusician(m.id); setShowMobileDetail(true) }} />
         </div>
+
+        {/* Mobile filter panel overlay */}
+        {showFilterPanel && (
+          <div className="lg:hidden absolute inset-0 z-30 flex flex-col">
+            <FilterPanel isMobile />
+          </div>
+        )}
 
         {/* Map area: always on desktop; only on 'map' tab on mobile */}
         <div className={`flex-1 relative min-h-0 ${

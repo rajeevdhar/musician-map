@@ -1,3 +1,5 @@
+export type Level = 'Beginner' | 'Intermediate' | 'Advanced' | 'Pro'
+
 export interface Musician {
   id: string           // same as user.id
   email: string
@@ -10,7 +12,10 @@ export interface Musician {
   lng: number
   locationName: string
   avatarUrl?: string
-  lookingFor: string   // e.g. "band", "session work", "jam partner"
+  lookingFor: string   // comma-separated, e.g. "Band Members, Session Work"
+  level?: Level
+  locationPrecision?: 'exact' | 'area' | 'hidden'
+  neighborhood?: string
   createdAt: string
   lastSeenAt?: string
 }

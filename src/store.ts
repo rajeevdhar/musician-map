@@ -1,6 +1,23 @@
 import { create } from 'zustand'
 import { supabase } from './lib/supabase'
-import type { Musician, ActiveModal } from './types'
+import type { Musician, ActiveModal, Level } from './types'
+import { haversineDistanceMiles } from './lib/musicianUtils'
+
+export interface Filters {
+  instruments: string[]
+  genres: string[]
+  level: 'Any' | Level
+  lookingFor: string[]
+  distanceMi: 1 | 5 | 10 | 25
+}
+
+const DEFAULT_FILTERS: Filters = {
+  instruments: [],
+  genres: [],
+  level: 'Any',
+  lookingFor: [],
+  distanceMi: 25,
+}
 
 // ── Presence heartbeat ─────────────────────────────────────────────────────
 // Writes profiles.last_seen_at every 60s while signed in, and mirrors the
@@ -211,11 +228,15 @@ interface AppStore {
   selectedId: string | null
   query: string
   activeTab: 'map' | 'list' | 'saved' | 'messages' | 'me'
-  filterInstruments: string[]
+  filters: Filters
+  showFilterPanel: boolean
   setSelectedId: (id: string | null) => void
   setQuery: (q: string) => void
   setActiveTab: (tab: AppStore['activeTab']) => void
-  setFilterInstruments: (instruments: string[]) => void
+  setFilters: (partial: Partial<Filters>) => void
+  resetFilters: () => void
+  setShowFilterPanel: (show: boolean) => void
+  filterCount: () => number
   filteredMusicians: () => Musician[]
 }
 
@@ -397,18 +418,51 @@ export const useStore = create<AppStore>()((set, get) => ({
   selectedId: null,
   query: '',
   activeTab: 'map',
-  filterInstruments: [],
+  filters: { ...DEFAULT_FILTERS },
+  showFilterPanel: false,
 
   setSelectedId: (id) => set({ selectedId: id }),
   setQuery: (q) => set({ query: q }),
   setActiveTab: (tab) => set({ activeTab: tab }),
-  setFilterInstruments: (instruments) => set({ filterInstruments: instruments }),
+  setFilters: (partial) => set(s => ({ filters: { ...s.filters, ...partial } })),
+  resetFilters: () => set({ filters: { ...DEFAULT_FILTERS } }),
+  setShowFilterPanel: (show) => set({ showFilterPanel: show }),
+
+  filterCount: () => {
+    const { filters } = get()
+    let count = 0
+    if (filters.instruments.length > 0) count++
+    if (filters.genres.length > 0) count++
+    if (filters.level !== 'Any') count++
+    if (filters.lookingFor.length > 0) count++
+    if (filters.distanceMi < 25) count++
+    return count
+  },
 
   filteredMusicians: () => {
-    const { musicians, query, filterInstruments } = get()
+    const { musicians, query, filters } = get()
+    const profile = get().currentProfile()
+    const userLat = profile?.lat
+    const userLng = profile?.lng
     let list = musicians
-    if (filterInstruments.length > 0) {
-      list = list.filter(m => m.instruments.some(i => filterInstruments.includes(i)))
+
+    if (filters.instruments.length > 0) {
+      list = list.filter(m => m.instruments.some(i => filters.instruments.includes(i)))
+    }
+    if (filters.genres.length > 0) {
+      list = list.filter(m => m.genres.some(g => filters.genres.includes(g)))
+    }
+    if (filters.level !== 'Any') {
+      list = list.filter(m => m.level === filters.level)
+    }
+    if (filters.lookingFor.length > 0) {
+      list = list.filter(m => filters.lookingFor.some(lf => m.lookingFor.includes(lf)))
+    }
+    if (userLat != null && userLng != null && !isNaN(userLat) && !isNaN(userLng)) {
+      list = list.filter(m => {
+        if (isNaN(m.lat) || isNaN(m.lng)) return true
+        return haversineDistanceMiles(userLat, userLng, m.lat, m.lng) <= filters.distanceMi
+      })
     }
     if (query.trim()) {
       const q = query.toLowerCase()

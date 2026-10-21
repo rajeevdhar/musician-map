@@ -1,7 +1,6 @@
 import { SlidersHorizontal } from 'lucide-react'
 import { useStore } from '../store'
 
-// Filter bar labels → actual INSTRUMENT_OPTIONS values
 const FILTER_ITEMS: { label: string; instruments: string[] }[] = [
   { label: 'Drums', instruments: ['Drums'] },
   { label: 'Bass', instruments: ['Bass'] },
@@ -16,21 +15,20 @@ const FILTER_ITEMS: { label: string; instruments: string[] }[] = [
 ]
 
 export default function FilterBar() {
-  const { filterInstruments, setFilterInstruments, filteredMusicians } = useStore()
+  const { filters, setFilters, setShowFilterPanel, filterCount } = useStore()
 
   const isActive = (item: typeof FILTER_ITEMS[0]) =>
-    item.instruments.some(i => filterInstruments.includes(i))
+    item.instruments.some(i => filters.instruments.includes(i))
 
   const toggle = (item: typeof FILTER_ITEMS[0]) => {
     const active = isActive(item)
-    if (active) {
-      setFilterInstruments(filterInstruments.filter(i => !item.instruments.includes(i)))
-    } else {
-      setFilterInstruments([...filterInstruments, ...item.instruments])
-    }
+    const instruments = active
+      ? filters.instruments.filter(i => !item.instruments.includes(i))
+      : [...filters.instruments, ...item.instruments]
+    setFilters({ instruments })
   }
 
-  const filterCount = filterInstruments.length
+  const count = filterCount()
 
   return (
     <div className="hidden lg:grid border-b-2 border-ink bg-accent" style={{ gridTemplateColumns: 'repeat(10, 1fr) auto' }}>
@@ -48,9 +46,12 @@ export default function FilterBar() {
           </button>
         )
       })}
-      <button className="h-11 px-3 bg-ink text-white text-[13px] font-extrabold flex items-center gap-2 hover:bg-neutral-800 transition-colors whitespace-nowrap">
+      <button
+        onClick={() => setShowFilterPanel(true)}
+        className="h-11 px-3 bg-ink text-white text-[13px] font-extrabold flex items-center gap-2 hover:bg-neutral-800 transition-colors whitespace-nowrap"
+      >
         <SlidersHorizontal size={14} />
-        More filters{filterCount > 0 ? ` ${filterCount}` : ''}
+        More filters{count > 0 ? ` ${count}` : ''}
       </button>
     </div>
   )

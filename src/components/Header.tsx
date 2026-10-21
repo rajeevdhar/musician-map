@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useStore } from '../store'
-import { Search, Music2, User, Pencil, Plus, LogOut, Trash2, Shield, Map, List, Heart, MessageSquare } from 'lucide-react'
+import { Search, Music2, User, Pencil, Plus, LogOut, Trash2, Shield, Map, List, Heart, MessageSquare, SlidersHorizontal } from 'lucide-react'
 
 interface Props {
   onShowAuth: () => void
@@ -17,7 +17,7 @@ const DESKTOP_TABS = [
 ]
 
 export default function Header({ onShowAuth, onShowProfile, onShowAdmin, isAdmin }: Props) {
-  const { currentUser, logout, deleteAccount, currentProfile, query, setQuery, activeTab, setActiveTab } = useStore()
+  const { currentUser, logout, deleteAccount, currentProfile, query, setQuery, activeTab, setActiveTab, setShowFilterPanel, filterCount } = useStore()
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const profile = currentProfile()
@@ -140,9 +140,18 @@ export default function Header({ onShowAuth, onShowProfile, onShowAdmin, isAdmin
             className="w-full h-9 bg-white pl-8 pr-2 text-sm text-ink focus:outline-none"
           />
         </div>
+        <button
+          onClick={() => setShowFilterPanel(true)}
+          className="relative w-12 h-12 bg-ink flex items-center justify-center flex-shrink-0"
+        >
+          <SlidersHorizontal size={18} className="text-white" />
+          {filterCount() > 0 && (
+            <span className="absolute top-1 right-1 w-2 h-2 bg-accent" />
+          )}
+        </button>
         {currentUser ? (
-          <button onClick={onShowProfile} className="w-9 h-9 bg-ink flex items-center justify-center flex-shrink-0">
-            <User size={16} className="text-white" />
+          <button onClick={onShowProfile} className="w-9 h-9 bg-ground border-2 border-white flex items-center justify-center flex-shrink-0">
+            <User size={16} className="text-ink" />
           </button>
         ) : (
           <button onClick={onShowAuth} className="bg-white text-accent-700 text-xs font-extrabold px-3 h-9 flex-shrink-0">

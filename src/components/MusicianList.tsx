@@ -7,7 +7,7 @@ interface Props {
 }
 
 export default function MusicianList({ onViewProfile }: Props) {
-  const { filteredMusicians, selectedId, setSelectedId, currentProfile } = useStore()
+  const { filteredMusicians, selectedId, setSelectedId, currentProfile, resetFilters } = useStore()
   const musicians = filteredMusicians()
   const profile = currentProfile()
 
@@ -28,6 +28,12 @@ export default function MusicianList({ onViewProfile }: Props) {
           <div className="flex flex-col items-center justify-center h-full gap-4 px-8 text-center">
             <p className="text-[20px] font-extrabold text-ink">No one matches yet.</p>
             <p className="text-sm text-neutral-700">Try a wider distance or fewer filters.</p>
+            <button
+              onClick={resetFilters}
+              className="h-[42px] px-5 border-2 border-ink text-sm font-extrabold text-ink hover:bg-accent-100 transition-colors"
+            >
+              Reset filters
+            </button>
           </div>
         ) : (
           musicians.map(m => (
