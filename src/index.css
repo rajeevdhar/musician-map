@@ -51,6 +51,7 @@ a:hover { color: var(--color-accent-600); }
 
 /* Leaflet chrome */
 .leaflet-container { font-family: var(--font-body); background: var(--color-neutral-200); }
+.leaflet-tile-pane { filter: grayscale(1) brightness(1.05); }
 .leaflet-bar, .leaflet-bar a { border-radius: 0 !important; }
 .leaflet-bar { border: 2px solid var(--color-text) !important; box-shadow: none !important; }
 .leaflet-bar a { color: var(--color-text); background: var(--color-bg); }

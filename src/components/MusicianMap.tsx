@@ -1,65 +1,21 @@
 import { useEffect } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import { useStore } from '../store'
 import type { Musician } from '../types'
-import MapLegend from './MapLegend'
-import { isOnline } from '../lib/presence'
+import { getInstrumentCode } from '../lib/musicianUtils'
 
-// Custom DivIcon factories
-function makeMusicianIcon(online = false) {
+function makeMusicianPin(musician: Musician, isSelected: boolean) {
+  const code = getInstrumentCode(musician.instruments)
+  const firstName = musician.displayName.split(' ')[0]
   return new L.DivIcon({
     className: '',
-    html: `<div class="musician-pin">🎵${online ? '<span class="online-badge" title="Online now"></span>' : ''}</div>`,
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
-    popupAnchor: [0, -20],
+    html: `<div class="mf-pin${isSelected ? ' is-selected' : ''}"><b>${code}</b> <span>${firstName}</span></div>`,
+    iconSize: [0, 0],
+    iconAnchor: [0, 0],
   })
 }
 
-const musicianIcon = makeMusicianIcon()
-const musicianOnlineIcon = makeMusicianIcon(true)
-
-// Mini popup card for musician pin
-function MusicianPopup({ musician, onExpand }: { musician: Musician; onExpand: () => void }) {
-  return (
-    <div className="p-3 min-w-[200px]">
-      <div className="flex items-center gap-2 mb-1">
-        <span className="text-2xl">🎵</span>
-        <div>
-          <p className="font-semibold text-gray-900 text-sm leading-tight flex items-center gap-1.5">
-            {musician.displayName}
-            {isOnline(musician.lastSeenAt) && (
-              <span className="flex items-center gap-1 text-[10px] text-green-600 font-medium">
-                <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
-                Online
-              </span>
-            )}
-          </p>
-          <p className="text-xs text-gray-500">{musician.locationName}</p>
-        </div>
-      </div>
-      {musician.instruments.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-2">
-          {musician.instruments.slice(0, 3).map(i => (
-            <span key={i} className="bg-indigo-50 text-indigo-700 text-[10px] px-2 py-0.5 rounded-full font-medium">{i}</span>
-          ))}
-          {musician.instruments.length > 3 && (
-            <span className="text-[10px] text-gray-400">+{musician.instruments.length - 3} more</span>
-          )}
-        </div>
-      )}
-      <button
-        onClick={onExpand}
-        className="mt-2 w-full text-xs text-center text-indigo-600 font-medium hover:underline"
-      >
-        View Profile →
-      </button>
-    </div>
-  )
-}
-
-// Fly to the newly added musician's location
 function FlyToUser({ musicians }: { musicians: Musician[] }) {
   const map = useMap()
   const { currentUser } = useStore()
@@ -75,14 +31,19 @@ function FlyToUser({ musicians }: { musicians: Musician[] }) {
   return null
 }
 
-interface Props {
-  onMusicianClick: (m: Musician) => void
+function MapClickHandler() {
+  const { setSelectedId } = useStore()
+  useMapEvents({
+    click: () => setSelectedId(null),
+  })
+  return null
 }
 
-export default function MusicianMap({ onMusicianClick }: Props) {
-  const { musicians } = useStore()
+export default function MusicianMap() {
+  const { filteredMusicians, selectedId, setSelectedId } = useStore()
+  const musicians = filteredMusicians()
 
-  const defaultCenter: [number, number] = [39.8283, -98.5795] // US center
+  const defaultCenter: [number, number] = [39.8283, -98.5795]
   const defaultZoom = 5
 
   return (
@@ -90,28 +51,38 @@ export default function MusicianMap({ onMusicianClick }: Props) {
       <MapContainer
         center={defaultCenter}
         zoom={defaultZoom}
-        zoomControl={false}
+        zoomControl={true}
         className="w-full h-full"
-        style={{ background: '#e8e0d8' }}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          maxZoom={19}
         />
 
-        {/* Musician markers */}
         {musicians.filter(m => !isNaN(m.lat) && !isNaN(m.lng)).map(musician => (
-          <Marker key={musician.id} position={[musician.lat, musician.lng]} icon={isOnline(musician.lastSeenAt) ? musicianOnlineIcon : musicianIcon}>
-            <Popup minWidth={220} maxWidth={280}>
-              <MusicianPopup musician={musician} onExpand={() => onMusicianClick(musician)} />
-            </Popup>
-          </Marker>
+          <Marker
+            key={musician.id}
+            position={[musician.lat, musician.lng]}
+            icon={makeMusicianPin(musician, musician.id === selectedId)}
+            eventHandlers={{
+              click: (e) => {
+                e.originalEvent.stopPropagation()
+                setSelectedId(musician.id === selectedId ? null : musician.id)
+              },
+            }}
+            zIndexOffset={musician.id === selectedId ? 1000 : 0}
+          />
         ))}
 
         <FlyToUser musicians={musicians} />
+        <MapClickHandler />
       </MapContainer>
 
-      <MapLegend />
+      {/* Map hint overlay */}
+      <div className="absolute top-3 left-3 z-[999] bg-ink text-white text-[12px] font-semibold px-2.5 py-1.5 pointer-events-none">
+        Click a pin or a name
+      </div>
     </div>
   )
 }

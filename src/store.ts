@@ -206,6 +206,17 @@ interface AppStore {
   selectedMusician: Musician | null
   openModal: (modal: ActiveModal, payload?: Musician) => void
   closeModal: () => void
+
+  // ── Layout & search ───────────────────────────────────────────────────────
+  selectedId: string | null
+  query: string
+  activeTab: 'map' | 'list' | 'saved' | 'messages' | 'me'
+  filterInstruments: string[]
+  setSelectedId: (id: string | null) => void
+  setQuery: (q: string) => void
+  setActiveTab: (tab: AppStore['activeTab']) => void
+  setFilterInstruments: (instruments: string[]) => void
+  filteredMusicians: () => Musician[]
 }
 
 export const useStore = create<AppStore>()((set, get) => ({
@@ -381,4 +392,33 @@ export const useStore = create<AppStore>()((set, get) => ({
   },
 
   closeModal: () => set({ activeModal: null, selectedMusician: null }),
+
+  // ── Layout & search ───────────────────────────────────────────────────────
+  selectedId: null,
+  query: '',
+  activeTab: 'map',
+  filterInstruments: [],
+
+  setSelectedId: (id) => set({ selectedId: id }),
+  setQuery: (q) => set({ query: q }),
+  setActiveTab: (tab) => set({ activeTab: tab }),
+  setFilterInstruments: (instruments) => set({ filterInstruments: instruments }),
+
+  filteredMusicians: () => {
+    const { musicians, query, filterInstruments } = get()
+    let list = musicians
+    if (filterInstruments.length > 0) {
+      list = list.filter(m => m.instruments.some(i => filterInstruments.includes(i)))
+    }
+    if (query.trim()) {
+      const q = query.toLowerCase()
+      list = list.filter(m =>
+        m.displayName.toLowerCase().includes(q) ||
+        m.instruments.some(i => i.toLowerCase().includes(q)) ||
+        m.genres.some(g => g.toLowerCase().includes(q)) ||
+        m.locationName.toLowerCase().includes(q)
+      )
+    }
+    return list
+  },
 }))

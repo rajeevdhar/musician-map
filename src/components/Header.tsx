@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useStore } from '../store'
-import { Music2, User, Pencil, Plus, LogOut, Trash2, Shield } from 'lucide-react'
+import { Search, Music2, User, Pencil, Plus, LogOut, Trash2, Shield, Map, List, Heart, MessageSquare } from 'lucide-react'
 
 interface Props {
   onShowAuth: () => void
@@ -9,8 +9,15 @@ interface Props {
   isAdmin: boolean
 }
 
+const DESKTOP_TABS = [
+  { id: 'map' as const, Icon: Map, label: 'Map' },
+  { id: 'list' as const, Icon: List, label: 'List' },
+  { id: 'saved' as const, Icon: Heart, label: 'Saved' },
+  { id: 'messages' as const, Icon: MessageSquare, label: 'Messages' },
+]
+
 export default function Header({ onShowAuth, onShowProfile, onShowAdmin, isAdmin }: Props) {
-  const { currentUser, logout, deleteAccount, currentProfile } = useStore()
+  const { currentUser, logout, deleteAccount, currentProfile, query, setQuery, activeTab, setActiveTab } = useStore()
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const profile = currentProfile()
@@ -22,93 +29,124 @@ export default function Header({ onShowAuth, onShowProfile, onShowAdmin, isAdmin
   }
 
   return (
-    <header className="absolute top-0 left-0 right-0 z-[1000] flex items-center gap-2 px-3 py-2 pointer-events-none">
-      {/* Logo */}
-      <div className="pointer-events-auto flex items-center gap-2 bg-ink text-white px-3 py-2 shadow-sm">
-        <Music2 size={16} />
-        <span className="font-extrabold text-sm hidden sm:block tracking-tight">MUSICIANMAPPER.</span>
-      </div>
+    <header className="bg-accent flex-shrink-0 relative z-[1001]">
+      {/* Desktop: full accent bar grid */}
+      <div className="hidden lg:grid h-[68px]" style={{ gridTemplateColumns: '260px 1fr auto' }}>
+        {/* Left: wordmark */}
+        <div className="flex items-center px-5">
+          <span className="text-white text-[18px] font-extrabold tracking-tight">MUSICIANMAPPER.</span>
+        </div>
 
-      <div className="flex-1" />
+        {/* Center: search */}
+        <div className="flex items-center px-4">
+          <div className="relative w-full max-w-[560px]">
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" />
+            <input
+              type="text"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Instrument, genre or name"
+              className="w-full h-11 bg-white border-0 pl-10 pr-3 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-accent"
+            />
+          </div>
+        </div>
 
-      {/* Auth controls */}
-      <div className="pointer-events-auto">
-        {currentUser ? (
-          <div className="relative">
+        {/* Right: nav tabs + user */}
+        <div className="flex items-stretch">
+          {DESKTOP_TABS.map(tab => (
             <button
-              onClick={() => setMenuOpen(v => !v)}
-              className="flex items-center gap-2 bg-ground border-2 border-ink px-3 py-2 text-sm font-bold text-ink hover:bg-accent-100 shadow-sm"
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 h-[68px] px-5 border-l-2 border-white text-[14px] font-extrabold transition-colors ${
+                activeTab === tab.id
+                  ? 'bg-white text-accent-700'
+                  : 'text-white hover:bg-white/10'
+              }`}
             >
-              {profile ? <Music2 size={14} /> : <User size={14} />}
-              <span className="hidden sm:block max-w-[120px] truncate">{currentUser.displayName}</span>
-              {isAdmin && <span className="text-[10px] bg-accent-100 text-accent-700 px-1.5 py-0.5 font-extrabold uppercase tracking-wide">admin</span>}
-              <span className="text-xs text-neutral-500">▾</span>
+              <tab.Icon size={16} />
+              {tab.label}
             </button>
+          ))}
 
-            {menuOpen && (
-              <div
-                className="absolute right-0 top-full mt-0 bg-ground border-2 border-ink shadow-lg min-w-[160px]"
-                onMouseLeave={() => setMenuOpen(false)}
-              >
-                {isAdmin && (
-                  <>
-                    <button
-                      onClick={() => { setMenuOpen(false); onShowAdmin() }}
-                      className="w-full flex items-center gap-2 px-4 h-10 text-sm font-bold text-accent-700 hover:bg-accent-100"
-                    >
-                      <Shield size={14} /> Admin Panel
+          {/* User menu / Sign In */}
+          <div className="flex items-center border-l-2 border-white px-3">
+            {currentUser ? (
+              <div className="relative">
+                <button
+                  onClick={() => setMenuOpen(v => !v)}
+                  className="flex items-center gap-2 bg-white px-3 h-9 text-sm font-bold text-ink hover:bg-accent-100"
+                >
+                  {profile ? <Music2 size={14} /> : <User size={14} />}
+                  <span className="max-w-[120px] truncate">{currentUser.displayName}</span>
+                  {isAdmin && <span className="text-[10px] bg-accent-100 text-accent-700 px-1.5 py-0.5 font-extrabold uppercase tracking-wide">admin</span>}
+                  <span className="text-xs text-neutral-500">▾</span>
+                </button>
+
+                {menuOpen && (
+                  <div
+                    className="absolute right-0 top-full bg-ground border-2 border-ink shadow-lg min-w-[160px] z-10"
+                    onMouseLeave={() => setMenuOpen(false)}
+                  >
+                    {isAdmin && (
+                      <>
+                        <button onClick={() => { setMenuOpen(false); onShowAdmin() }} className="w-full flex items-center gap-2 px-4 h-10 text-sm font-bold text-accent-700 hover:bg-accent-100">
+                          <Shield size={14} /> Admin Panel
+                        </button>
+                        <div className="border-t-2 border-ink" />
+                      </>
+                    )}
+                    <button onClick={() => { setMenuOpen(false); onShowProfile() }} className="w-full flex items-center gap-2 px-4 h-10 text-sm font-semibold text-ink hover:bg-accent-100">
+                      {profile ? <><Pencil size={14} /> Edit Profile</> : <><Plus size={14} /> Create Profile</>}
                     </button>
                     <div className="border-t-2 border-ink" />
-                  </>
-                )}
-                <button
-                  onClick={() => { setMenuOpen(false); onShowProfile() }}
-                  className="w-full flex items-center gap-2 px-4 h-10 text-sm font-semibold text-ink hover:bg-accent-100"
-                >
-                  {profile ? <><Pencil size={14} /> Edit Profile</> : <><Plus size={14} /> Create Profile</>}
-                </button>
-                <div className="border-t-2 border-ink" />
-                <button
-                  onClick={async () => { setMenuOpen(false); await logout() }}
-                  className="w-full flex items-center gap-2 px-4 h-10 text-sm font-semibold text-accent-700 hover:bg-accent-100"
-                >
-                  <LogOut size={14} /> Sign Out
-                </button>
-                {!confirmDelete ? (
-                  <button
-                    onClick={() => setConfirmDelete(true)}
-                    className="w-full flex items-center gap-2 px-4 h-10 text-sm text-neutral-500 hover:bg-accent-100"
-                  >
-                    <Trash2 size={14} /> Delete Account
-                  </button>
-                ) : (
-                  <div className="px-3 py-2 space-y-1.5 border-t-2 border-ink">
-                    <p className="text-xs text-accent-700 font-bold">Delete permanently?</p>
-                    <div className="flex gap-1.5">
-                      <button
-                        onClick={() => setConfirmDelete(false)}
-                        className="flex-1 py-1 text-xs border-2 border-ink text-ink hover:bg-accent-100"
-                      >
-                        Cancel
+                    <button onClick={async () => { setMenuOpen(false); await logout() }} className="w-full flex items-center gap-2 px-4 h-10 text-sm font-semibold text-accent-700 hover:bg-accent-100">
+                      <LogOut size={14} /> Sign Out
+                    </button>
+                    {!confirmDelete ? (
+                      <button onClick={() => setConfirmDelete(true)} className="w-full flex items-center gap-2 px-4 h-10 text-sm text-neutral-500 hover:bg-accent-100">
+                        <Trash2 size={14} /> Delete Account
                       </button>
-                      <button
-                        onClick={handleDeleteAccount}
-                        className="flex-1 py-1 text-xs bg-accent hover:bg-accent-600 text-white font-bold"
-                      >
-                        Delete
-                      </button>
-                    </div>
+                    ) : (
+                      <div className="px-3 py-2 space-y-1.5 border-t-2 border-ink">
+                        <p className="text-xs text-accent-700 font-bold">Delete permanently?</p>
+                        <div className="flex gap-1.5">
+                          <button onClick={() => setConfirmDelete(false)} className="flex-1 py-1 text-xs border-2 border-ink text-ink hover:bg-accent-100">Cancel</button>
+                          <button onClick={handleDeleteAccount} className="flex-1 py-1 text-xs bg-accent hover:bg-accent-600 text-white font-bold">Delete</button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
+            ) : (
+              <button onClick={onShowAuth} className="bg-white text-accent-700 text-sm font-extrabold px-4 h-9 hover:bg-accent-100 transition-colors">
+                Sign in
+              </button>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Mobile: wordmark + search + filter button */}
+      <div className="lg:hidden flex items-center gap-2 h-14 px-3">
+        <span className="text-white text-[15px] font-extrabold tracking-tight flex-shrink-0">MUSICIANMAPPER.</span>
+        <div className="flex-1 relative">
+          <Search size={16} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" />
+          <input
+            type="text"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Search musicians…"
+            className="w-full h-9 bg-white pl-8 pr-2 text-sm text-ink focus:outline-none"
+          />
+        </div>
+        {currentUser ? (
+          <button onClick={onShowProfile} className="w-9 h-9 bg-ink flex items-center justify-center flex-shrink-0">
+            <User size={16} className="text-white" />
+          </button>
         ) : (
-          <button
-            onClick={onShowAuth}
-            className="bg-accent hover:bg-accent-600 text-white text-sm font-bold px-4 py-2 shadow-sm transition-colors"
-          >
-            Sign In / Register
+          <button onClick={onShowAuth} className="bg-white text-accent-700 text-xs font-extrabold px-3 h-9 flex-shrink-0">
+            Sign in
           </button>
         )}
       </div>
