@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { useStore } from '../store'
-import type { Musician, CraigslistPost } from '../types'
+import type { Musician } from '../types'
 import MapLegend from './MapLegend'
 
 // Custom DivIcon factories
@@ -16,18 +16,7 @@ function makeMusicianIcon() {
   })
 }
 
-function makeCraigslistIcon() {
-  return new L.DivIcon({
-    className: '',
-    html: `<div class="craigslist-pin">📢</div>`,
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
-    popupAnchor: [0, -20],
-  })
-}
-
 const musicianIcon = makeMusicianIcon()
-const craigslistIcon = makeCraigslistIcon()
 
 // Mini popup card for musician pin
 function MusicianPopup({ musician, onExpand }: { musician: Musician; onExpand: () => void }) {
@@ -60,27 +49,6 @@ function MusicianPopup({ musician, onExpand }: { musician: Musician; onExpand: (
   )
 }
 
-// Mini popup card for craigslist pin
-function CraigslistPopup({ post, onExpand }: { post: CraigslistPost; onExpand: () => void }) {
-  return (
-    <div className="p-3 min-w-[200px]">
-      <div className="flex items-start gap-2">
-        <span className="text-xl mt-0.5 flex-shrink-0">📢</span>
-        <div className="min-w-0">
-          <p className="font-semibold text-gray-900 text-sm leading-tight line-clamp-2">{post.title}</p>
-          <p className="text-xs text-orange-500 mt-0.5">{post.city} · Craigslist</p>
-        </div>
-      </div>
-      <button
-        onClick={onExpand}
-        className="mt-2 w-full text-xs text-center text-orange-600 font-medium hover:underline"
-      >
-        View Post →
-      </button>
-    </div>
-  )
-}
-
 // Fly to the newly added musician's location
 function FlyToUser({ musicians }: { musicians: Musician[] }) {
   const map = useMap()
@@ -99,16 +67,10 @@ function FlyToUser({ musicians }: { musicians: Musician[] }) {
 
 interface Props {
   onMusicianClick: (m: Musician) => void
-  onPostClick: (p: CraigslistPost) => void
 }
 
-export default function MusicianMap({ onMusicianClick, onPostClick }: Props) {
-  const { musicians, craigslistPosts, selectedCityId, fetchCraigslist } = useStore()
-
-  // Load Craigslist posts for default city on mount
-  useEffect(() => {
-    fetchCraigslist(selectedCityId)
-  }, []) // eslint-disable-line
+export default function MusicianMap({ onMusicianClick }: Props) {
+  const { musicians } = useStore()
 
   const defaultCenter: [number, number] = [39.8283, -98.5795] // US center
   const defaultZoom = 5
@@ -132,15 +94,6 @@ export default function MusicianMap({ onMusicianClick, onPostClick }: Props) {
           <Marker key={musician.id} position={[musician.lat, musician.lng]} icon={musicianIcon}>
             <Popup minWidth={220} maxWidth={280}>
               <MusicianPopup musician={musician} onExpand={() => onMusicianClick(musician)} />
-            </Popup>
-          </Marker>
-        ))}
-
-        {/* Craigslist markers */}
-        {craigslistPosts.map(post => (
-          <Marker key={post.id} position={[post.lat, post.lng]} icon={craigslistIcon}>
-            <Popup minWidth={220} maxWidth={280}>
-              <CraigslistPopup post={post} onExpand={() => onPostClick(post)} />
             </Popup>
           </Marker>
         ))}

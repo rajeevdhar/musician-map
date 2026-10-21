@@ -2,7 +2,9 @@
   "name": "musician-map",
   "version": "1.0.0",
   "type": "module",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
     "dev:client": "vite",
@@ -17,9 +19,7 @@
     "cors": "^2.8.5",
     "dotenv": "^18.0.8",
     "express": "^4.18.2",
-    "fast-xml-parser": "^4.3.4",
     "leaflet": "^1.9.4",
-    "node-fetch": "^3.3.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-leaflet": "^4.2.1",

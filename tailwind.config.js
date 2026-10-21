@@ -5,7 +5,6 @@ export default {
     extend: {
       colors: {
         musician: '#3b82f6',
-        craigslist: '#f97316',
       },
     },
   },

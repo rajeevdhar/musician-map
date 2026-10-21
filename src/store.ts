@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { supabase } from './lib/supabase'
-import type { Musician, CraigslistPost, ActiveModal } from './types'
+import type { Musician, ActiveModal } from './types'
 
 let heartbeatTimer: ReturnType<typeof setInterval> | null = null
 function startHeartbeat(userId: string) {
@@ -161,18 +161,10 @@ interface AppStore {
   removeProfile: () => Promise<void>
   deleteAccount: () => Promise<void>
 
-  // ── Craigslist ────────────────────────────────────────────────────────────
-  craigslistPosts: CraigslistPost[]
-  selectedCityId: string
-  isLoadingCL: boolean
-  clError: string | null
-  fetchCraigslist: (cityId: string) => Promise<void>
-
   // ── UI ────────────────────────────────────────────────────────────────────
   activeModal: ActiveModal
   selectedMusician: Musician | null
-  selectedPost: CraigslistPost | null
-  openModal: (modal: ActiveModal, payload?: Musician | CraigslistPost) => void
+  openModal: (modal: ActiveModal, payload?: Musician) => void
   closeModal: () => void
 }
 
@@ -336,37 +328,14 @@ export const useStore = create<AppStore>()((set, get) => ({
     await supabase.auth.signOut()
   },
 
-  // ── Craigslist ────────────────────────────────────────────────────────────
-  craigslistPosts: [],
-  selectedCityId: 'newyork',
-  isLoadingCL: false,
-  clError: null,
-
-  fetchCraigslist: async (cityId) => {
-    set({ isLoadingCL: true, clError: null, selectedCityId: cityId })
-    try {
-      const res = await fetch(`/api/craigslist?city=${cityId}`)
-      const data = await res.json()
-      set({
-        craigslistPosts: data.posts ?? [],
-        clError: data.error ?? null,
-        isLoadingCL: false,
-      })
-    } catch {
-      set({ isLoadingCL: false, clError: 'API server not running — start with: npm run dev' })
-    }
-  },
-
   // ── UI ────────────────────────────────────────────────────────────────────
   activeModal: null,
   selectedMusician: null,
-  selectedPost: null,
 
   openModal: (modal, payload) => {
     if (modal === 'musician-detail') set({ activeModal: modal, selectedMusician: payload as Musician })
-    else if (modal === 'craigslist-detail') set({ activeModal: modal, selectedPost: payload as CraigslistPost })
     else set({ activeModal: modal })
   },
 
-  closeModal: () => set({ activeModal: null, selectedMusician: null, selectedPost: null }),
+  closeModal: () => set({ activeModal: null, selectedMusician: null }),
 }))

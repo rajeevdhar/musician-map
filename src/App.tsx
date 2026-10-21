@@ -1,22 +1,20 @@
 import { useEffect, useState } from 'react'
 import { useStore } from './store'
-import type { Musician, CraigslistPost } from './types'
+import type { Musician } from './types'
 import Header from './components/Header'
 import MusicianMap from './components/MusicianMap'
 import AuthModal from './components/AuthModal'
 import ProfileModal from './components/ProfileModal'
 import MusicianDetail from './components/MusicianDetail'
-import CraigslistDetail from './components/CraigslistDetail'
 import AdminPanel from './components/AdminPanel'
 import ResetPasswordModal from './components/ResetPasswordModal'
 
-type Modal = 'auth' | 'profile' | 'musician' | 'post' | 'admin' | null
+type Modal = 'auth' | 'profile' | 'musician' | 'admin' | null
 
 export default function App() {
   const { currentUser, initAuth, needsPasswordReset } = useStore()
   const [modal, setModal] = useState<Modal>(null)
   const [selectedMusician, setSelectedMusician] = useState<Musician | null>(null)
-  const [selectedPost, setSelectedPost] = useState<CraigslistPost | null>(null)
 
   // Restore Supabase session on first render
   useEffect(() => { initAuth() }, []) // eslint-disable-line
@@ -29,16 +27,11 @@ export default function App() {
     setModal('musician')
   }
 
-  const openPost = (p: CraigslistPost) => {
-    setSelectedPost(p)
-    setModal('post')
-  }
-
   const handleRegistered = () => setModal('profile')
 
   return (
     <div className="relative w-full h-full overflow-hidden">
-      <MusicianMap onMusicianClick={openMusician} onPostClick={openPost} />
+      <MusicianMap onMusicianClick={openMusician} />
 
       <Header
         onShowAuth={() => setModal('auth')}
@@ -63,13 +56,6 @@ export default function App() {
           musician={selectedMusician}
           onClose={() => { setModal(null); setSelectedMusician(null) }}
           onEditProfile={currentUser ? () => setModal('profile') : undefined}
-        />
-      )}
-
-      {modal === 'post' && selectedPost && (
-        <CraigslistDetail
-          post={selectedPost}
-          onClose={() => { setModal(null); setSelectedPost(null) }}
         />
       )}
 

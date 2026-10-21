@@ -15,27 +15,7 @@ export interface Musician {
   lastSeenAt?: string
 }
 
-export interface CraigslistPost {
-  id: string
-  title: string
-  description: string
-  url: string
-  lat: number
-  lng: number
-  locationName: string
-  pubDate: string
-  city: string
-  cityId: string
-}
-
-export interface City {
-  id: string
-  label: string
-  lat: number
-  lng: number
-}
-
-export type ActiveModal = 'auth' | 'profile' | 'musician-detail' | 'craigslist-detail' | 'reset-password' | null
+export type ActiveModal = 'auth' | 'profile' | 'musician-detail' | 'reset-password' | null
 
 export const INSTRUMENT_OPTIONS = [
   'Guitar', 'Bass', 'Drums', 'Keyboard / Piano', 'Vocals', 'Violin',
