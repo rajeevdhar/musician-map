@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import type { Musician } from '../types'
 import { useStore } from '../store'
 import ProfileModal from './ProfileModal'
+import { isOnline } from '../lib/presence'
 
 interface Props {
   onClose: () => void
@@ -13,11 +14,6 @@ type ActionKey = string
 interface UserStat {
   id: string
   lastSignInAt: string | null
-}
-
-function isOnline(lastSeenAt?: string): boolean {
-  if (!lastSeenAt) return false
-  return Date.now() - new Date(lastSeenAt).getTime() < 5 * 60 * 1000
 }
 
 function relativeTime(iso?: string | null): string {

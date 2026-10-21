@@ -30,6 +30,20 @@ html, body, #root {
 
 .musician-pin:hover { transform: scale(1.15); }
 
+.musician-pin { position: relative; }
+
+.online-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 12px;
+  height: 12px;
+  background: #22c55e;
+  border: 2px solid white;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
 /* Leaflet popup override */
 .leaflet-popup-content-wrapper {
   border-radius: 12px !important;

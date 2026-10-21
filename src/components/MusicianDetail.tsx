@@ -1,15 +1,11 @@
 import type { Musician } from '../types'
 import { useStore } from '../store'
+import { isOnline } from '../lib/presence'
 
 interface Props {
   musician: Musician
   onClose: () => void
   onEditProfile?: () => void
-}
-
-function isOnline(lastSeenAt?: string): boolean {
-  if (!lastSeenAt) return false
-  return Date.now() - new Date(lastSeenAt).getTime() < 5 * 60 * 1000
 }
 
 function lastSeenLabel(lastSeenAt?: string): string | null {
@@ -23,8 +19,10 @@ function lastSeenLabel(lastSeenAt?: string): string | null {
   return null
 }
 
-export default function MusicianDetail({ musician, onClose, onEditProfile }: Props) {
+export default function MusicianDetail({ musician: initial, onClose, onEditProfile }: Props) {
   const { currentUser } = useStore()
+  // Read the live record so status updates while the popup is open
+  const musician = useStore(s => s.musicians.find(m => m.id === initial.id)) ?? initial
   const isOwnProfile = currentUser?.id === musician.id
   const online = isOnline(musician.lastSeenAt)
   const seenLabel = lastSeenLabel(musician.lastSeenAt)

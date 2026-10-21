@@ -4,12 +4,13 @@ import L from 'leaflet'
 import { useStore } from '../store'
 import type { Musician } from '../types'
 import MapLegend from './MapLegend'
+import { isOnline } from '../lib/presence'
 
 // Custom DivIcon factories
-function makeMusicianIcon() {
+function makeMusicianIcon(online = false) {
   return new L.DivIcon({
     className: '',
-    html: `<div class="musician-pin">🎵</div>`,
+    html: `<div class="musician-pin">🎵${online ? '<span class="online-badge" title="Online now"></span>' : ''}</div>`,
     iconSize: [36, 36],
     iconAnchor: [18, 18],
     popupAnchor: [0, -20],
@@ -17,6 +18,7 @@ function makeMusicianIcon() {
 }
 
 const musicianIcon = makeMusicianIcon()
+const musicianOnlineIcon = makeMusicianIcon(true)
 
 // Mini popup card for musician pin
 function MusicianPopup({ musician, onExpand }: { musician: Musician; onExpand: () => void }) {
@@ -25,7 +27,15 @@ function MusicianPopup({ musician, onExpand }: { musician: Musician; onExpand: (
       <div className="flex items-center gap-2 mb-1">
         <span className="text-2xl">🎵</span>
         <div>
-          <p className="font-semibold text-gray-900 text-sm leading-tight">{musician.displayName}</p>
+          <p className="font-semibold text-gray-900 text-sm leading-tight flex items-center gap-1.5">
+            {musician.displayName}
+            {isOnline(musician.lastSeenAt) && (
+              <span className="flex items-center gap-1 text-[10px] text-green-600 font-medium">
+                <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
+                Online
+              </span>
+            )}
+          </p>
           <p className="text-xs text-gray-500">{musician.locationName}</p>
         </div>
       </div>
@@ -91,7 +101,7 @@ export default function MusicianMap({ onMusicianClick }: Props) {
 
         {/* Musician markers */}
         {musicians.filter(m => !isNaN(m.lat) && !isNaN(m.lng)).map(musician => (
-          <Marker key={musician.id} position={[musician.lat, musician.lng]} icon={musicianIcon}>
+          <Marker key={musician.id} position={[musician.lat, musician.lng]} icon={isOnline(musician.lastSeenAt) ? musicianOnlineIcon : musicianIcon}>
             <Popup minWidth={220} maxWidth={280}>
               <MusicianPopup musician={musician} onExpand={() => onMusicianClick(musician)} />
             </Popup>

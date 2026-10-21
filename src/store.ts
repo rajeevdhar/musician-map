@@ -2,21 +2,61 @@ import { create } from 'zustand'
 import { supabase } from './lib/supabase'
 import type { Musician, ActiveModal } from './types'
 
+// ── Presence heartbeat ─────────────────────────────────────────────────────
+// Writes profiles.last_seen_at every 60s while signed in, and mirrors the
+// timestamp into local state so the user's own dot turns green immediately
+// instead of waiting for (or being overwritten by) a stale profiles fetch.
 let heartbeatTimer: ReturnType<typeof setInterval> | null = null
-function startHeartbeat(userId: string) {
+let heartbeatUserId: string | null = null
+let lastPingIso: string | null = null
+
+function applyOwnPing(userId: string, iso: string) {
+  useStore.setState(s => ({
+    musicians: s.musicians.map(m => (m.id === userId ? { ...m, lastSeenAt: iso } : m)),
+  }))
+}
+
+function startHeartbeat(userId: string): Promise<void> {
   if (heartbeatTimer) clearInterval(heartbeatTimer)
+  heartbeatUserId = userId
   const ping = async () => {
+    const iso = new Date().toISOString()
     const { error } = await supabase
       .from('profiles')
-      .update({ last_seen_at: new Date().toISOString() })
+      .update({ last_seen_at: iso })
       .eq('id', userId)
-    if (error) console.warn('Heartbeat failed:', error.message)
+    if (error) {
+      console.warn('Heartbeat failed:', error.message)
+      return
+    }
+    lastPingIso = iso
+    applyOwnPing(userId, iso)
   }
-  ping()
   heartbeatTimer = setInterval(ping, 60_000)
+  return ping()
 }
 function stopHeartbeat() {
   if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null }
+  heartbeatUserId = null
+  lastPingIso = null
+}
+
+// Periodically re-fetch profiles so everyone else's online status stays current.
+let refreshTimer: ReturnType<typeof setInterval> | null = null
+function startProfileRefresh(refresh: () => void) {
+  if (refreshTimer) return
+  refreshTimer = setInterval(() => {
+    if (document.visibilityState === 'visible') refresh()
+  }, 60_000)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') refresh()
+  })
+}
+
+function newerIso(a?: string, b?: string): string | undefined {
+  if (!a) return b
+  if (!b) return a
+  return new Date(a).getTime() >= new Date(b).getTime() ? a : b
 }
 
 // Seed musicians rendered client-side — not stored in the DB.
@@ -187,11 +227,13 @@ export const useStore = create<AppStore>()((set, get) => ({
           },
           isAuthReady: true,
         })
-        startHeartbeat(u.id)
+        // Fetch after the first heartbeat lands so we don't read a stale last_seen_at
+        startHeartbeat(u.id).finally(() => get().fetchMusicians())
       } else {
         set({ isAuthReady: true })
+        get().fetchMusicians()
       }
-      get().fetchMusicians()
+      startProfileRefresh(() => get().fetchMusicians())
     })
 
     supabase.auth.onAuthStateChange((event, session) => {
@@ -205,8 +247,7 @@ export const useStore = create<AppStore>()((set, get) => ({
             displayName: u.user_metadata?.displayName ?? u.email!,
           },
         })
-        startHeartbeat(u.id)
-        get().fetchMusicians()
+        startHeartbeat(u.id).finally(() => get().fetchMusicians())
       } else if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session?.user) {
         const u = session.user
         set({
@@ -216,8 +257,7 @@ export const useStore = create<AppStore>()((set, get) => ({
             displayName: u.user_metadata?.displayName ?? u.email!,
           },
         })
-        startHeartbeat(u.id)
-        get().fetchMusicians()
+        startHeartbeat(u.id).finally(() => get().fetchMusicians())
       } else if (event === 'SIGNED_OUT') {
         stopHeartbeat()
         set({ currentUser: null })
@@ -272,7 +312,10 @@ export const useStore = create<AppStore>()((set, get) => ({
         lookingFor: row.looking_for ?? '',
         avatarUrl: row.avatar_url ?? undefined,
         createdAt: row.created_at,
-        lastSeenAt: row.last_seen_at ?? undefined,
+        lastSeenAt: newerIso(
+          row.last_seen_at ?? undefined,
+          row.id === heartbeatUserId ? lastPingIso ?? undefined : undefined,
+        ),
       }))
       // Seed ids never collide with UUID-based DB ids, but guard anyway
       const dbIds = new Set(dbMusicians.map(m => m.id))
