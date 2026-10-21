@@ -81,12 +81,6 @@ export default function App() {
         <ResetPasswordModal onClose={() => useStore.setState({ needsPasswordReset: false })} />
       )}
 
-      {!currentUser && (
-        <div className="absolute bottom-6 right-3 z-[1000] bg-indigo-700/90 backdrop-blur-sm text-white text-sm px-4 py-3 rounded-2xl shadow-lg max-w-[220px] pointer-events-none">
-          <p className="font-medium">Find musicians near you 🎸</p>
-          <p className="text-indigo-200 text-xs mt-1">Register to add yourself to the map and connect with others.</p>
-        </div>
-      )}
     </div>
   )
 }

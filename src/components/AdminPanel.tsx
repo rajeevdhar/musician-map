@@ -122,37 +122,36 @@ export default function AdminPanel({ onClose }: Props) {
         <div className="modal-box" style={{ maxWidth: '720px' }}>
           <div className="sticky top-0 bg-white flex items-center justify-between px-6 pt-5 pb-3 border-b border-gray-100 z-10">
             <div className="flex items-center gap-3">
-              <span className="text-2xl">🛡️</span>
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Admin Panel</h2>
-                <p className="text-xs text-gray-500">{dbProfiles.length} profile{dbProfiles.length !== 1 ? 's' : ''} in database</p>
+                <h2 className="text-xl font-extrabold text-ink">Admin Panel</h2>
+                <p className="text-xs text-neutral-700">{dbProfiles.length} profile{dbProfiles.length !== 1 ? 's' : ''} in database</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={loadAll} disabled={isLoading} className="text-xs text-indigo-500 hover:text-indigo-700 disabled:opacity-50 px-2 py-1 rounded hover:bg-indigo-50 transition-colors">
+              <button onClick={loadAll} disabled={isLoading} className="text-xs text-accent-700 hover:bg-accent-100 disabled:opacity-50 px-2 py-1 border-2 border-ink font-bold transition-colors">
                 ↻ Refresh
               </button>
-              <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+              <button onClick={onClose} className="text-neutral-500 hover:text-ink text-2xl leading-none">×</button>
             </div>
           </div>
 
           <div className="p-6 space-y-5">
-            <div className="grid grid-cols-4 gap-3">
-              <div className="bg-indigo-50 rounded-xl p-3 text-center">
-                <p className="text-2xl font-bold text-indigo-700">{dbProfiles.length}</p>
-                <p className="text-xs text-indigo-500 mt-0.5">Registered</p>
+            <div className="grid grid-cols-4 gap-0 border-2 border-ink">
+              <div className="p-3 text-center border-r-2 border-ink">
+                <p className="text-2xl font-extrabold text-ink">{dbProfiles.length}</p>
+                <p className="text-[11px] font-extrabold text-neutral-700 uppercase tracking-widest mt-0.5">Registered</p>
               </div>
-              <div className="bg-emerald-50 rounded-xl p-3 text-center">
-                <p className="text-2xl font-bold text-emerald-700">{registeredOnMap}</p>
-                <p className="text-xs text-emerald-500 mt-0.5">On Map</p>
+              <div className="p-3 text-center border-r-2 border-ink">
+                <p className="text-2xl font-extrabold text-ink">{registeredOnMap}</p>
+                <p className="text-[11px] font-extrabold text-neutral-700 uppercase tracking-widest mt-0.5">On Map</p>
               </div>
-              <div className="bg-green-50 rounded-xl p-3 text-center">
-                <p className="text-2xl font-bold text-green-700">{onlineCount}</p>
-                <p className="text-xs text-green-500 mt-0.5">Online Now</p>
+              <div className="p-3 text-center border-r-2 border-ink">
+                <p className="text-2xl font-extrabold text-accent">{onlineCount}</p>
+                <p className="text-[11px] font-extrabold text-neutral-700 uppercase tracking-widest mt-0.5">Online Now</p>
               </div>
-              <div className="bg-orange-50 rounded-xl p-3 text-center">
-                <p className="text-2xl font-bold text-orange-700">8</p>
-                <p className="text-xs text-orange-500 mt-0.5">Seeds</p>
+              <div className="p-3 text-center">
+                <p className="text-2xl font-extrabold text-ink">8</p>
+                <p className="text-[11px] font-extrabold text-neutral-700 uppercase tracking-widest mt-0.5">Seeds</p>
               </div>
             </div>
 
@@ -161,7 +160,7 @@ export default function AdminPanel({ onClose }: Props) {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search by name, email, or city…"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full h-12 bg-white border-2 border-ink px-3 text-sm focus:outline-none"
             />
 
             {isLoading ? (
@@ -223,15 +222,15 @@ function ProfileRow({
   const online = isOnline(musician.lastSeenAt)
 
   return (
-    <div className="border border-gray-200 rounded-xl p-3 hover:border-gray-300 transition-colors">
+    <div className="border-2 border-ink p-3 hover:bg-accent-100 transition-colors">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             {online && (
-              <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" title="Online now" />
+              <span className="w-2 h-2 bg-accent flex-shrink-0" title="Online now" />
             )}
-            <span className="font-semibold text-sm text-gray-900">{musician.displayName}</span>
-            <span className="text-xs text-gray-400">{musician.email}</span>
+            <span className="font-extrabold text-sm text-ink">{musician.displayName}</span>
+            <span className="text-xs text-neutral-500">{musician.email}</span>
           </div>
           <p className="text-xs text-gray-500 mt-0.5">
             {musician.locationName}
@@ -255,26 +254,26 @@ function ProfileRow({
         <div className="flex-shrink-0 flex flex-col gap-1.5 items-end">
           {confirm === 'profile' ? (
             <div className="flex gap-1.5">
-              <button onClick={() => setConfirm(null)} className="px-2 py-1 text-xs rounded border border-gray-300 text-gray-600">
+              <button onClick={() => setConfirm(null)} className="px-2 py-1 text-xs border-2 border-ink text-ink hover:bg-accent-100">
                 Cancel
               </button>
               <button
                 onClick={() => { setConfirm(null); onDeleteProfile() }}
                 disabled={removingProfile}
-                className="px-2 py-1 text-xs rounded bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50"
+                className="px-2 py-1 text-xs bg-ink hover:bg-neutral-800 text-white font-bold disabled:opacity-50"
               >
                 {removingProfile ? '…' : 'Confirm'}
               </button>
             </div>
           ) : confirm === 'account' ? (
             <div className="flex gap-1.5">
-              <button onClick={() => setConfirm(null)} className="px-2 py-1 text-xs rounded border border-gray-300 text-gray-600">
+              <button onClick={() => setConfirm(null)} className="px-2 py-1 text-xs border-2 border-ink text-ink hover:bg-accent-100">
                 Cancel
               </button>
               <button
                 onClick={() => { setConfirm(null); onDeleteAccount() }}
                 disabled={deletingAccount}
-                className="px-2 py-1 text-xs rounded bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
+                className="px-2 py-1 text-xs bg-accent hover:bg-accent-600 text-white font-bold disabled:opacity-50"
               >
                 {deletingAccount ? '…' : 'Confirm'}
               </button>
@@ -283,19 +282,19 @@ function ProfileRow({
             <>
               <button
                 onClick={onEdit}
-                className="px-2.5 py-1 text-xs rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200"
+                className="px-2.5 py-1 text-xs border-2 border-ink text-ink hover:bg-accent-100 font-bold"
               >
                 Edit
               </button>
               <button
                 onClick={() => setConfirm('profile')}
-                className="px-2.5 py-1 text-xs rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200"
+                className="px-2.5 py-1 text-xs border-2 border-ink text-neutral-700 hover:bg-accent-100"
               >
                 Remove Profile
               </button>
               <button
                 onClick={() => setConfirm('account')}
-                className="px-2.5 py-1 text-xs rounded-lg bg-red-50 hover:bg-red-100 text-red-700 border border-red-200"
+                className="px-2.5 py-1 text-xs border-2 border-ink text-accent-700 hover:bg-accent-100"
               >
                 Delete Account
               </button>

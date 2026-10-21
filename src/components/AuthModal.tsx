@@ -50,23 +50,23 @@ export default function AuthModal({ onClose, onRegistered }: Props) {
   return (
     <div className="modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
       <div className="modal-box">
-        <div className="flex items-center justify-between px-6 pt-5 pb-3">
-          <h2 className="text-xl font-bold text-gray-900">
-            {tab === 'login' ? 'Welcome back 🎵' : tab === 'register' ? 'Join MusicianMap 🎸' : 'Reset Password'}
+        <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b-2 border-ink">
+          <h2 className="text-xl font-extrabold text-ink">
+            {tab === 'login' ? 'Welcome back' : tab === 'register' ? 'Create account' : 'Reset Password'}
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+          <button onClick={onClose} className="text-neutral-500 hover:text-ink text-2xl leading-none">×</button>
         </div>
 
         {tab !== 'forgot' && (
-          <div className="flex border-b border-gray-200 mx-6">
+          <div className="flex border-b-2 border-ink mx-6">
             {(['login', 'register'] as const).map(t => (
               <button
                 key={t}
                 onClick={() => switchTab(t)}
-                className={`flex-1 pb-2 text-sm font-medium capitalize transition-colors ${
+                className={`flex-1 pb-2 text-sm font-bold capitalize transition-colors ${
                   tab === t
-                    ? 'text-indigo-600 border-b-2 border-indigo-600 -mb-px'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'text-accent-700 border-b-2 border-accent -mb-px'
+                    : 'text-neutral-500 hover:text-ink'
                 }`}
               >
                 {t === 'login' ? 'Sign In' : 'Register'}
@@ -78,39 +78,39 @@ export default function AuthModal({ onClose, onRegistered }: Props) {
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {tab === 'register' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
+              <label className="block text-xs font-extrabold uppercase tracking-widest text-neutral-700 mb-1">Display Name</label>
               <input
                 type="text"
                 value={displayName}
                 onChange={e => setDisplayName(e.target.value)}
                 placeholder="Your name or artist name"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full h-12 bg-white border-2 border-ink px-3 text-sm focus:outline-none"
                 required
               />
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-xs font-extrabold uppercase tracking-widest text-neutral-700 mb-1">Email</label>
             <input
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full h-12 bg-white border-2 border-ink px-3 text-sm focus:outline-none"
               required
             />
           </div>
 
           {tab !== 'forgot' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <label className="block text-xs font-extrabold uppercase tracking-widest text-neutral-700 mb-1">Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full h-12 bg-white border-2 border-ink px-3 text-sm focus:outline-none"
                 required
               />
             </div>
@@ -121,7 +121,7 @@ export default function AuthModal({ onClose, onRegistered }: Props) {
               <button
                 type="button"
                 onClick={() => { setTab('forgot'); setError(''); setResetSent(false) }}
-                className="text-xs text-indigo-500 hover:text-indigo-700"
+                className="text-xs text-accent-700 hover:text-accent-600"
               >
                 Forgot password?
               </button>
@@ -129,17 +129,17 @@ export default function AuthModal({ onClose, onRegistered }: Props) {
           )}
 
           {error && (
-            <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
+            <p className="text-sm text-accent-700 bg-accent-100 border-2 border-accent px-3 py-2">{error}</p>
           )}
 
           {resetSent ? (
-            <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-3 space-y-3">
-              <p className="text-sm text-green-700 font-medium">Check your email!</p>
-              <p className="text-xs text-green-600">A password reset link has been sent to {email}.</p>
+            <div className="border-2 border-ink px-3 py-3 space-y-3">
+              <p className="text-sm font-bold text-ink">Check your email!</p>
+              <p className="text-xs text-neutral-700">A password reset link has been sent to {email}.</p>
               <button
                 type="button"
                 onClick={() => switchTab('login')}
-                className="text-xs text-indigo-600 hover:underline"
+                className="text-xs text-accent-700 hover:underline"
               >
                 Back to Sign In
               </button>
@@ -149,22 +149,25 @@ export default function AuthModal({ onClose, onRegistered }: Props) {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-medium py-2.5 rounded-lg transition-colors"
+                className="w-full flex items-center justify-between h-[52px] bg-accent hover:bg-accent-600 disabled:opacity-60 text-white font-bold px-4 text-sm transition-colors"
               >
-                {loading
-                  ? 'Please wait…'
-                  : tab === 'login'
-                    ? 'Sign In'
-                    : tab === 'register'
-                      ? 'Create Account'
-                      : 'Send Reset Link'}
+                <span>
+                  {loading
+                    ? 'Please wait…'
+                    : tab === 'login'
+                      ? 'Sign In'
+                      : tab === 'register'
+                        ? 'Create Account'
+                        : 'Send Reset Link'}
+                </span>
+                <span>→</span>
               </button>
 
               {tab === 'forgot' && (
                 <button
                   type="button"
                   onClick={() => switchTab('login')}
-                  className="w-full text-sm text-gray-500 hover:text-gray-700"
+                  className="w-full text-sm text-neutral-500 hover:text-ink"
                 >
                   Back to Sign In
                 </button>
@@ -173,7 +176,7 @@ export default function AuthModal({ onClose, onRegistered }: Props) {
           )}
 
           {tab === 'register' && (
-            <p className="text-xs text-gray-500 text-center">
+            <p className="text-xs text-neutral-500 text-center">
               By registering you agree to display your location publicly to other musicians.
             </p>
           )}

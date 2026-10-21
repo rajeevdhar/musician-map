@@ -1,5 +1,6 @@
 import type { Musician } from '../types'
 import { useStore } from '../store'
+import { MapPin, Mail, Pencil } from 'lucide-react'
 
 interface Props {
   musician: Musician
@@ -32,11 +33,13 @@ export default function MusicianDetail({ musician, onClose, onEditProfile }: Pro
   return (
     <div className="modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
       <div className="modal-box max-w-sm">
-        {/* Avatar banner */}
-        <div className="h-20 bg-gradient-to-br from-indigo-500 to-purple-600 relative flex items-end px-5 pb-3">
+        {/* Accent header */}
+        <div className="h-16 bg-accent relative flex items-center px-5">
           <button onClick={onClose} className="absolute top-3 right-3 text-white/80 hover:text-white text-2xl leading-none">×</button>
-          <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center text-3xl shadow-lg -mb-7 border-2 border-white">
-            🎵
+          <div className="w-12 h-12 bg-ink flex items-center justify-center absolute -bottom-6 left-5 border-2 border-ground">
+            <span className="text-white text-xs font-extrabold">
+              {musician.instruments[0]?.slice(0, 2).toUpperCase() ?? 'MU'}
+            </span>
           </div>
         </div>
 
@@ -44,29 +47,29 @@ export default function MusicianDetail({ musician, onClose, onEditProfile }: Pro
           {/* Name & location */}
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold text-gray-900">{musician.displayName}</h2>
+              <h2 className="text-lg font-extrabold text-ink">{musician.displayName}</h2>
               {online && (
-                <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
-                  <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
+                <span className="flex items-center gap-1 text-xs text-accent-700 font-extrabold uppercase tracking-widest">
+                  <span className="w-2 h-2 bg-accent inline-block" />
                   Online
                 </span>
               )}
             </div>
-            <p className="text-sm text-gray-500 flex items-center gap-1 mt-0.5">
-              <span>📍</span> {musician.locationName}
+            <p className="text-sm text-neutral-700 flex items-center gap-1 mt-0.5">
+              <MapPin size={12} /> {musician.locationName}
             </p>
             {!online && seenLabel && (
-              <p className="text-xs text-gray-400 mt-0.5">{seenLabel}</p>
+              <p className="text-xs text-neutral-500 mt-0.5">{seenLabel}</p>
             )}
           </div>
 
           {/* Instruments */}
           {musician.instruments.length > 0 && (
             <div>
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Instruments</p>
+              <p className="text-[11px] font-extrabold text-neutral-700 uppercase tracking-widest mb-1.5">Instruments</p>
               <div className="flex flex-wrap gap-1.5">
                 {musician.instruments.map(i => (
-                  <span key={i} className="tag bg-indigo-50 text-indigo-700">{i}</span>
+                  <span key={i} className="tag">{i}</span>
                 ))}
               </div>
             </div>
@@ -75,10 +78,10 @@ export default function MusicianDetail({ musician, onClose, onEditProfile }: Pro
           {/* Genres */}
           {musician.genres.length > 0 && (
             <div>
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Genres</p>
+              <p className="text-[11px] font-extrabold text-neutral-700 uppercase tracking-widest mb-1.5">Genres</p>
               <div className="flex flex-wrap gap-1.5">
                 {musician.genres.map(g => (
-                  <span key={g} className="tag bg-orange-50 text-orange-700">{g}</span>
+                  <span key={g} className="tag">{g}</span>
                 ))}
               </div>
             </div>
@@ -87,10 +90,10 @@ export default function MusicianDetail({ musician, onClose, onEditProfile }: Pro
           {/* Looking for */}
           {musician.lookingFor && (
             <div>
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Looking for</p>
+              <p className="text-[11px] font-extrabold text-neutral-700 uppercase tracking-widest mb-1.5">Looking for</p>
               <div className="flex flex-wrap gap-1.5">
                 {musician.lookingFor.split(',').map(s => s.trim()).filter(Boolean).map(l => (
-                  <span key={l} className="tag bg-green-50 text-green-700">{l}</span>
+                  <span key={l} className="tag">{l}</span>
                 ))}
               </div>
             </div>
@@ -98,30 +101,32 @@ export default function MusicianDetail({ musician, onClose, onEditProfile }: Pro
 
           {/* Bio */}
           {musician.bio && (
-            <p className="text-sm text-gray-600 leading-relaxed">{musician.bio}</p>
+            <p className="text-sm text-neutral-700 leading-relaxed">{musician.bio}</p>
           )}
 
           {/* Contact */}
           {!isOwnProfile && musician.contactEmail && (
             <a
-              href={`mailto:${musician.contactEmail}?subject=Hey from MusicianMap!`}
-              className="block w-full text-center bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-xl transition-colors text-sm"
+              href={`mailto:${musician.contactEmail}?subject=Hey from MusicianMapper!`}
+              className="flex items-center justify-between w-full h-[52px] bg-accent hover:bg-accent-600 text-white font-bold px-4 text-sm transition-colors"
             >
-              ✉️ Contact {musician.displayName.split(' ')[0]}
+              <span className="flex items-center gap-2"><Mail size={14} /> Contact {musician.displayName.split(' ')[0]}</span>
+              <span>→</span>
             </a>
           )}
 
           {isOwnProfile && onEditProfile && (
             <button
               onClick={() => { onClose(); onEditProfile() }}
-              className="block w-full text-center bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium py-2.5 rounded-xl transition-colors text-sm"
+              className="flex items-center justify-between w-full h-[52px] border-2 border-ink hover:bg-accent-100 text-ink font-bold px-4 text-sm transition-colors"
             >
-              ✏️ Edit My Profile
+              <span className="flex items-center gap-2"><Pencil size={14} /> Edit My Profile</span>
+              <span>→</span>
             </button>
           )}
 
           {!currentUser && (
-            <p className="text-xs text-center text-gray-400">
+            <p className="text-xs text-center text-neutral-500">
               Sign in to contact this musician
             </p>
           )}
