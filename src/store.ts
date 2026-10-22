@@ -526,8 +526,8 @@ export const useStore = create<AppStore>()((set, get) => ({
     }
     if (filters.lookingFor.length > 0) {
       list = list.filter(m => filters.lookingFor.some(lf => {
-        // "Students" filter matches teachers: those who offer lessons or have "Lessons / Teaching"
-        if (lf === 'Students') return m.offersLessons || m.lookingFor.includes('Lessons / Teaching')
+        // Teacher filtering for students: show profiles that want lessons/teaching
+        if (lf === 'Students') return m.lookingFor.includes('Lessons / Teaching')
         return m.lookingFor.includes(lf)
       }))
     }
