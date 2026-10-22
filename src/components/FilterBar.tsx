@@ -14,6 +14,9 @@ const FILTER_ITEMS: { label: string; instruments: string[] }[] = [
   { label: 'Other', instruments: ['Other', 'Flute', 'Banjo', 'Ukulele', 'Mandolin', 'Harmonica'] },
 ]
 
+const DISTANCE_OPTIONS = [1, 5, 10, 25, 50, 100, 0] as const
+const distanceLabel = (d: number) => d === 0 ? 'World' : `${d} mi`
+
 export default function FilterBar() {
   const { filters, setFilters, setShowFilterPanel, filterCount } = useStore()
 
@@ -31,14 +34,14 @@ export default function FilterBar() {
   const count = filterCount()
 
   return (
-    <div className="hidden lg:grid border-b-2 border-ink bg-accent" style={{ gridTemplateColumns: 'repeat(10, 1fr) auto' }}>
-      {FILTER_ITEMS.map(item => {
+    <div className="hidden lg:flex border-b-2 border-ink bg-accent">
+      {FILTER_ITEMS.map((item, i) => {
         const active = isActive(item)
         return (
           <button
             key={item.label}
             onClick={() => toggle(item)}
-            className={`h-11 pl-3 text-[13px] font-extrabold border-r-2 border-white text-left transition-colors ${
+            className={`flex-1 h-11 pl-3 text-[13px] font-extrabold border-r-2 border-white text-left transition-colors ${
               active ? 'bg-white text-accent-700' : 'text-white hover:bg-white/10'
             }`}
           >
@@ -46,6 +49,20 @@ export default function FilterBar() {
           </button>
         )
       })}
+
+      {/* Distance selector — always visible */}
+      <div className="flex items-center border-r-2 border-white">
+        <select
+          value={filters.distanceMi}
+          onChange={e => setFilters({ distanceMi: Number(e.target.value) as typeof filters.distanceMi })}
+          className="h-11 bg-ink text-white text-[12px] font-extrabold px-3 cursor-pointer appearance-none focus:outline-none"
+        >
+          {DISTANCE_OPTIONS.map(d => (
+            <option key={d} value={d}>{distanceLabel(d)}</option>
+          ))}
+        </select>
+      </div>
+
       <button
         onClick={() => setShowFilterPanel(true)}
         className="h-11 px-3 bg-ink text-white text-[13px] font-extrabold flex items-center gap-2 hover:bg-neutral-800 transition-colors whitespace-nowrap"

@@ -18,6 +18,28 @@ import ResetPasswordModal from './components/ResetPasswordModal'
 
 type Modal = 'auth' | 'profile' | 'admin' | null
 
+const DISTANCE_OPTIONS = [1, 5, 10, 25, 50, 100, 0] as const
+const distanceLabel = (d: number) => d === 0 ? 'World' : `${d} mi`
+
+function MobileDistanceBar() {
+  const { filters, setFilters } = useStore()
+  return (
+    <div className="lg:hidden flex-shrink-0 flex border-b-2 border-ink bg-ground">
+      {DISTANCE_OPTIONS.map((d, i) => (
+        <button
+          key={d}
+          onClick={() => setFilters({ distanceMi: d })}
+          className={`flex-1 h-9 text-[11px] font-extrabold transition-colors ${i > 0 ? 'border-l-2 border-ink' : ''} ${
+            filters.distanceMi === d ? 'bg-ink text-white' : 'text-ink hover:bg-accent-100'
+          }`}
+        >
+          {distanceLabel(d)}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 const BOTTOM_TABS = [
   { id: 'map' as const, Icon: Map, label: 'Map' },
   { id: 'list' as const, Icon: List, label: 'List' },
@@ -89,6 +111,7 @@ export default function App() {
           activeTab === 'list' ? 'flex w-full' : 'hidden'
         } lg:flex lg:w-[380px]`}>
           {showFilterPanel && <FilterPanel />}
+          <MobileDistanceBar />
           <MusicianList onViewProfile={(m) => { openMusician(m.id); setShowMobileDetail(true) }} />
         </div>
 

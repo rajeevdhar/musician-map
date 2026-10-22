@@ -3,8 +3,6 @@ import { useStore } from '../store'
 import { GENRE_OPTIONS, LOOKING_FOR_OPTIONS } from '../types'
 
 const LEVEL_OPTIONS = ['Any', 'Beginner', 'Intermediate', 'Advanced', 'Pro'] as const
-const DISTANCE_OPTIONS = [1, 5, 10, 25, 50, 100, 0] as const
-const distanceLabel = (d: number) => d === 0 ? 'World' : `${d} mi`
 
 interface Props {
   isMobile?: boolean
@@ -53,24 +51,6 @@ export default function FilterPanel({ isMobile = false }: Props) {
 
       {/* Scrollable content */}
       <div className={`px-4 py-4 space-y-6 ${isMobile ? 'flex-1 overflow-y-auto' : 'overflow-y-auto max-h-[340px]'}`}>
-        {/* Distance */}
-        <section>
-          <p className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-700 mb-2">Distance</p>
-          <div className="border-2 border-ink grid grid-cols-7">
-            {DISTANCE_OPTIONS.map((d, i) => (
-              <button
-                key={d}
-                onClick={() => setFilters({ distanceMi: d })}
-                className={`h-10 text-[11px] font-extrabold text-center transition-colors ${i > 0 ? 'border-l-2 border-ink' : ''} ${
-                  filters.distanceMi === d ? 'bg-ink text-white' : 'text-ink hover:bg-accent-100'
-                }`}
-              >
-                {distanceLabel(d)}
-              </button>
-            ))}
-          </div>
-        </section>
-
         {/* Skill level */}
         <section>
           <p className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-700 mb-2">Skill level</p>
