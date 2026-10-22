@@ -229,10 +229,10 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
     })
   }
 
-  const cropAndReupload = (): Promise<string> => {
+  const cropAndReupload = async (): Promise<string> => {
     const img = cropImgRef.current
     const container = cropContainerRef.current
-    if (!img || !container || !avatarUrl || renderedImgSize.w === 0) return Promise.resolve(avatarUrl)
+    if (!img || !container || !avatarUrl || renderedImgSize.w === 0) return avatarUrl
     const cW = container.clientWidth
     const cH = container.clientHeight
     const scaleX = img.naturalWidth / renderedImgSize.w
@@ -244,7 +244,12 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
     const OUTPUT = 600
     const canvas = document.createElement('canvas')
     canvas.width = OUTPUT; canvas.height = OUTPUT
-    canvas.getContext('2d')!.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, OUTPUT, OUTPUT)
+    try {
+      canvas.getContext('2d')!.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, OUTPUT, OUTPUT)
+    } catch {
+      // Canvas tainted (CORS) — skip re-crop, use the already-uploaded image
+      return avatarUrl
+    }
     return new Promise(resolve => {
       canvas.toBlob(async blob => {
         if (!blob) { resolve(avatarUrl); return }
@@ -642,6 +647,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
                         ref={cropImgRef}
                         src={avatarUrl}
                         alt="Profile"
+                        crossOrigin="anonymous"
                         draggable={false}
                         onLoad={e => initCropSize(e.currentTarget)}
                         style={{
