@@ -58,3 +58,9 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER profiles_updated_at
   BEFORE UPDATE ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- Section 4 additions (run in Supabase SQL editor if upgrading an existing project)
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS location_precision TEXT DEFAULT 'exact',
+  ADD COLUMN IF NOT EXISTS neighborhood TEXT,
+  ADD COLUMN IF NOT EXISTS level TEXT;

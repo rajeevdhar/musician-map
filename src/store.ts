@@ -343,6 +343,9 @@ export const useStore = create<AppStore>()((set, get) => ({
         locationName: row.location_name ?? '',
         lookingFor: row.looking_for ?? '',
         avatarUrl: row.avatar_url ?? undefined,
+        locationPrecision: (row.location_precision as Musician['locationPrecision']) ?? 'exact',
+        neighborhood: row.neighborhood ?? '',
+        level: row.level ?? undefined,
         createdAt: row.created_at,
         lastSeenAt: newerIso(
           row.last_seen_at ?? undefined,
@@ -372,6 +375,9 @@ export const useStore = create<AppStore>()((set, get) => ({
       lng: profile.lng,
       location_name: profile.locationName,
       looking_for: profile.lookingFor,
+      location_precision: profile.locationPrecision ?? 'exact',
+      neighborhood: profile.neighborhood ?? null,
+      level: profile.level ?? null,
       last_seen_at: new Date().toISOString(),
     })
     if (!error) await get().fetchMusicians()
@@ -444,7 +450,8 @@ export const useStore = create<AppStore>()((set, get) => ({
     const profile = get().currentProfile()
     const userLat = profile?.lat
     const userLng = profile?.lng
-    let list = musicians
+    const currentUserId = get().currentUser?.id
+    let list = musicians.filter(m => m.locationPrecision !== 'hidden' || m.id === currentUserId)
 
     if (filters.instruments.length > 0) {
       list = list.filter(m => m.instruments.some(i => filters.instruments.includes(i)))

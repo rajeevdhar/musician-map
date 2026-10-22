@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from './store'
 import { Map, List, Heart, MessageSquare, User } from 'lucide-react'
 import Header from './components/Header'
@@ -7,6 +7,8 @@ import MusicianMap from './components/MusicianMap'
 import MusicianList from './components/MusicianList'
 import MusicianDetail from './components/MusicianDetail'
 import FilterPanel from './components/FilterPanel'
+import SignupScreen from './components/SignupScreen'
+import OnboardingFlow from './components/OnboardingFlow'
 import AuthModal from './components/AuthModal'
 import ProfileModal from './components/ProfileModal'
 import AdminPanel from './components/AdminPanel'
@@ -23,27 +25,37 @@ const BOTTOM_TABS = [
 ]
 
 export default function App() {
-  const { currentUser, initAuth, needsPasswordReset, musicians, selectedId, setSelectedId, activeTab, setActiveTab, showFilterPanel } = useStore()
+  const { currentUser, initAuth, needsPasswordReset, musicians, selectedId, setSelectedId, activeTab, setActiveTab, showFilterPanel, isAuthReady } = useStore()
   const [modal, setModal] = useState<Modal>(null)
   const [showMobileDetail, setShowMobileDetail] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(false)
+  const [signupDismissed, setSignupDismissed] = useState(false)
+  const prevUserRef = useRef(currentUser)
 
   useEffect(() => { initAuth() }, []) // eslint-disable-line
+
+  // Reset signup state on logout
+  useEffect(() => {
+    if (prevUserRef.current && !currentUser) {
+      setSignupDismissed(false)
+      setShowOnboarding(false)
+    }
+    prevUserRef.current = currentUser
+  }, [currentUser])
 
   const adminEmail = import.meta.env.VITE_ADMIN_EMAIL
   const isAdmin = !!currentUser && currentUser.email === adminEmail
 
   const selectedMusician = selectedId ? musicians.find(m => m.id === selectedId) ?? null : null
 
-  const openMusician = (id: string) => {
-    setSelectedId(id)
-  }
-
-  const handleRegistered = () => setModal('profile')
+  const openMusician = (id: string) => setSelectedId(id)
 
   const showProfile = () => {
     if (!currentUser) { setModal('auth'); return }
     setModal('profile')
   }
+
+  const showSignupScreen = isAuthReady && !currentUser && !signupDismissed && !showOnboarding
 
   // Close mobile detail when selection changes
   useEffect(() => {
@@ -172,7 +184,7 @@ export default function App() {
 
       {/* Overlay modals */}
       {modal === 'auth' && (
-        <AuthModal onClose={() => setModal(null)} onRegistered={handleRegistered} />
+        <AuthModal onClose={() => setModal(null)} />
       )}
       {modal === 'profile' && currentUser && (
         <ProfileModal onClose={() => setModal(null)} />
@@ -182,6 +194,23 @@ export default function App() {
       )}
       {needsPasswordReset && (
         <ResetPasswordModal onClose={() => useStore.setState({ needsPasswordReset: false })} />
+      )}
+
+      {/* Signup screen (logged-out users) */}
+      {showSignupScreen && (
+        <SignupScreen
+          onSignedUp={() => setShowOnboarding(true)}
+          onLogin={() => setModal('auth')}
+          onSkip={() => setSignupDismissed(true)}
+        />
+      )}
+
+      {/* Onboarding flow (after signup) */}
+      {showOnboarding && (
+        <OnboardingFlow
+          onComplete={() => setShowOnboarding(false)}
+          onBack={() => { setShowOnboarding(false); setSignupDismissed(true) }}
+        />
       )}
     </div>
   )
