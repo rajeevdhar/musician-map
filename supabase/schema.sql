@@ -117,3 +117,7 @@ ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS availability JSONB DEFAULT NULL,
   ADD COLUMN IF NOT EXISTS phone TEXT,
   ADD COLUMN IF NOT EXISTS years_playing INTEGER;
+
+-- Test profiles flag (set by seed script, shown in AdminPanel)
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS is_test BOOLEAN DEFAULT FALSE;

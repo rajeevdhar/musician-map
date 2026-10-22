@@ -71,6 +71,7 @@ export default function AdminPanel({ onClose }: Props) {
       avatarUrl: row.avatar_url ?? undefined,
       createdAt: row.created_at,
       lastSeenAt: row.last_seen_at ?? undefined,
+      isTest: row.is_test ?? false,
     })))
 
     if (statsResult.users) {
@@ -104,6 +105,7 @@ export default function AdminPanel({ onClose }: Props) {
 
   const registeredOnMap = musicians.filter(m => !m.id.startsWith('seed-')).length
   const onlineCount = dbProfiles.filter(m => isOnline(m.lastSeenAt)).length
+  const testCount = dbProfiles.filter(m => m.isTest).length
 
   const filtered = dbProfiles.filter(m =>
     !search.trim() ||
@@ -146,8 +148,8 @@ export default function AdminPanel({ onClose }: Props) {
                 <p className="text-[11px] font-extrabold text-neutral-700 uppercase tracking-widest mt-0.5">Online Now</p>
               </div>
               <div className="p-3 text-center">
-                <p className="text-2xl font-extrabold text-ink">8</p>
-                <p className="text-[11px] font-extrabold text-neutral-700 uppercase tracking-widest mt-0.5">Seeds</p>
+                <p className="text-2xl font-extrabold text-neutral-400">{testCount}</p>
+                <p className="text-[11px] font-extrabold text-neutral-700 uppercase tracking-widest mt-0.5">Test</p>
               </div>
             </div>
 
@@ -227,6 +229,9 @@ function ProfileRow({
               title={online ? 'Online now' : presenceText(musician.lastSeenAt) ? `Last seen ${presenceText(musician.lastSeenAt)}` : 'Never seen'}
             />
             <span className="font-extrabold text-sm text-ink">{musician.displayName}</span>
+            {musician.isTest && (
+              <span className="text-[9px] font-extrabold uppercase tracking-widest bg-neutral-200 text-neutral-500 px-1.5 py-0.5">TEST</span>
+            )}
             <span className="text-xs text-neutral-500">{musician.email}</span>
           </div>
           <p className="text-xs text-gray-500 mt-0.5">

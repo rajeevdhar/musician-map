@@ -401,6 +401,7 @@ export const useStore = create<AppStore>()((set, get) => ({
         availability: row.availability as boolean[][] ?? undefined,
         phone: row.phone ?? undefined,
         yearsPlaying: row.years_playing ?? undefined,
+        isTest: row.is_test ?? false,
       }))
       // Seed ids never collide with UUID-based DB ids, but guard anyway
       const dbIds = new Set(dbMusicians.map(m => m.id))
