@@ -24,18 +24,20 @@ const distanceLabel = (d: number) => d === 0 ? 'World' : `${d} mi`
 function MobileDistanceBar() {
   const { filters, setFilters } = useStore()
   return (
-    <div className="lg:hidden flex-shrink-0 flex border-b-2 border-ink bg-ground">
-      {DISTANCE_OPTIONS.map((d, i) => (
-        <button
-          key={d}
-          onClick={() => setFilters({ distanceMi: d })}
-          className={`flex-1 h-9 text-[11px] font-extrabold transition-colors ${i > 0 ? 'border-l-2 border-ink' : ''} ${
-            filters.distanceMi === d ? 'bg-ink text-white' : 'text-ink hover:bg-accent-100'
-          }`}
-        >
-          {distanceLabel(d)}
-        </button>
-      ))}
+    <div className="lg:hidden flex-shrink-0 px-3 py-2 border-b-2 border-ink bg-ground">
+      <div className="border-2 border-ink flex">
+        {DISTANCE_OPTIONS.map((d, i) => (
+          <button
+            key={d}
+            onClick={() => setFilters({ distanceMi: d })}
+            className={`flex-1 h-9 text-[11px] font-extrabold transition-colors ${i > 0 ? 'border-l-2 border-ink' : ''} ${
+              filters.distanceMi === d ? 'bg-ink text-white' : 'text-ink hover:bg-accent-100'
+            }`}
+          >
+            {distanceLabel(d)}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
