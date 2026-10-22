@@ -49,7 +49,7 @@ function startHeartbeat(userId: string): Promise<void> {
     lastPingIso = iso
     applyOwnPing(userId, iso)
   }
-  heartbeatTimer = setInterval(ping, 60_000)
+  heartbeatTimer = setInterval(ping, 300_000)
   return ping()
 }
 function stopHeartbeat() {

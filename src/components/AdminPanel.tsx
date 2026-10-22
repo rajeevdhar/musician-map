@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import type { Musician } from '../types'
 import { useStore } from '../store'
 import ProfileModal from './ProfileModal'
-import { isOnline } from '../lib/presence'
+import { isOnline, presenceText } from '../lib/presence'
 
 interface Props {
   onClose: () => void
@@ -222,9 +222,10 @@ function ProfileRow({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            {online && (
-              <span className="w-2 h-2 bg-accent flex-shrink-0" title="Online now" />
-            )}
+            <span
+              className={`w-2 h-2 rounded-full flex-shrink-0 ${online ? 'bg-green-500' : 'bg-neutral-300'}`}
+              title={online ? 'Online now' : presenceText(musician.lastSeenAt) ? `Last seen ${presenceText(musician.lastSeenAt)}` : 'Never seen'}
+            />
             <span className="font-extrabold text-sm text-ink">{musician.displayName}</span>
             <span className="text-xs text-neutral-500">{musician.email}</span>
           </div>

@@ -97,8 +97,21 @@ app.delete('/api/admin/user/:id', requireAdmin, async (req, res) => {
 
 // Serve built frontend in production (Railway single-service deployment)
 if (isProd) {
-  app.use(express.static(join(__dirname, 'dist')))
+  // Vite hashes all filenames in /assets — safe to cache for a year
+  app.use('/assets', express.static(join(__dirname, 'dist/assets'), {
+    maxAge: '1y',
+    immutable: true,
+  }))
+  // index.html must not be cached so deploys reach users immediately
+  app.use(express.static(join(__dirname, 'dist'), {
+    setHeaders(res, filePath) {
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+      }
+    },
+  }))
   app.get('*', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
     res.sendFile(join(__dirname, 'dist', 'index.html'))
   })
 }

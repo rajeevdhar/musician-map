@@ -2,7 +2,7 @@ import type { Musician } from '../types'
 import { useStore } from '../store'
 import { ArrowLeft, X, Heart, MapPin, Pencil, MessageSquare } from 'lucide-react'
 import { getInstrumentCode } from '../lib/musicianUtils'
-import { isOnline } from '../lib/presence'
+import { isOnline, presenceText } from '../lib/presence'
 
 interface Props {
   musician: Musician
@@ -55,9 +55,13 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
       <div className="flex-1 overflow-y-auto">
         {/* Accent header block */}
         <div className="bg-accent border-t-2 border-ink px-4 pt-3.5 pb-4">
-          <p className="text-[11px] font-extrabold uppercase tracking-widest text-white/70 mb-1">
+          <p className="text-[11px] font-extrabold uppercase tracking-widest text-white/70 mb-1 flex items-center gap-1.5">
+            <span
+              className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${online ? 'bg-green-400' : 'bg-white/30'}`}
+              title={online ? 'Online now' : presenceText(musician.lastSeenAt) ?? 'Offline'}
+            />
             {code} · {musician.instruments[0] ?? 'Musician'}
-            {online && ' · Online now'}
+            {online ? ' · Online now' : presenceText(musician.lastSeenAt) ? ` · ${presenceText(musician.lastSeenAt)}` : ''}
           </p>
           <h2 className="text-[40px] font-extrabold text-white leading-none tracking-tight">{musician.displayName}</h2>
           <p className="text-[14px] font-semibold text-white/80 mt-1.5 flex items-center gap-1">
