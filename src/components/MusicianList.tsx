@@ -41,7 +41,7 @@ export default function MusicianList({ onViewProfile }: Props) {
           <span className="text-[20px] font-extrabold text-ink pb-0.5">musicians</span>
         </div>
         <button onClick={toggleSort} className="text-[13px] font-semibold text-neutral-700 pb-1 hover:text-ink transition-colors">
-          {sort === 'nearest' ? 'Nearest ↓' : sort === 'further' ? 'Further ↑' : 'A–Z ↓'}
+          {sort === 'nearest' ? 'Nearest ↓' : sort === 'further' ? 'Furthest ↑' : 'A–Z ↓'}
         </button>
       </div>
 
