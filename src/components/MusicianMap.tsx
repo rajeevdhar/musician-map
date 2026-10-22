@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
-import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet'
+import { MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
+import 'leaflet.markercluster'
 import { useStore } from '../store'
 import { isOnline } from '../lib/presence'
 import type { Musician } from '../types'
@@ -65,6 +66,49 @@ function FlyToSelected({ musicians }: { musicians: Musician[] }) {
   return null
 }
 
+function ClusteredMarkers({ musicians, jittered, selectedId, setSelectedId }: {
+  musicians: Musician[]
+  jittered: Map<string, [number, number]>
+  selectedId: string | null
+  setSelectedId: (id: string | null) => void
+}) {
+  const map = useMap()
+
+  useEffect(() => {
+    const group = L.markerClusterGroup({
+      iconCreateFunction: (cluster) => new L.DivIcon({
+        className: '',
+        html: `<div class="mf-cluster">${cluster.getChildCount()}</div>`,
+        iconSize: [0, 0],
+        iconAnchor: [0, 0],
+      }),
+      maxClusterRadius: 50,
+      spiderfyOnMaxZoom: true,
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: true,
+      animate: true,
+    })
+
+    musicians.forEach(musician => {
+      const pos = jittered.get(musician.id) ?? [musician.lat, musician.lng] as [number, number]
+      const marker = L.marker(pos, {
+        icon: makeMusicianPin(musician, musician.id === selectedId),
+        zIndexOffset: musician.id === selectedId ? 1000 : 0,
+      })
+      marker.on('click', (e: L.LeafletMouseEvent) => {
+        e.originalEvent.stopPropagation()
+        setSelectedId(musician.id === selectedId ? null : musician.id)
+      })
+      group.addLayer(marker)
+    })
+
+    map.addLayer(group)
+    return () => { map.removeLayer(group) }
+  }, [musicians, selectedId]) // eslint-disable-line
+
+  return null
+}
+
 function MapClickHandler() {
   const { setSelectedId } = useStore()
   useMapEvents({
@@ -108,7 +152,8 @@ function jitterPositions(musicians: Musician[]): Map<string, [number, number]> {
 export default function MusicianMap() {
   const { filteredMusicians, musicians, selectedId, setSelectedId } = useStore()
   const visible = filteredMusicians()
-  const jittered = jitterPositions(visible.filter(m => !isNaN(m.lat) && !isNaN(m.lng)))
+  const validVisible = visible.filter(m => !isNaN(m.lat) && !isNaN(m.lng))
+  const jittered = jitterPositions(validVisible)
   const onlineCount = musicians.filter(m => isOnline(m.lastSeenAt)).length
 
   const defaultCenter: [number, number] = [39.8283, -98.5795]
@@ -128,20 +173,12 @@ export default function MusicianMap() {
           maxZoom={19}
         />
 
-        {visible.filter(m => !isNaN(m.lat) && !isNaN(m.lng)).map(musician => (
-          <Marker
-            key={musician.id}
-            position={jittered.get(musician.id) ?? [musician.lat, musician.lng]}
-            icon={makeMusicianPin(musician, musician.id === selectedId)}
-            eventHandlers={{
-              click: (e) => {
-                e.originalEvent.stopPropagation()
-                setSelectedId(musician.id === selectedId ? null : musician.id)
-              },
-            }}
-            zIndexOffset={musician.id === selectedId ? 1000 : 0}
-          />
-        ))}
+        <ClusteredMarkers
+          musicians={validVisible}
+          jittered={jittered}
+          selectedId={selectedId}
+          setSelectedId={setSelectedId}
+        />
 
         <FlyToUser musicians={visible} />
         <FlyToSelected musicians={visible} />

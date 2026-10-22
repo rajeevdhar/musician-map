@@ -1,5 +1,7 @@
 /* Leaflet CSS must come before tailwind directives */
 @import 'leaflet/dist/leaflet.css';
+@import 'leaflet.markercluster/dist/MarkerCluster.css';
+@import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 
 @tailwind base;
 @tailwind components;
@@ -98,6 +100,13 @@ a:hover { color: var(--color-accent-600); }
 .mf-tip-meta { font-size: 11px; opacity: .7; margin-bottom: 5px; font-weight: 600; letter-spacing: .01em; }
 .mf-tip-bio { font-size: 11px; opacity: .65; line-height: 1.45; }
 .mf-tip-teacher { display: inline-block; margin-top: 5px; font: 800 9px var(--font-heading); letter-spacing: .08em; background: #b45309; color: #fff; padding: 1px 5px; }
+
+/* Marker cluster overrides */
+.mf-cluster { display: flex; align-items: center; justify-content: center; background: var(--color-accent); color: #fff; font: 900 13px var(--font-heading); box-shadow: var(--shadow-sm); cursor: pointer; transition: transform .15s ease, box-shadow .15s ease; white-space: nowrap; padding: 0 10px; height: 30px; }
+.mf-cluster:hover { transform: scale(1.12); box-shadow: 0 4px 16px rgba(0,0,0,.35); }
+[data-theme="navy"] .mf-cluster,
+[data-theme="slate"] .mf-cluster { background: var(--color-gold); color: var(--color-text); }
+.leaflet-cluster-anim .leaflet-marker-icon { transition: left .3s ease-out, top .3s ease-out; }
 
 .mf-area { width: 80px; height: 80px; transform: translate(-50%, -50%); border: 2px dashed var(--color-accent); background: rgba(236, 48, 19, .12); padding: 4px 6px; font: 800 11px var(--font-heading); color: var(--color-accent-700); cursor: pointer; }
 .mf-area.is-selected { background: rgba(236, 48, 19, .28); border-style: solid; }
