@@ -8,7 +8,7 @@ export interface Filters {
   genres: string[]
   level: 'Any' | Level
   lookingFor: string[]
-  distanceMi: 1 | 5 | 10 | 25
+  distanceMi: 1 | 5 | 10 | 25 | 50 | 100 | 0
 }
 
 const DEFAULT_FILTERS: Filters = {
@@ -503,7 +503,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     if (filters.genres.length > 0) count++
     if (filters.level !== 'Any') count++
     if (filters.lookingFor.length > 0) count++
-    if (filters.distanceMi < 25) count++
+    if (filters.distanceMi !== 25) count++
     return count
   },
 
@@ -527,7 +527,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     if (filters.lookingFor.length > 0) {
       list = list.filter(m => filters.lookingFor.some(lf => m.lookingFor.includes(lf)))
     }
-    if (userLat != null && userLng != null && !isNaN(userLat) && !isNaN(userLng)) {
+    if (filters.distanceMi !== 0 && userLat != null && userLng != null && !isNaN(userLat) && !isNaN(userLng)) {
       list = list.filter(m => {
         if (isNaN(m.lat) || isNaN(m.lng)) return true
         return haversineDistanceMiles(userLat, userLng, m.lat, m.lng) <= filters.distanceMi
