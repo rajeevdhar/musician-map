@@ -435,6 +435,7 @@ export const useStore = create<AppStore>()((set, get) => ({
       availability: profile.availability ?? null,
       phone: profile.phone ?? null,
       years_playing: profile.yearsPlaying ?? null,
+      avatar_url: profile.avatarUrl ?? null,
     })
     if (!error) {
       await get().fetchMusicians()

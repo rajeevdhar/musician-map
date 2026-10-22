@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { X, Navigation } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { X, Navigation, Camera } from 'lucide-react'
 import { useStore } from '../store'
 import { INSTRUMENT_OPTIONS, GENRE_OPTIONS, LOOKING_FOR_OPTIONS } from '../types'
 import type { Musician, Level } from '../types'
@@ -89,6 +89,9 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
   const [geoStatus, setGeoStatus] = useState<GeoStatus>('idle')
   const [confirmRemove, setConfirmRemove] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState(source?.avatarUrl ?? '')
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const avatarFileRef = useRef<HTMLInputElement>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -158,6 +161,25 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
     })
   }
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) { setError('Photo must be under 5MB'); return }
+    setUploadingAvatar(true)
+    setError('')
+    const userId = currentUser!.id
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
+    const path = `${userId}/avatar.${ext}`
+    const { error: uploadErr } = await supabase.storage
+      .from('avatars')
+      .upload(path, file, { upsert: true, contentType: file.type })
+    if (uploadErr) { setError('Upload failed: ' + uploadErr.message); setUploadingAvatar(false); return }
+    const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+    setAvatarUrl(`${data.publicUrl}?t=${Date.now()}`)
+    setUploadingAvatar(false)
+    if (avatarFileRef.current) avatarFileRef.current.value = ''
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -213,6 +235,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
         primaryInstrument: primaryInstrument || undefined,
         gear,
         availability,
+        avatarUrl: avatarUrl || undefined,
       })
     }
 
@@ -482,8 +505,33 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
         <div className="hidden lg:grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
           {/* Col 1: Photo, name, primary instrument, bio, location */}
           <div className="p-6 space-y-5">
-            <div className="h-[200px] bg-neutral-200 flex items-center justify-center flex-shrink-0">
-              <span className="text-neutral-400 text-[12px] font-extrabold uppercase tracking-widest">Photo</span>
+            <div>
+              <input ref={avatarFileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+              <div
+                className="h-[200px] bg-neutral-200 border-2 border-ink relative overflow-hidden cursor-pointer group"
+                onClick={() => avatarFileRef.current?.click()}
+              >
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full gap-2">
+                    <Camera size={28} className="text-neutral-400" />
+                    <span className="text-neutral-400 text-[11px] font-extrabold uppercase tracking-widest">Add Photo</span>
+                    <span className="text-neutral-400 text-[10px]">Max 5MB</span>
+                  </div>
+                )}
+                {uploadingAvatar && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                    <span className="text-white text-[12px] font-extrabold">Uploading…</span>
+                  </div>
+                )}
+                {avatarUrl && !uploadingAvatar && (
+                  <div className="absolute bottom-0 inset-x-0 h-9 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
+                    <Camera size={13} className="text-white" />
+                    <span className="text-white text-[11px] font-extrabold uppercase tracking-wider">Change Photo</span>
+                  </div>
+                )}
+              </div>
             </div>
             <div>
               <Label>Display / Artist Name</Label>
@@ -585,6 +633,36 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
         {/* Mobile: stacked sections */}
         <div className="lg:hidden flex flex-col">
           <div className="p-4 space-y-4">
+            <div className="flex items-center gap-3">
+              <div
+                className="w-20 h-20 bg-neutral-200 border-2 border-ink relative overflow-hidden cursor-pointer flex-shrink-0"
+                onClick={() => avatarFileRef.current?.click()}
+              >
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <Camera size={22} className="text-neutral-400" />
+                  </div>
+                )}
+                {uploadingAvatar && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                    <span className="text-white text-[9px] font-extrabold">…</span>
+                  </div>
+                )}
+              </div>
+              <div>
+                <p className="text-[12px] font-extrabold text-ink uppercase tracking-widest mb-1">Profile Photo</p>
+                <button
+                  type="button"
+                  onClick={() => avatarFileRef.current?.click()}
+                  className="text-[12px] font-bold text-accent-700 hover:underline"
+                >
+                  {avatarUrl ? 'Change photo' : 'Add photo'}
+                </button>
+                <p className="text-[10px] text-neutral-400 mt-0.5">Max 5MB · JPG, PNG, GIF</p>
+              </div>
+            </div>
             <div>
               <Label>Display / Artist Name</Label>
               <input
