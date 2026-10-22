@@ -5,12 +5,32 @@ import { useStore } from '../store'
 import type { Musician } from '../types'
 import { getInstrumentCode } from '../lib/musicianUtils'
 
+function esc(s: string) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
 function makeMusicianPin(musician: Musician, isSelected: boolean) {
   const code = getInstrumentCode(musician.instruments)
   const firstName = musician.displayName.split(' ')[0]
+  const isTeacher = musician.lookingFor?.includes('Lessons / Teaching') ?? false
+
+  const city = musician.locationName.split(',')[0]
+  const instrumentStr = musician.instruments.slice(0, 2).join(', ')
+  const meta = [instrumentStr, musician.level, city].filter(Boolean).join(' · ')
+  const bio = musician.bio && musician.bio.length > 72 ? musician.bio.slice(0, 72) + '…' : musician.bio
+
+  const pinClass = ['mf-pin', isSelected ? 'is-selected' : '', isTeacher ? 'is-teacher' : ''].filter(Boolean).join(' ')
+
+  const tooltip = `<div class="mf-pin-tooltip">
+    <div class="mf-tip-name">${esc(musician.displayName)}</div>
+    ${meta ? `<div class="mf-tip-meta">${esc(meta)}</div>` : ''}
+    ${bio ? `<div class="mf-tip-bio">${esc(bio)}</div>` : ''}
+    ${isTeacher ? '<div class="mf-tip-teacher">OFFERS LESSONS</div>' : ''}
+  </div>`
+
   return new L.DivIcon({
     className: '',
-    html: `<div class="mf-pin${isSelected ? ' is-selected' : ''}"><b>${code}</b> <span>${firstName}</span></div>`,
+    html: `<div class="mf-pin-wrap"><div class="${pinClass}"><b>${esc(code)}</b> <span>${esc(firstName)}</span></div>${tooltip}</div>`,
     iconSize: [0, 0],
     iconAnchor: [0, 0],
   })

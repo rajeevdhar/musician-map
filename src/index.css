@@ -41,10 +41,23 @@ a:hover { color: var(--color-accent-600); }
 .grayscale, .grayscale img { filter: grayscale(1); }
 
 /* Map pins (L.divIcon className) */
-.mf-pin { height: 30px; padding: 0 10px; display: flex; align-items: center; gap: 6px; background: var(--color-accent); color: #fff; font: 800 12px var(--font-heading); white-space: nowrap; box-shadow: var(--shadow-sm); cursor: pointer; transform: translate(-50%, -50%); width: max-content; }
+.mf-pin-wrap { transform: translate(-50%, -50%); position: relative; width: max-content; }
+.mf-pin { height: 30px; padding: 0 10px; display: flex; align-items: center; gap: 6px; background: var(--color-accent); color: #fff; font: 800 12px var(--font-heading); white-space: nowrap; box-shadow: var(--shadow-sm); cursor: pointer; transition: transform .15s ease, box-shadow .15s ease; }
 .mf-pin span { font-weight: 600; }
-.mf-pin.is-selected { background: var(--color-text); z-index: 1000; }
-.mf-pin.is-craigslist { background: var(--color-text); }
+.mf-pin.is-selected { background: var(--color-text); }
+.mf-pin.is-teacher { background: #b45309; }
+.mf-pin.is-teacher.is-selected { background: var(--color-text); }
+.mf-pin-wrap:hover .mf-pin { transform: scale(1.18); box-shadow: 0 4px 16px rgba(0,0,0,.35); z-index: 10; }
+
+/* Hover tooltip */
+.mf-pin-tooltip { display: none; position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); background: var(--color-text); color: #fff; padding: 10px 12px; width: 210px; white-space: normal; z-index: 2000; pointer-events: none; box-shadow: 0 4px 16px rgba(0,0,0,.35); }
+.mf-pin-tooltip::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 6px solid transparent; border-top-color: var(--color-text); }
+.mf-pin-wrap:hover .mf-pin-tooltip { display: block; }
+.mf-tip-name { font: 800 13px var(--font-heading); margin-bottom: 3px; }
+.mf-tip-meta { font-size: 11px; opacity: .7; margin-bottom: 5px; font-weight: 600; letter-spacing: .01em; }
+.mf-tip-bio { font-size: 11px; opacity: .65; line-height: 1.45; }
+.mf-tip-teacher { display: inline-block; margin-top: 5px; font: 800 9px var(--font-heading); letter-spacing: .08em; background: #b45309; color: #fff; padding: 1px 5px; }
+
 .mf-area { width: 80px; height: 80px; transform: translate(-50%, -50%); border: 2px dashed var(--color-accent); background: rgba(236, 48, 19, .12); padding: 4px 6px; font: 800 11px var(--font-heading); color: var(--color-accent-700); cursor: pointer; }
 .mf-area.is-selected { background: rgba(236, 48, 19, .28); border-style: solid; }
 .leaflet-div-icon { background: transparent; border: 0; }
