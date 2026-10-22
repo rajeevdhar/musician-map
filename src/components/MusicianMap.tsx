@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import { useStore } from '../store'
+import { isOnline } from '../lib/presence'
 import type { Musician } from '../types'
 
 function esc(s: string) {
@@ -58,8 +59,9 @@ function MapClickHandler() {
 }
 
 export default function MusicianMap() {
-  const { filteredMusicians, selectedId, setSelectedId } = useStore()
-  const musicians = filteredMusicians()
+  const { filteredMusicians, musicians, selectedId, setSelectedId } = useStore()
+  const visible = filteredMusicians()
+  const onlineCount = musicians.filter(m => isOnline(m.lastSeenAt)).length
 
   const defaultCenter: [number, number] = [39.8283, -98.5795]
   const defaultZoom = 5
@@ -78,7 +80,7 @@ export default function MusicianMap() {
           maxZoom={19}
         />
 
-        {musicians.filter(m => !isNaN(m.lat) && !isNaN(m.lng)).map(musician => (
+        {visible.filter(m => !isNaN(m.lat) && !isNaN(m.lng)).map(musician => (
           <Marker
             key={musician.id}
             position={[musician.lat, musician.lng]}
@@ -93,13 +95,26 @@ export default function MusicianMap() {
           />
         ))}
 
-        <FlyToUser musicians={musicians} />
+        <FlyToUser musicians={visible} />
         <MapClickHandler />
       </MapContainer>
 
-      {/* Map hint overlay */}
-      <div className="absolute top-3 left-3 z-[999] bg-ink text-white text-[12px] font-semibold px-2.5 py-1.5 pointer-events-none">
-        Click a pin or a name
+      {/* Map legend */}
+      <div className="absolute bottom-6 left-3 z-[999] bg-ink text-white text-[11px] font-semibold pointer-events-none space-y-1.5 px-3 py-2.5">
+        <div className="flex items-center gap-2">
+          <span className="inline-block w-3 h-3 flex-shrink-0" style={{ background: 'var(--color-accent)' }} />
+          <span>Musician</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="inline-block w-3 h-3 flex-shrink-0" style={{ background: '#b45309' }} />
+          <span>Offers lessons</span>
+        </div>
+        {onlineCount > 0 && (
+          <div className="flex items-center gap-2 border-t border-white/20 pt-1.5 mt-0.5">
+            <span className="inline-block w-2 h-2 rounded-full flex-shrink-0 bg-green-400" />
+            <span>{onlineCount} online now</span>
+          </div>
+        )}
       </div>
     </div>
   )
