@@ -50,6 +50,21 @@ function FlyToUser({ musicians }: { musicians: Musician[] }) {
   return null
 }
 
+function FlyToSelected({ musicians }: { musicians: Musician[] }) {
+  const map = useMap()
+  const { selectedId } = useStore()
+
+  useEffect(() => {
+    if (!selectedId) return
+    const m = musicians.find(m => m.id === selectedId)
+    if (m && !isNaN(m.lat) && !isNaN(m.lng)) {
+      map.flyTo([m.lat, m.lng], Math.max(map.getZoom(), 11), { duration: 1.2 })
+    }
+  }, [selectedId]) // eslint-disable-line
+
+  return null
+}
+
 function MapClickHandler() {
   const { setSelectedId } = useStore()
   useMapEvents({
@@ -96,6 +111,7 @@ export default function MusicianMap() {
         ))}
 
         <FlyToUser musicians={visible} />
+        <FlyToSelected musicians={visible} />
         <MapClickHandler />
       </MapContainer>
 
