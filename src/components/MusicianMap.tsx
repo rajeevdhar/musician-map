@@ -73,9 +73,42 @@ function MapClickHandler() {
   return null
 }
 
+function jitterPositions(musicians: Musician[]): Map<string, [number, number]> {
+  const positions = new Map<string, [number, number]>()
+  const groups = new Map<string, Musician[]>()
+
+  for (const m of musicians) {
+    const key = `${m.lat},${m.lng}`
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key)!.push(m)
+  }
+
+  const RADIUS = 0.003 // ~300m
+
+  for (const group of groups.values()) {
+    if (group.length === 1) {
+      positions.set(group[0].id, [group[0].lat, group[0].lng])
+    } else {
+      const lat0 = group[0].lat
+      const lng0 = group[0].lng
+      const lonScale = Math.cos((lat0 * Math.PI) / 180)
+      group.forEach((m, i) => {
+        const angle = (2 * Math.PI * i) / group.length
+        positions.set(m.id, [
+          lat0 + RADIUS * Math.sin(angle),
+          lng0 + (RADIUS / lonScale) * Math.cos(angle),
+        ])
+      })
+    }
+  }
+
+  return positions
+}
+
 export default function MusicianMap() {
   const { filteredMusicians, musicians, selectedId, setSelectedId } = useStore()
   const visible = filteredMusicians()
+  const jittered = jitterPositions(visible.filter(m => !isNaN(m.lat) && !isNaN(m.lng)))
   const onlineCount = musicians.filter(m => isOnline(m.lastSeenAt)).length
 
   const defaultCenter: [number, number] = [39.8283, -98.5795]
@@ -98,7 +131,7 @@ export default function MusicianMap() {
         {visible.filter(m => !isNaN(m.lat) && !isNaN(m.lng)).map(musician => (
           <Marker
             key={musician.id}
-            position={[musician.lat, musician.lng]}
+            position={jittered.get(musician.id) ?? [musician.lat, musician.lng]}
             icon={makeMusicianPin(musician, musician.id === selectedId)}
             eventHandlers={{
               click: (e) => {
