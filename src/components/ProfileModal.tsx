@@ -1,23 +1,26 @@
 import { useState } from 'react'
+import { X, Navigation } from 'lucide-react'
 import { useStore } from '../store'
 import { INSTRUMENT_OPTIONS, GENRE_OPTIONS, LOOKING_FOR_OPTIONS } from '../types'
-import type { Musician } from '../types'
+import type { Musician, Level } from '../types'
 import { supabase } from '../lib/supabase'
 
-interface Props {
-  onClose: () => void
-  adminTarget?: Musician
-  onAdminSaved?: () => void
-}
-
+type Precision = 'exact' | 'area' | 'hidden'
 type GeoStatus = 'idle' | 'searching' | 'found' | 'error'
+
+const LEVEL_OPTIONS: Level[] = ['Beginner', 'Intermediate', 'Advanced', 'Pro']
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const SLOTS = ['Morning', 'Afternoon', 'Evening']
+
+function jitter(n: number, r = 0.03) { return n + (Math.random() - 0.5) * 2 * r }
+function emptyAvail(): boolean[][] { return Array.from({ length: 7 }, () => [false, false, false]) }
 
 async function geocodeLocation(query: string): Promise<{ lat: number; lng: number; display: string } | null> {
   try {
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&addressdetails=1`
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`
     const res = await fetch(url, { headers: { 'User-Agent': 'MusicianMap/1.0' } })
     const data = await res.json()
-    if (data && data[0]) {
+    if (data?.[0]) {
       return {
         lat: parseFloat(data[0].lat),
         lng: parseFloat(data[0].lon),
@@ -28,43 +31,39 @@ async function geocodeLocation(query: string): Promise<{ lat: number; lng: numbe
   return null
 }
 
-function TagSelector({
-  label, options, selected, onChange,
-}: {
-  label: string; options: string[]; selected: string[]; onChange: (v: string[]) => void; color?: string
-}) {
+function Label({ children }: { children: React.ReactNode }) {
+  return <p className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-700 mb-2">{children}</p>
+}
+
+function TagPicker({ options, selected, onChange }: { options: string[]; selected: string[]; onChange: (v: string[]) => void }) {
   const toggle = (opt: string) =>
     onChange(selected.includes(opt) ? selected.filter(x => x !== opt) : [...selected, opt])
-
   return (
-    <div>
-      <label className="block text-xs font-extrabold uppercase tracking-widest text-neutral-700 mb-2">{label}</label>
-      <div className="flex flex-wrap gap-1.5">
-        {options.map(opt => (
-          <button
-            key={opt}
-            type="button"
-            onClick={() => toggle(opt)}
-            className={`h-[34px] px-2.5 text-xs font-semibold transition-colors border-2 border-ink ${
-              selected.includes(opt)
-                ? 'bg-ink text-white'
-                : 'bg-white text-ink hover:bg-accent-100'
-            }`}
-          >
-            {opt}
-          </button>
-        ))}
-      </div>
+    <div className="flex flex-wrap gap-1.5">
+      {options.map(opt => (
+        <button
+          key={opt}
+          type="button"
+          onClick={() => toggle(opt)}
+          className={`h-[34px] px-2.5 text-[12px] font-semibold border-2 border-ink transition-colors ${
+            selected.includes(opt) ? 'bg-ink text-white' : 'bg-white text-ink hover:bg-accent-100'
+          }`}
+        >
+          {opt}
+        </button>
+      ))}
     </div>
   )
 }
 
-export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Props) {
-  const [confirmRemove, setConfirmRemove] = useState(false)
-  const [confirmDelete, setConfirmDelete] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const { currentUser, saveProfile, currentProfile, removeProfile, deleteAccount, fetchMusicians } = useStore()
+interface Props {
+  onClose: () => void
+  adminTarget?: Musician
+  onAdminSaved?: () => void
+}
 
+export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Props) {
+  const { currentUser, saveProfile, currentProfile, removeProfile, deleteAccount, fetchMusicians } = useStore()
   const isAdminMode = !!adminTarget
   const source = adminTarget ?? currentProfile()
 
@@ -76,12 +75,38 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
     source?.lookingFor ? source.lookingFor.split(',').map(s => s.trim()).filter(Boolean) : []
   )
   const [contactEmail, setContactEmail] = useState(source?.contactEmail ?? currentUser?.email ?? '')
+  const [level, setLevel] = useState<Level | undefined>(source?.level)
+  const [primaryInstrument, setPrimaryInstrument] = useState(source?.primaryInstrument ?? '')
+  const [gear, setGear] = useState<string[]>(source?.gear ?? [])
+  const [gearInput, setGearInput] = useState('')
+  const [availability, setAvailability] = useState<boolean[][]>(source?.availability ?? emptyAvail())
+  const [locationPrecision, setLocationPrecision] = useState<Precision>(source?.locationPrecision ?? 'exact')
   const [locationQuery, setLocationQuery] = useState(source?.locationName ?? '')
   const [lat, setLat] = useState<number | null>(source?.lat ?? null)
   const [lng, setLng] = useState<number | null>(source?.lng ?? null)
   const [locationName, setLocationName] = useState(source?.locationName ?? '')
+  const [locationChanged, setLocationChanged] = useState(false)
   const [geoStatus, setGeoStatus] = useState<GeoStatus>('idle')
+  const [confirmRemove, setConfirmRemove] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+
+  const completeness = (() => {
+    const fields = [
+      displayName.trim().length > 0,
+      bio.trim().length > 0,
+      instruments.length > 0,
+      genres.length > 0,
+      lookingFor.length > 0,
+      lat !== null || locationPrecision === 'hidden',
+      !!level,
+      gear.length > 0,
+      !!primaryInstrument,
+      availability.some(d => d.some(Boolean)),
+    ]
+    return Math.round(fields.filter(Boolean).length / fields.length * 100)
+  })()
 
   const detectLocation = () => {
     if (!navigator.geolocation) return
@@ -96,11 +121,11 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
           const display = data.display_name?.split(',').slice(0, 3).join(', ') ?? 'Your location'
           setLat(latitude); setLng(longitude)
           setLocationName(display); setLocationQuery(display)
-          setGeoStatus('found')
+          setLocationChanged(true); setGeoStatus('found')
         } catch {
           setLat(latitude); setLng(longitude)
           setLocationName('Detected location'); setLocationQuery('Detected location')
-          setGeoStatus('found')
+          setLocationChanged(true); setGeoStatus('found')
         }
       },
       () => setGeoStatus('error')
@@ -114,10 +139,23 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
     if (result) {
       setLat(result.lat); setLng(result.lng)
       setLocationName(result.display); setLocationQuery(result.display)
-      setGeoStatus('found')
+      setLocationChanged(true); setGeoStatus('found')
     } else {
       setGeoStatus('error')
     }
+  }
+
+  const addGear = () => {
+    const t = gearInput.trim()
+    if (t && !gear.includes(t)) { setGear(g => [...g, t]); setGearInput('') }
+  }
+
+  const toggleAvailability = (day: number, slot: number) => {
+    setAvailability(prev => {
+      const next = prev.map(d => [...d])
+      next[day][slot] = !next[day][slot]
+      return next
+    })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -125,26 +163,32 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
     setError('')
     if (!displayName.trim()) { setError('Display name is required'); return }
     if (instruments.length === 0) { setError('Select at least one instrument'); return }
-    if (!lat || !lng) { setError('Please set your location'); return }
+    if (locationPrecision !== 'hidden' && (!lat || !lng)) { setError('Please set your location'); return }
 
     setSaving(true)
+
+    let saveLat = lat ?? 0
+    let saveLng = lng ?? 0
+    if (locationPrecision === 'area' && locationChanged) {
+      saveLat = jitter(saveLat)
+      saveLng = jitter(saveLng)
+    } else if (locationPrecision === 'hidden') {
+      saveLat = 0; saveLng = 0
+    }
 
     if (isAdminMode && adminTarget) {
       const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch(`/api/admin/profile/${adminTarget.id}`, {
         method: 'PATCH',
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { Authorization: `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           display_name: displayName.trim(),
           bio: bio.trim(),
           instruments,
           genres,
           contact_email: contactEmail.trim(),
-          lat,
-          lng,
+          lat: saveLat,
+          lng: saveLng,
           location_name: locationName,
           looking_for: lookingFor.join(', '),
         }),
@@ -160,10 +204,15 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
         instruments,
         genres,
         contactEmail: contactEmail.trim(),
-        lat,
-        lng,
+        lat: saveLat,
+        lng: saveLng,
         locationName,
         lookingFor: lookingFor.join(', '),
+        level,
+        locationPrecision,
+        primaryInstrument: primaryInstrument || undefined,
+        gear,
+        availability,
       })
     }
 
@@ -171,208 +220,513 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
     onClose()
   }
 
-  const handleRemove = async () => {
-    await removeProfile()
-    onClose()
-  }
+  const handleRemove = async () => { await removeProfile(); onClose() }
+  const handleDeleteAccount = async () => { await deleteAccount(); onClose() }
 
-  const handleDeleteAccount = async () => {
-    await deleteAccount()
-    onClose()
-  }
-
-  return (
-    <div className="modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="modal-box">
-        <div className="sticky top-0 bg-white flex items-center justify-between px-6 pt-5 pb-3 border-b border-gray-100 z-10">
-          <div>
-            <h2 className="text-xl font-extrabold text-ink">
-              {isAdminMode
-                ? `Admin: ${source ? 'Edit Profile' : 'No Profile'}`
-                : source ? 'Edit Your Profile' : 'Set Up Your Profile'}
-            </h2>
-            {isAdminMode && adminTarget && (
-              <p className="text-xs text-accent-700 mt-0.5 font-bold">Editing {adminTarget.displayName}</p>
-            )}
+  // ── Admin mode: compact modal dialog ────────────────────────────────────
+  if (isAdminMode) {
+    return (
+      <div className="modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+        <div className="modal-box">
+          <div className="sticky top-0 bg-ground flex items-center justify-between px-6 pt-5 pb-3 border-b-2 border-ink z-10">
+            <div>
+              <h2 className="text-[20px] font-extrabold text-ink">
+                Admin: {source ? 'Edit Profile' : 'No Profile'}
+              </h2>
+              {adminTarget && (
+                <p className="text-[12px] text-accent-700 mt-0.5 font-bold">Editing {adminTarget.displayName}</p>
+              )}
+            </div>
+            <button onClick={onClose} className="w-9 h-9 border-2 border-ink flex items-center justify-center hover:bg-accent-100 transition-colors">
+              <X size={16} />
+            </button>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+          <form onSubmit={handleSubmit} className="p-6 space-y-5">
+            <div>
+              <Label>Display Name</Label>
+              <input type="text" value={displayName} onChange={e => setDisplayName(e.target.value)} className="w-full h-12 bg-white border-2 border-ink px-3 text-[15px] focus:outline-none" />
+            </div>
+            <div>
+              <Label>Bio</Label>
+              <textarea value={bio} onChange={e => setBio(e.target.value)} rows={3} className="w-full bg-white border-2 border-ink px-3 py-2 text-[15px] focus:outline-none resize-none" />
+            </div>
+            <div>
+              <Label>Instruments</Label>
+              <TagPicker options={INSTRUMENT_OPTIONS} selected={instruments} onChange={setInstruments} />
+            </div>
+            <div>
+              <Label>Genres</Label>
+              <TagPicker options={GENRE_OPTIONS} selected={genres} onChange={setGenres} />
+            </div>
+            <div>
+              <Label>Looking for</Label>
+              <TagPicker options={LOOKING_FOR_OPTIONS} selected={lookingFor} onChange={setLookingFor} />
+            </div>
+            <div>
+              <Label>Contact Email</Label>
+              <input type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} className="w-full h-12 bg-white border-2 border-ink px-3 text-[15px] focus:outline-none" />
+            </div>
+            <div>
+              <Label>Location</Label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={locationQuery}
+                  onChange={e => { setLocationQuery(e.target.value); setGeoStatus('idle') }}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); void searchLocation() } }}
+                  className="flex-1 h-12 bg-white border-2 border-ink px-3 text-[15px] focus:outline-none"
+                  placeholder="City, neighborhood…"
+                />
+                <button type="button" onClick={searchLocation} className="px-3 h-12 border-2 border-ink text-[13px] font-bold hover:bg-accent-100">Search</button>
+              </div>
+              {geoStatus === 'found' && <p className="text-[12px] text-accent-700 font-bold mt-1">Set: {locationName}</p>}
+              {geoStatus === 'error' && <p className="text-[12px] text-accent-700 mt-1">Location not found.</p>}
+            </div>
+            {error && <p className="text-[13px] text-accent-700 bg-accent-100 border-2 border-accent px-3 py-2">{error}</p>}
+            <div className="flex gap-3 pt-1">
+              <button type="button" onClick={onClose} className="flex-1 h-[52px] border-2 border-ink text-[13px] font-bold text-ink hover:bg-accent-100">Cancel</button>
+              <button type="submit" disabled={saving} className="flex-1 flex items-center justify-between h-[52px] bg-accent hover:bg-accent-600 disabled:opacity-60 text-white text-[13px] font-bold px-4">
+                <span>{saving ? 'Saving…' : 'Save Changes'}</span><span>→</span>
+              </button>
+            </div>
+          </form>
         </div>
+      </div>
+    )
+  }
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          <div>
-            <label className="block text-xs font-extrabold uppercase tracking-widest text-neutral-700 mb-1">Display / Artist Name</label>
-            <input
-              type="text"
-              value={displayName}
-              onChange={e => setDisplayName(e.target.value)}
-              className="w-full h-12 bg-white border-2 border-ink px-3 text-sm focus:outline-none"
-              placeholder="Your name or band name"
-            />
-          </div>
+  // ── User mode: full-screen profile editor ────────────────────────────────
+  const locationSection = (
+    <div>
+      <Label>Location</Label>
+      <div className="flex gap-2 mb-1">
+        <input
+          type="text"
+          value={locationQuery}
+          onChange={e => { setLocationQuery(e.target.value); setGeoStatus('idle') }}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); void searchLocation() } }}
+          className="flex-1 h-10 bg-white border-2 border-ink px-2 text-[14px] text-ink focus:outline-none"
+          placeholder="City, neighborhood, ZIP…"
+        />
+        <button type="button" onClick={searchLocation} className="px-3 h-10 border-2 border-ink text-[12px] font-extrabold hover:bg-accent-100 transition-colors">
+          Search
+        </button>
+        <button type="button" onClick={detectLocation} title="Use my current location" className="w-10 h-10 border-2 border-ink flex items-center justify-center hover:bg-accent-100 transition-colors flex-shrink-0">
+          <Navigation size={14} />
+        </button>
+      </div>
+      {geoStatus === 'searching' && <p className="text-[12px] text-neutral-500">Detecting…</p>}
+      {geoStatus === 'found' && <p className="text-[12px] text-accent-700 font-bold">Set: {locationName}</p>}
+      {geoStatus === 'error' && <p className="text-[12px] text-accent-700">Not found. Try a more specific address.</p>}
+    </div>
+  )
 
-          <div>
-            <label className="block text-xs font-extrabold uppercase tracking-widest text-neutral-700 mb-1">Bio</label>
-            <textarea
-              value={bio}
-              onChange={e => setBio(e.target.value)}
-              rows={3}
-              className="w-full bg-white border-2 border-ink px-3 py-2 text-sm focus:outline-none resize-none"
-              placeholder="Tell other musicians about yourself..."
-            />
-          </div>
-
-          <TagSelector
-            label="Instruments (select all that apply)"
-            options={INSTRUMENT_OPTIONS}
-            selected={instruments}
-            onChange={setInstruments}
-          />
-
-          <TagSelector
-            label="Genres"
-            options={GENRE_OPTIONS}
-            selected={genres}
-            onChange={setGenres}
-          />
-
-          <TagSelector
-            label="Looking for"
-            options={LOOKING_FOR_OPTIONS}
-            selected={lookingFor}
-            onChange={setLookingFor}
-          />
-
-          <div>
-            <label className="block text-xs font-extrabold uppercase tracking-widest text-neutral-700 mb-1">Contact Email (shown to other musicians)</label>
-            <input
-              type="email"
-              value={contactEmail}
-              onChange={e => setContactEmail(e.target.value)}
-              className="w-full h-12 bg-white border-2 border-ink px-3 text-sm focus:outline-none"
-              placeholder="contact@example.com"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-extrabold uppercase tracking-widest text-neutral-700 mb-1">
-              Your Location <span className="font-normal normal-case tracking-normal">(shown on map)</span>
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={locationQuery}
-                onChange={e => { setLocationQuery(e.target.value); setGeoStatus('idle') }}
-                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), searchLocation())}
-                className="flex-1 h-12 bg-white border-2 border-ink px-3 text-sm focus:outline-none"
-                placeholder="City, neighborhood, ZIP..."
-              />
-              <button type="button" onClick={searchLocation} className="px-3 h-12 bg-surface border-2 border-ink text-sm font-bold hover:bg-accent-100">
-                Search
-              </button>
-              <button type="button" onClick={detectLocation} title="Use my current location" className="px-3 h-12 bg-surface border-2 border-ink text-sm hover:bg-accent-100">
-                Locate
-              </button>
+  const precisionSection = (
+    <div>
+      <Label>Location precision</Label>
+      <div className="border-2 border-ink">
+        {(
+          [
+            { value: 'exact' as Precision, label: 'Exact pin', desc: 'Precise location on map' },
+            { value: 'area' as Precision, label: 'Approximate area', desc: 'Only neighborhood shown' },
+            { value: 'hidden' as Precision, label: 'Hidden from map', desc: 'Browse without appearing' },
+          ] as const
+        ).map((opt, i) => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => setLocationPrecision(opt.value)}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${
+              i > 0 ? 'border-t-2 border-ink' : ''
+            } ${locationPrecision === opt.value ? 'bg-ink text-white' : 'hover:bg-accent-100 text-ink'}`}
+          >
+            <div className={`w-4 h-4 border-2 rounded-full flex-shrink-0 flex items-center justify-center ${
+              locationPrecision === opt.value ? 'border-white' : 'border-ink'
+            }`}>
+              {locationPrecision === opt.value && <div className="w-2 h-2 bg-white rounded-full" />}
             </div>
-            {geoStatus === 'searching' && <p className="text-xs text-neutral-500 mt-1">Searching…</p>}
-            {geoStatus === 'found' && <p className="text-xs text-accent-700 font-bold mt-1">Location set: {locationName}</p>}
-            {geoStatus === 'error' && <p className="text-xs text-accent-700 mt-1">Location not found. Try a more specific address.</p>}
-          </div>
-
-          {error && (
-            <p className="text-sm text-accent-700 bg-accent-100 border-2 border-accent px-3 py-2">{error}</p>
-          )}
-
-          <div className="flex gap-3 pt-1">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 h-[52px] border-2 border-ink text-sm font-bold text-ink hover:bg-accent-100"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex-1 flex items-center justify-between h-[52px] bg-accent hover:bg-accent-600 disabled:opacity-60 text-white text-sm font-bold px-4 transition-colors"
-            >
-              <span>{saving ? 'Saving…' : source ? 'Save Changes' : 'Add Me to the Map'}</span>
-              <span>→</span>
-            </button>
-          </div>
-
-          {/* Remove profile (not shown in admin mode — admin has its own controls) */}
-          {source && !isAdminMode && (
-            <div className="border-t-2 border-ink pt-4 mt-2">
-              {!confirmRemove ? (
-                <button
-                  type="button"
-                  onClick={() => setConfirmRemove(true)}
-                  className="w-full py-2 text-sm text-accent-700 hover:bg-accent-100 transition-colors"
-                >
-                  Remove my profile from the map
-                </button>
-              ) : (
-                <div className="border-2 border-ink p-3 space-y-2 bg-accent-100">
-                  <p className="text-sm text-accent-700 font-bold">Remove your pin from the map?</p>
-                  <p className="text-xs text-neutral-700">Your account stays active — you can add a profile again any time.</p>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setConfirmRemove(false)}
-                      className="flex-1 py-2 text-xs border-2 border-ink text-ink hover:bg-accent-100"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleRemove}
-                      className="flex-1 py-2 text-xs bg-accent hover:bg-accent-600 text-white font-bold"
-                    >
-                      Yes, remove me
-                    </button>
-                  </div>
-                </div>
-              )}
+            <div>
+              <div className="text-[13px] font-extrabold leading-tight">{opt.label}</div>
+              <div className={`text-[11px] ${locationPrecision === opt.value ? 'text-white/80' : 'text-neutral-700'}`}>{opt.desc}</div>
             </div>
-          )}
-
-          {/* Delete account (only for self, not admin mode) */}
-          {!isAdminMode && (
-            <div className="border-t-2 border-ink pt-3">
-              {!confirmDelete ? (
-                <button
-                  type="button"
-                  onClick={() => setConfirmDelete(true)}
-                  className="w-full py-2 text-sm text-neutral-500 hover:text-accent-700 hover:bg-accent-100 transition-colors"
-                >
-                  Delete my account permanently
-                </button>
-              ) : (
-                <div className="border-2 border-ink p-3 space-y-2 bg-accent-100">
-                  <p className="text-sm text-accent-700 font-bold">Delete account permanently?</p>
-                  <p className="text-xs text-neutral-700">This cannot be undone. Your profile, map pin and account will be deleted.</p>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setConfirmDelete(false)}
-                      className="flex-1 py-2 text-xs border-2 border-ink text-ink hover:bg-accent-100"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleDeleteAccount}
-                      className="flex-1 py-2 text-xs bg-accent hover:bg-accent-600 text-white font-bold"
-                    >
-                      Delete Everything
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </form>
+          </button>
+        ))}
       </div>
     </div>
+  )
+
+  const availabilitySection = (
+    <div>
+      <Label>Availability</Label>
+      <div className="border-2 border-ink overflow-x-auto">
+        <div className="min-w-[320px]">
+          <div className="grid border-b-2 border-ink" style={{ gridTemplateColumns: '68px repeat(7, 1fr)' }}>
+            <div className="h-8 border-r-2 border-ink" />
+            {DAYS.map(d => (
+              <div key={d} className="h-8 text-[10px] font-extrabold text-center flex items-center justify-center border-l-2 border-ink">
+                {d}
+              </div>
+            ))}
+          </div>
+          {SLOTS.map((slot, si) => (
+            <div
+              key={slot}
+              className={`grid ${si > 0 ? 'border-t-2 border-ink' : ''}`}
+              style={{ gridTemplateColumns: '68px repeat(7, 1fr)' }}
+            >
+              <div className="h-9 text-[10px] font-extrabold flex items-center px-1.5 border-r-2 border-ink leading-tight">
+                {slot}
+              </div>
+              {DAYS.map((_, di) => (
+                <button
+                  key={di}
+                  type="button"
+                  onClick={() => toggleAvailability(di, si)}
+                  className={`h-9 border-l-2 border-ink transition-colors ${
+                    availability[di]?.[si] ? 'bg-accent' : 'hover:bg-accent-100'
+                  }`}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+
+  const gearSection = (
+    <div>
+      <Label>Gear</Label>
+      <div className="flex gap-2 mb-2">
+        <input
+          type="text"
+          value={gearInput}
+          onChange={e => setGearInput(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addGear() } }}
+          placeholder="e.g. Fender Stratocaster"
+          className="flex-1 h-10 bg-white border-2 border-ink px-2 text-[13px] text-ink focus:outline-none"
+        />
+        <button type="button" onClick={addGear} className="h-10 px-3 bg-ink text-white text-[12px] font-extrabold hover:bg-neutral-800 transition-colors">
+          Add
+        </button>
+      </div>
+      {gear.length > 0 && (
+        <div className="border-t-2 border-ink">
+          {gear.map((item, i) => (
+            <div key={i} className="flex items-center justify-between py-2 border-b-2 border-ink">
+              <span className="text-[14px] text-ink">{item}</span>
+              <button
+                type="button"
+                onClick={() => setGear(g => g.filter((_, j) => j !== i))}
+                className="w-6 h-6 flex items-center justify-center text-neutral-400 hover:text-accent transition-colors text-lg leading-none"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+
+  return (
+    <form onSubmit={handleSubmit} className="fixed inset-0 z-[2000] bg-ground flex flex-col overflow-hidden">
+      {/* Header */}
+      <div
+        className="flex-shrink-0 flex items-center gap-4 px-4 lg:px-6 border-b-2 border-ink"
+        style={{ minHeight: 68 }}
+      >
+        <span className="text-[28px] lg:text-[44px] font-extrabold text-ink leading-[0.9] tracking-[-0.02em] flex-shrink-0">
+          My profile
+        </span>
+        {/* Completeness bar — desktop */}
+        <div className="hidden lg:flex flex-1 items-center gap-3 min-w-0">
+          <div className="flex-1 h-1.5 bg-neutral-300">
+            <div
+              className="h-full bg-accent transition-all duration-300"
+              style={{ width: `${completeness}%` }}
+            />
+          </div>
+          <span className="text-[12px] font-extrabold text-neutral-700 whitespace-nowrap">
+            Profile {completeness}% complete
+          </span>
+        </div>
+        <div className="flex items-center gap-2 ml-auto flex-shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-[44px] px-4 border-2 border-ink text-[13px] font-extrabold text-ink hover:bg-accent-100 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={saving}
+            className="h-[44px] min-w-[140px] lg:min-w-[200px] bg-accent hover:bg-accent-600 disabled:opacity-60 text-white font-extrabold text-[13px] flex items-center justify-between px-4 transition-colors"
+          >
+            <span>{saving ? 'Saving…' : 'Save profile'}</span>
+            <span>→</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Scrollable body */}
+      <div className="flex-1 overflow-y-auto">
+        {error && (
+          <div className="mx-4 mt-4 text-[13px] text-accent-700 bg-accent-100 border-2 border-accent px-3 py-2">
+            {error}
+          </div>
+        )}
+
+        {/* Desktop: 3-column grid */}
+        <div className="hidden lg:grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+          {/* Col 1: Photo, name, primary instrument, bio, location */}
+          <div className="p-6 space-y-5">
+            <div className="h-[200px] bg-neutral-200 flex items-center justify-center flex-shrink-0">
+              <span className="text-neutral-400 text-[12px] font-extrabold uppercase tracking-widest">Photo</span>
+            </div>
+            <div>
+              <Label>Display / Artist Name</Label>
+              <input
+                type="text"
+                value={displayName}
+                onChange={e => setDisplayName(e.target.value)}
+                className="w-full h-12 bg-white border-2 border-ink px-3 text-[15px] text-ink focus:outline-none"
+                placeholder="Your name or band name"
+              />
+            </div>
+            <div>
+              <Label>Primary instrument</Label>
+              <select
+                value={primaryInstrument}
+                onChange={e => setPrimaryInstrument(e.target.value)}
+                className="w-full h-12 bg-white border-2 border-ink px-3 text-[15px] text-ink focus:outline-none"
+              >
+                <option value="">Select…</option>
+                {INSTRUMENT_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+              </select>
+            </div>
+            <div>
+              <Label>Bio</Label>
+              <textarea
+                value={bio}
+                onChange={e => setBio(e.target.value)}
+                rows={5}
+                className="w-full bg-white border-2 border-ink px-3 py-2 text-[15px] text-ink focus:outline-none resize-none"
+                placeholder="Tell other musicians about yourself…"
+              />
+            </div>
+            {locationSection}
+          </div>
+
+          {/* Col 2: Instruments, genres, level, looking for */}
+          <div className="p-6 space-y-5 border-l-2 border-ink">
+            <div>
+              <Label>Instruments (all that apply)</Label>
+              <TagPicker options={INSTRUMENT_OPTIONS} selected={instruments} onChange={setInstruments} />
+            </div>
+            <div>
+              <Label>Genres</Label>
+              <TagPicker options={GENRE_OPTIONS} selected={genres} onChange={setGenres} />
+            </div>
+            <div>
+              <Label>Level (optional)</Label>
+              <div className="flex border-2 border-ink">
+                {LEVEL_OPTIONS.map((opt, i) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setLevel(prev => prev === opt ? undefined : opt)}
+                    className={`flex-1 h-10 text-[11px] font-extrabold transition-colors ${
+                      i > 0 ? 'border-l-2 border-ink' : ''
+                    } ${level === opt ? 'bg-ink text-white' : 'text-ink hover:bg-accent-100'}`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Label>Looking for</Label>
+              <div className="grid grid-cols-2 gap-y-2.5 gap-x-3">
+                {LOOKING_FOR_OPTIONS.map(opt => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setLookingFor(lf => lf.includes(opt) ? lf.filter(x => x !== opt) : [...lf, opt])}
+                    className="flex items-start gap-2 text-left"
+                  >
+                    <div className={`w-5 h-5 flex-shrink-0 border-2 flex items-center justify-center mt-0.5 transition-colors ${
+                      lookingFor.includes(opt) ? 'bg-accent border-accent' : 'border-ink'
+                    }`}>
+                      {lookingFor.includes(opt) && <span className="text-white text-[10px] font-extrabold leading-none">✓</span>}
+                    </div>
+                    <span className="text-[13px] text-ink leading-tight">{opt}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Col 3: Gear, availability, precision, account email */}
+          <div className="p-6 space-y-5 border-l-2 border-ink">
+            {gearSection}
+            {availabilitySection}
+            {precisionSection}
+            <div>
+              <Label>Account email</Label>
+              <div className="h-12 bg-neutral-100 border-2 border-ink px-3 flex items-center text-[14px] text-neutral-500 select-all">
+                {currentUser?.email}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile: stacked sections */}
+        <div className="lg:hidden flex flex-col">
+          <div className="p-4 space-y-4">
+            <div>
+              <Label>Display / Artist Name</Label>
+              <input
+                type="text"
+                value={displayName}
+                onChange={e => setDisplayName(e.target.value)}
+                className="w-full h-12 bg-white border-2 border-ink px-3 text-[15px] text-ink focus:outline-none"
+                placeholder="Your name or band name"
+              />
+            </div>
+            <div>
+              <Label>Primary instrument</Label>
+              <select
+                value={primaryInstrument}
+                onChange={e => setPrimaryInstrument(e.target.value)}
+                className="w-full h-12 bg-white border-2 border-ink px-3 text-[15px] text-ink focus:outline-none"
+              >
+                <option value="">Select…</option>
+                {INSTRUMENT_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+              </select>
+            </div>
+            <div>
+              <Label>Bio</Label>
+              <textarea
+                value={bio}
+                onChange={e => setBio(e.target.value)}
+                rows={4}
+                className="w-full bg-white border-2 border-ink px-3 py-2 text-[15px] text-ink focus:outline-none resize-none"
+                placeholder="Tell other musicians about yourself…"
+              />
+            </div>
+            {locationSection}
+          </div>
+
+          <div className="p-4 space-y-4 border-t-2 border-ink">
+            <div>
+              <Label>Instruments (all that apply)</Label>
+              <TagPicker options={INSTRUMENT_OPTIONS} selected={instruments} onChange={setInstruments} />
+            </div>
+            <div>
+              <Label>Genres</Label>
+              <TagPicker options={GENRE_OPTIONS} selected={genres} onChange={setGenres} />
+            </div>
+            <div>
+              <Label>Level (optional)</Label>
+              <div className="flex border-2 border-ink">
+                {LEVEL_OPTIONS.map((opt, i) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setLevel(prev => prev === opt ? undefined : opt)}
+                    className={`flex-1 h-10 text-[11px] font-extrabold transition-colors ${
+                      i > 0 ? 'border-l-2 border-ink' : ''
+                    } ${level === opt ? 'bg-ink text-white' : 'text-ink hover:bg-accent-100'}`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Label>Looking for</Label>
+              <div className="grid grid-cols-2 gap-y-2.5 gap-x-3">
+                {LOOKING_FOR_OPTIONS.map(opt => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setLookingFor(lf => lf.includes(opt) ? lf.filter(x => x !== opt) : [...lf, opt])}
+                    className="flex items-start gap-2 text-left"
+                  >
+                    <div className={`w-5 h-5 flex-shrink-0 border-2 flex items-center justify-center mt-0.5 transition-colors ${
+                      lookingFor.includes(opt) ? 'bg-accent border-accent' : 'border-ink'
+                    }`}>
+                      {lookingFor.includes(opt) && <span className="text-white text-[10px] font-extrabold leading-none">✓</span>}
+                    </div>
+                    <span className="text-[13px] text-ink leading-tight">{opt}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4 space-y-4 border-t-2 border-ink">
+            {gearSection}
+            {availabilitySection}
+            {precisionSection}
+            <div>
+              <Label>Account email</Label>
+              <div className="h-12 bg-neutral-100 border-2 border-ink px-3 flex items-center text-[14px] text-neutral-500">
+                {currentUser?.email}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Dangerous actions */}
+        {source && (
+          <div className="border-t-2 border-ink px-4 lg:px-6 py-4">
+            {!confirmRemove ? (
+              <button
+                type="button"
+                onClick={() => setConfirmRemove(true)}
+                className="py-2 px-4 text-[13px] text-accent-700 hover:bg-accent-100 transition-colors"
+              >
+                Remove my profile from the map
+              </button>
+            ) : (
+              <div className="border-2 border-ink p-4 space-y-3 bg-accent-100 max-w-sm">
+                <p className="text-[14px] text-accent-700 font-extrabold">Remove your pin from the map?</p>
+                <p className="text-[12px] text-neutral-700">Your account stays active — you can add a profile again any time.</p>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setConfirmRemove(false)} className="flex-1 h-10 border-2 border-ink text-[13px] font-bold text-ink hover:bg-accent-100">Cancel</button>
+                  <button type="button" onClick={handleRemove} className="flex-1 h-10 bg-accent hover:bg-accent-600 text-white font-bold text-[13px]">Yes, remove me</button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="border-t-2 border-ink px-4 lg:px-6 py-4">
+          {!confirmDelete ? (
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              className="py-2 px-4 text-[13px] text-neutral-500 hover:text-accent-700 hover:bg-accent-100 transition-colors"
+            >
+              Delete my account permanently
+            </button>
+          ) : (
+            <div className="border-2 border-ink p-4 space-y-3 bg-accent-100 max-w-sm">
+              <p className="text-[14px] text-accent-700 font-extrabold">Delete account permanently?</p>
+              <p className="text-[12px] text-neutral-700">This cannot be undone. Your profile, map pin and account will be deleted.</p>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setConfirmDelete(false)} className="flex-1 h-10 border-2 border-ink text-[13px] font-bold text-ink hover:bg-accent-100">Cancel</button>
+                <button type="button" onClick={handleDeleteAccount} className="flex-1 h-10 bg-accent hover:bg-accent-600 text-white font-bold text-[13px]">Delete Everything</button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="h-8" />
+      </div>
+    </form>
   )
 }

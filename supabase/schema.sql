@@ -109,3 +109,11 @@ CREATE POLICY IF NOT EXISTS "requests_insert" ON public.contact_requests
   FOR INSERT WITH CHECK (auth.uid() = from_id);
 CREATE POLICY IF NOT EXISTS "requests_update" ON public.contact_requests
   FOR UPDATE USING (auth.uid() = to_id);
+
+-- Section 6: Profile enhancements (gear, availability, phone, primary instrument)
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS primary_instrument TEXT,
+  ADD COLUMN IF NOT EXISTS gear TEXT[] DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS availability JSONB DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS phone TEXT,
+  ADD COLUMN IF NOT EXISTS years_playing INTEGER;

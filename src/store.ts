@@ -265,6 +265,10 @@ interface AppStore {
   respondToContactRequest: (fromId: string, accept: boolean) => Promise<void>
   initMessages: () => Promise<void>
   unreadCount: () => number
+
+  // ── Toast ─────────────────────────────────────────────────────────────────
+  toast: string | null
+  showToast: (msg: string) => void
 }
 
 export const useStore = create<AppStore>()((set, get) => ({
@@ -392,6 +396,11 @@ export const useStore = create<AppStore>()((set, get) => ({
           row.last_seen_at ?? undefined,
           row.id === heartbeatUserId ? lastPingIso ?? undefined : undefined,
         ),
+        primaryInstrument: row.primary_instrument ?? undefined,
+        gear: Array.isArray(row.gear) ? row.gear : [],
+        availability: row.availability as boolean[][] ?? undefined,
+        phone: row.phone ?? undefined,
+        yearsPlaying: row.years_playing ?? undefined,
       }))
       // Seed ids never collide with UUID-based DB ids, but guard anyway
       const dbIds = new Set(dbMusicians.map(m => m.id))
@@ -420,8 +429,16 @@ export const useStore = create<AppStore>()((set, get) => ({
       neighborhood: profile.neighborhood ?? null,
       level: profile.level ?? null,
       last_seen_at: new Date().toISOString(),
+      primary_instrument: profile.primaryInstrument ?? null,
+      gear: profile.gear ?? [],
+      availability: profile.availability ?? null,
+      phone: profile.phone ?? null,
+      years_playing: profile.yearsPlaying ?? null,
     })
-    if (!error) await get().fetchMusicians()
+    if (!error) {
+      await get().fetchMusicians()
+      get().showToast('Profile saved')
+    }
   },
 
   currentProfile: () => {
@@ -708,5 +725,12 @@ export const useStore = create<AppStore>()((set, get) => ({
   unreadCount: () => {
     const { unread, contactRequests } = get()
     return Object.keys(unread).length + Object.keys(contactRequests.incoming).length
+  },
+
+  // ── Toast ─────────────────────────────────────────────────────────────────
+  toast: null,
+  showToast: (msg) => {
+    set({ toast: msg })
+    setTimeout(() => set({ toast: null }), 2500)
   },
 }))

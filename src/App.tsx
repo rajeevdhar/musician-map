@@ -27,7 +27,7 @@ const BOTTOM_TABS = [
 ]
 
 export default function App() {
-  const { currentUser, initAuth, needsPasswordReset, musicians, selectedId, setSelectedId, activeTab, setActiveTab, showFilterPanel, isAuthReady, setActiveThreadId, unreadCount } = useStore()
+  const { currentUser, initAuth, needsPasswordReset, musicians, selectedId, setSelectedId, activeTab, setActiveTab, showFilterPanel, isAuthReady, setActiveThreadId, unreadCount, toast } = useStore()
   const [modal, setModal] = useState<Modal>(null)
   const [showMobileDetail, setShowMobileDetail] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
@@ -227,20 +227,6 @@ export default function App() {
         ))}
       </nav>
 
-      {/* Overlay modals */}
-      {modal === 'auth' && (
-        <AuthModal onClose={() => setModal(null)} />
-      )}
-      {modal === 'profile' && currentUser && (
-        <ProfileModal onClose={() => setModal(null)} />
-      )}
-      {modal === 'admin' && isAdmin && (
-        <AdminPanel onClose={() => setModal(null)} />
-      )}
-      {needsPasswordReset && (
-        <ResetPasswordModal onClose={() => useStore.setState({ needsPasswordReset: false })} />
-      )}
-
       {/* Signup screen (logged-out users) */}
       {showSignupScreen && (
         <SignupScreen
@@ -256,6 +242,27 @@ export default function App() {
           onComplete={() => setShowOnboarding(false)}
           onBack={() => { setShowOnboarding(false); setSignupDismissed(true) }}
         />
+      )}
+
+      {/* Overlay modals — rendered after SignupScreen/OnboardingFlow to win z-index */}
+      {modal === 'auth' && (
+        <AuthModal onClose={() => setModal(null)} />
+      )}
+      {modal === 'profile' && currentUser && (
+        <ProfileModal onClose={() => setModal(null)} />
+      )}
+      {modal === 'admin' && isAdmin && (
+        <AdminPanel onClose={() => setModal(null)} />
+      )}
+      {needsPasswordReset && (
+        <ResetPasswordModal onClose={() => useStore.setState({ needsPasswordReset: false })} />
+      )}
+
+      {/* Toast notification */}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[3000] bg-ink text-white text-[14px] font-extrabold px-6 py-3 shadow-xl pointer-events-none whitespace-nowrap">
+          {toast}
+        </div>
       )}
     </div>
   )

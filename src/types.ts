@@ -18,6 +18,11 @@ export interface Musician {
   neighborhood?: string
   createdAt: string
   lastSeenAt?: string
+  primaryInstrument?: string
+  gear?: string[]
+  availability?: boolean[][]
+  phone?: string
+  yearsPlaying?: number
 }
 
 export type ActiveModal = 'auth' | 'profile' | 'musician-detail' | 'reset-password' | null
