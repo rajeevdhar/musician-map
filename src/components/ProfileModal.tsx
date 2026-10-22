@@ -114,7 +114,6 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState(source?.avatarUrl ?? '')
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
-  const [offersLessons, setOffersLessons] = useState(source?.offersLessons ?? false)
   const avatarFileRef = useRef<HTMLInputElement>(null)
   const cropContainerRef = useRef<HTMLDivElement>(null)
   const cropImgRef = useRef<HTMLImageElement>(null)
@@ -353,7 +352,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
         gear,
         availability,
         avatarUrl: finalAvatarUrl || undefined,
-        offersLessons,
+        offersLessons: lookingFor.includes('Students'),
       })
     }
 
@@ -723,7 +722,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
             {locationSection}
           </div>
 
-          {/* Col 2: Instruments, genres, level, looking for, offers lessons */}
+          {/* Col 2: Instruments, genres, level, looking for */}
           <div className="p-6 space-y-5 border-l-2 border-ink">
             <div>
               <Label>Instruments (all that apply)</Label>
@@ -761,35 +760,20 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
                     className="flex items-start gap-2 text-left"
                   >
                     <div className={`w-5 h-5 flex-shrink-0 border-2 flex items-center justify-center mt-0.5 transition-colors ${
+                      opt === 'Students' && lookingFor.includes(opt) ? 'border-[#b45309]' :
                       lookingFor.includes(opt) ? 'bg-accent border-accent' : 'border-ink'
-                    }`}>
+                    }`} style={opt === 'Students' && lookingFor.includes(opt) ? { background: '#b45309' } : undefined}>
                       {lookingFor.includes(opt) && <span className="text-white text-[10px] font-extrabold leading-none">✓</span>}
                     </div>
-                    <span className="text-[13px] text-ink leading-tight">{opt}</span>
+                    <div>
+                      <span className="text-[13px] text-ink leading-tight">{opt}</span>
+                      {opt === 'Students' && (
+                        <span className="block text-[11px] text-neutral-500 mt-0.5">Your pin will appear amber on the map</span>
+                      )}
+                    </div>
                   </button>
                 ))}
               </div>
-            </div>
-            <div className="pt-1 border-t-2 border-neutral-200">
-              <Label>Offering lessons</Label>
-              <button
-                type="button"
-                onClick={() => setOffersLessons(v => !v)}
-                className="flex items-start gap-2 text-left w-full"
-              >
-                <div
-                  className={`w-5 h-5 flex-shrink-0 border-2 flex items-center justify-center mt-0.5 transition-colors ${
-                    offersLessons ? 'border-[#b45309]' : 'border-ink'
-                  }`}
-                  style={offersLessons ? { background: '#b45309' } : undefined}
-                >
-                  {offersLessons && <span className="text-white text-[10px] font-extrabold leading-none">✓</span>}
-                </div>
-                <div>
-                  <span className="text-[13px] text-ink leading-tight font-semibold">I offer music lessons</span>
-                  <span className="block text-[11px] text-neutral-500 mt-0.5">Your pin will appear amber on the map</span>
-                </div>
-              </button>
             </div>
           </div>
 
@@ -911,35 +895,20 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
                     className="flex items-start gap-2 text-left"
                   >
                     <div className={`w-5 h-5 flex-shrink-0 border-2 flex items-center justify-center mt-0.5 transition-colors ${
+                      opt === 'Students' && lookingFor.includes(opt) ? 'border-[#b45309]' :
                       lookingFor.includes(opt) ? 'bg-accent border-accent' : 'border-ink'
-                    }`}>
+                    }`} style={opt === 'Students' && lookingFor.includes(opt) ? { background: '#b45309' } : undefined}>
                       {lookingFor.includes(opt) && <span className="text-white text-[10px] font-extrabold leading-none">✓</span>}
                     </div>
-                    <span className="text-[13px] text-ink leading-tight">{opt}</span>
+                    <div>
+                      <span className="text-[13px] text-ink leading-tight">{opt}</span>
+                      {opt === 'Students' && (
+                        <span className="block text-[11px] text-neutral-500 mt-0.5">Your pin will appear amber on the map</span>
+                      )}
+                    </div>
                   </button>
                 ))}
               </div>
-            </div>
-            <div className="pt-1 border-t-2 border-neutral-200">
-              <Label>Offering lessons</Label>
-              <button
-                type="button"
-                onClick={() => setOffersLessons(v => !v)}
-                className="flex items-start gap-2 text-left w-full"
-              >
-                <div
-                  className={`w-5 h-5 flex-shrink-0 border-2 flex items-center justify-center mt-0.5 transition-colors ${
-                    offersLessons ? 'border-[#b45309]' : 'border-ink'
-                  }`}
-                  style={offersLessons ? { background: '#b45309' } : undefined}
-                >
-                  {offersLessons && <span className="text-white text-[10px] font-extrabold leading-none">✓</span>}
-                </div>
-                <div>
-                  <span className="text-[13px] text-ink leading-tight font-semibold">I offer music lessons</span>
-                  <span className="block text-[11px] text-neutral-500 mt-0.5">Your pin will appear amber on the map</span>
-                </div>
-              </button>
             </div>
           </div>
 
