@@ -3,7 +3,7 @@ import { useStore } from '../store'
 import type { Musician } from '../types'
 import { getInstrumentCode, haversineDistanceMiles, formatDistance } from '../lib/musicianUtils'
 
-type SortMode = 'nearest' | 'az'
+type SortMode = 'nearest' | 'further' | 'az'
 
 interface Props {
   onViewProfile?: (m: Musician) => void
@@ -18,11 +18,11 @@ export default function MusicianList({ onViewProfile }: Props) {
 
   const musicians = (() => {
     const list = [...filteredMusicians()]
-    if (sort === 'nearest' && userLat != null && userLng != null) {
+    if ((sort === 'nearest' || sort === 'further') && userLat != null && userLng != null) {
       list.sort((a, b) => {
         const da = (!isNaN(a.lat) && !isNaN(a.lng)) ? haversineDistanceMiles(userLat, userLng, a.lat, a.lng) : Infinity
         const db = (!isNaN(b.lat) && !isNaN(b.lng)) ? haversineDistanceMiles(userLat, userLng, b.lat, b.lng) : Infinity
-        return da - db
+        return sort === 'nearest' ? da - db : db - da
       })
     } else if (sort === 'az') {
       list.sort((a, b) => a.displayName.localeCompare(b.displayName))
@@ -30,7 +30,7 @@ export default function MusicianList({ onViewProfile }: Props) {
     return list
   })()
 
-  const toggleSort = () => setSort(s => s === 'nearest' ? 'az' : 'nearest')
+  const toggleSort = () => setSort(s => s === 'nearest' ? 'further' : s === 'further' ? 'az' : 'nearest')
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -41,7 +41,7 @@ export default function MusicianList({ onViewProfile }: Props) {
           <span className="text-[20px] font-extrabold text-ink pb-0.5">musicians</span>
         </div>
         <button onClick={toggleSort} className="text-[13px] font-semibold text-neutral-700 pb-1 hover:text-ink transition-colors">
-          {sort === 'nearest' ? 'Nearest ↓' : 'A–Z ↓'}
+          {sort === 'nearest' ? 'Nearest ↓' : sort === 'further' ? 'Further ↑' : 'A–Z ↓'}
         </button>
       </div>
 
