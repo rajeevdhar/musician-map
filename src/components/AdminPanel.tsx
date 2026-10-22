@@ -72,6 +72,7 @@ export default function AdminPanel({ onClose }: Props) {
       createdAt: row.created_at,
       lastSeenAt: row.last_seen_at ?? undefined,
       isTest: row.is_test ?? false,
+      offersLessons: row.offers_lessons ?? false,
     })))
 
     if (statsResult.users) {

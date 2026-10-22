@@ -31,6 +31,29 @@ async function geocodeLocation(query: string): Promise<{ lat: number; lng: numbe
   return null
 }
 
+async function resizeImage(file: File): Promise<Blob> {
+  const MAX_DIM = 1400
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const blobUrl = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(blobUrl)
+      let { width, height } = img
+      if (width > MAX_DIM || height > MAX_DIM) {
+        if (width >= height) { height = Math.round(height * MAX_DIM / width); width = MAX_DIM }
+        else { width = Math.round(width * MAX_DIM / height); height = MAX_DIM }
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      canvas.getContext('2d')!.drawImage(img, 0, 0, width, height)
+      canvas.toBlob(blob => { blob ? resolve(blob) : reject(new Error('resize failed')) }, 'image/jpeg', 0.85)
+    }
+    img.onerror = () => { URL.revokeObjectURL(blobUrl); reject(new Error('load failed')) }
+    img.src = blobUrl
+  })
+}
+
 function Label({ children }: { children: React.ReactNode }) {
   return <p className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-700 mb-2">{children}</p>
 }
@@ -91,6 +114,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState(source?.avatarUrl ?? '')
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [offersLessons, setOffersLessons] = useState(source?.offersLessons ?? false)
   const avatarFileRef = useRef<HTMLInputElement>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -164,15 +188,21 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    if (file.size > 5 * 1024 * 1024) { setError('Photo must be under 5MB'); return }
     setUploadingAvatar(true)
     setError('')
+    let blob: Blob
+    try {
+      blob = await resizeImage(file)
+    } catch {
+      setError('Could not process image')
+      setUploadingAvatar(false)
+      return
+    }
     const userId = currentUser!.id
-    const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
-    const path = `${userId}/avatar.${ext}`
+    const path = `${userId}/avatar.jpg`
     const { error: uploadErr } = await supabase.storage
       .from('avatars')
-      .upload(path, file, { upsert: true, contentType: file.type })
+      .upload(path, blob, { upsert: true, contentType: 'image/jpeg' })
     if (uploadErr) { setError('Upload failed: ' + uploadErr.message); setUploadingAvatar(false); return }
     const { data } = supabase.storage.from('avatars').getPublicUrl(path)
     setAvatarUrl(`${data.publicUrl}?t=${Date.now()}`)
@@ -236,6 +266,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
         gear,
         availability,
         avatarUrl: avatarUrl || undefined,
+        offersLessons,
       })
     }
 
@@ -454,6 +485,9 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
 
   return (
     <form onSubmit={handleSubmit} className="fixed inset-0 z-[2000] bg-ground flex flex-col overflow-hidden">
+      {/* Hidden file input — always in DOM so both desktop and mobile can trigger it */}
+      <input ref={avatarFileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+
       {/* Header */}
       <div
         className="flex-shrink-0 flex items-center gap-4 px-4 lg:px-6 border-b-2 border-ink"
@@ -506,7 +540,6 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
           {/* Col 1: Photo, name, primary instrument, bio, location */}
           <div className="p-6 space-y-5">
             <div>
-              <input ref={avatarFileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
               <div
                 className="h-[200px] bg-neutral-200 border-2 border-ink relative overflow-hidden cursor-pointer group"
                 onClick={() => avatarFileRef.current?.click()}
@@ -567,7 +600,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
             {locationSection}
           </div>
 
-          {/* Col 2: Instruments, genres, level, looking for */}
+          {/* Col 2: Instruments, genres, level, looking for, offers lessons */}
           <div className="p-6 space-y-5 border-l-2 border-ink">
             <div>
               <Label>Instruments (all that apply)</Label>
@@ -613,6 +646,27 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
                   </button>
                 ))}
               </div>
+            </div>
+            <div className="pt-1 border-t-2 border-neutral-200">
+              <Label>Offering lessons</Label>
+              <button
+                type="button"
+                onClick={() => setOffersLessons(v => !v)}
+                className="flex items-start gap-2 text-left w-full"
+              >
+                <div
+                  className={`w-5 h-5 flex-shrink-0 border-2 flex items-center justify-center mt-0.5 transition-colors ${
+                    offersLessons ? 'border-[#b45309]' : 'border-ink'
+                  }`}
+                  style={offersLessons ? { background: '#b45309' } : undefined}
+                >
+                  {offersLessons && <span className="text-white text-[10px] font-extrabold leading-none">✓</span>}
+                </div>
+                <div>
+                  <span className="text-[13px] text-ink leading-tight font-semibold">I offer music lessons</span>
+                  <span className="block text-[11px] text-neutral-500 mt-0.5">Your pin will appear amber on the map</span>
+                </div>
+              </button>
             </div>
           </div>
 
@@ -742,6 +796,27 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
                   </button>
                 ))}
               </div>
+            </div>
+            <div className="pt-1 border-t-2 border-neutral-200">
+              <Label>Offering lessons</Label>
+              <button
+                type="button"
+                onClick={() => setOffersLessons(v => !v)}
+                className="flex items-start gap-2 text-left w-full"
+              >
+                <div
+                  className={`w-5 h-5 flex-shrink-0 border-2 flex items-center justify-center mt-0.5 transition-colors ${
+                    offersLessons ? 'border-[#b45309]' : 'border-ink'
+                  }`}
+                  style={offersLessons ? { background: '#b45309' } : undefined}
+                >
+                  {offersLessons && <span className="text-white text-[10px] font-extrabold leading-none">✓</span>}
+                </div>
+                <div>
+                  <span className="text-[13px] text-ink leading-tight font-semibold">I offer music lessons</span>
+                  <span className="block text-[11px] text-neutral-500 mt-0.5">Your pin will appear amber on the map</span>
+                </div>
+              </button>
             </div>
           </div>
 

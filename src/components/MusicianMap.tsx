@@ -3,16 +3,14 @@ import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-lea
 import L from 'leaflet'
 import { useStore } from '../store'
 import type { Musician } from '../types'
-import { getInstrumentCode } from '../lib/musicianUtils'
 
 function esc(s: string) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
 function makeMusicianPin(musician: Musician, isSelected: boolean) {
-  const code = getInstrumentCode(musician.instruments)
   const firstName = musician.displayName.split(' ')[0]
-  const isTeacher = musician.lookingFor?.includes('Lessons / Teaching') ?? false
+  const isTeacher = musician.offersLessons ?? false
 
   const city = musician.locationName.split(',')[0]
   const instrumentStr = musician.instruments.slice(0, 2).join(', ')
@@ -30,7 +28,7 @@ function makeMusicianPin(musician: Musician, isSelected: boolean) {
 
   return new L.DivIcon({
     className: '',
-    html: `<div class="mf-pin-wrap"><div class="${pinClass}"><b>${esc(code)}</b> <span>${esc(firstName)}</span></div>${tooltip}</div>`,
+    html: `<div class="mf-pin-wrap"><div class="${pinClass}">${esc(firstName)}</div>${tooltip}</div>`,
     iconSize: [0, 0],
     iconAnchor: [0, 0],
   })

@@ -24,6 +24,7 @@ export interface Musician {
   phone?: string
   yearsPlaying?: number
   isTest?: boolean
+  offersLessons?: boolean
 }
 
 export type ActiveModal = 'auth' | 'profile' | 'musician-detail' | 'reset-password' | null
