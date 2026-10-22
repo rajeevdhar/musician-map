@@ -16,6 +16,8 @@ interface Props {
   isAdmin: boolean
   theme: Theme
   onSetTheme: (t: Theme) => void
+  largeText: boolean
+  onToggleLargeText: () => void
 }
 
 const DESKTOP_TABS = [
@@ -25,7 +27,7 @@ const DESKTOP_TABS = [
   { id: 'messages' as const, Icon: MessageSquare, label: 'Messages' },
 ]
 
-export default function Header({ onShowAuth, onShowProfile, onShowAdmin, isAdmin, theme, onSetTheme }: Props) {
+export default function Header({ onShowAuth, onShowProfile, onShowAdmin, isAdmin, theme, onSetTheme, largeText, onToggleLargeText }: Props) {
   const { currentUser, logout, deleteAccount, currentProfile, query, setQuery, activeTab, setActiveTab, setShowFilterPanel, filterCount } = useStore()
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -76,6 +78,17 @@ export default function Header({ onShowAuth, onShowProfile, onShowAdmin, isAdmin
               {tab.label}
             </button>
           ))}
+
+          {/* Large text toggle */}
+          <button
+            onClick={onToggleLargeText}
+            title={largeText ? 'Standard text size' : 'Larger text size'}
+            className={`flex items-center border-l-2 border-white h-[68px] px-4 text-[13px] font-extrabold tracking-wide transition-colors ${
+              largeText ? 'bg-white text-accent-700' : 'text-white hover:bg-white/10'
+            }`}
+          >
+            Aa
+          </button>
 
           {/* Theme picker */}
           <div className="flex items-center gap-2 border-l-2 border-white px-4">

@@ -55,6 +55,7 @@ export default function App() {
   const { currentUser, initAuth, needsPasswordReset, musicians, selectedId, setSelectedId, activeTab, setActiveTab, showFilterPanel, isAuthReady, setActiveThreadId, unreadCount, toast } = useStore()
   const [modal, setModal] = useState<Modal>(null)
   const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('mm-theme') as Theme) || 'default')
+  const [largeText, setLargeText] = useState(() => localStorage.getItem('mm-fontsize') === 'large')
   const [showMobileDetail, setShowMobileDetail] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [signupDismissed, setSignupDismissed] = useState(false)
@@ -66,6 +67,11 @@ export default function App() {
     document.documentElement.dataset.theme = theme === 'default' ? '' : theme
     localStorage.setItem('mm-theme', theme)
   }, [theme])
+
+  useEffect(() => {
+    document.documentElement.dataset.fontsize = largeText ? 'large' : ''
+    localStorage.setItem('mm-fontsize', largeText ? 'large' : '')
+  }, [largeText])
 
   // Reset signup state on logout
   useEffect(() => {
@@ -109,6 +115,8 @@ export default function App() {
         isAdmin={isAdmin}
         theme={theme}
         onSetTheme={setTheme}
+        largeText={largeText}
+        onToggleLargeText={() => setLargeText(v => !v)}
       />
 
       {/* Desktop-only filter bar */}
@@ -118,7 +126,7 @@ export default function App() {
       <div className="flex-1 flex min-h-0 overflow-hidden relative">
 
         {/* List panel: always on desktop; only on 'list' tab on mobile */}
-        <div className={`flex-col border-r-2 border-ink overflow-hidden flex-shrink-0 ${
+        <div className={`flex-col border-r-2 border-ink overflow-hidden flex-shrink-0 large-text-zoom ${
           activeTab === 'list' ? 'flex w-full' : 'hidden'
         } lg:flex lg:w-[380px]`}>
           {showFilterPanel && <FilterPanel />}
@@ -212,7 +220,7 @@ export default function App() {
 
         {/* Desktop: detail panel */}
         {selectedId && selectedMusician && (
-          <div className="hidden lg:flex w-[420px] flex-shrink-0 flex-col border-l-2 border-ink overflow-y-auto">
+          <div className="hidden lg:flex w-[420px] flex-shrink-0 flex-col border-l-2 border-ink overflow-y-auto large-text-zoom">
             <MusicianDetail
               musician={selectedMusician}
               onClose={() => setSelectedId(null)}
@@ -224,7 +232,7 @@ export default function App() {
 
         {/* Mobile: full-screen detail overlay */}
         {showMobileDetail && selectedMusician && (
-          <div className="lg:hidden absolute inset-0 z-20 bg-ground flex flex-col overflow-y-auto">
+          <div className="lg:hidden absolute inset-0 z-20 bg-ground flex flex-col overflow-y-auto large-text-zoom">
             <MusicianDetail
               musician={selectedMusician}
               onClose={() => { setShowMobileDetail(false); setSelectedId(null) }}
