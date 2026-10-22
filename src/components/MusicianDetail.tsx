@@ -1,6 +1,6 @@
 import type { Musician } from '../types'
 import { useStore } from '../store'
-import { ArrowLeft, X, Heart, MapPin, Mail, Pencil, MessageSquare } from 'lucide-react'
+import { ArrowLeft, X, Heart, MapPin, Pencil, MessageSquare } from 'lucide-react'
 import { getInstrumentCode } from '../lib/musicianUtils'
 import { isOnline } from '../lib/presence'
 
@@ -9,13 +9,18 @@ interface Props {
   onClose: () => void
   isMobile?: boolean
   onEditProfile?: () => void
+  onOpenMessages?: (id: string) => void
 }
 
-export default function MusicianDetail({ musician, onClose, isMobile = false, onEditProfile }: Props) {
-  const { currentUser } = useStore()
+export default function MusicianDetail({ musician, onClose, isMobile = false, onEditProfile, onOpenMessages }: Props) {
+  const { currentUser, saved, toggleSaved, contactRequests, revealedContacts, requestContact } = useStore()
   const isOwnProfile = currentUser?.id === musician.id
   const code = getInstrumentCode(musician.instruments)
   const online = isOnline(musician.lastSeenAt)
+  const isSeed = musician.id.startsWith('seed-')
+  const isSaved = saved[musician.id] !== undefined
+  const outgoingStatus = contactRequests.outgoing[musician.id]
+  const revealed = revealedContacts[musician.id]
 
   return (
     <div className="flex flex-col h-full">
@@ -36,9 +41,14 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
           {isMobile ? <ArrowLeft size={18} /> : <X size={18} />}
         </button>
         {/* Save (heart) */}
-        <button className="absolute top-3 right-3 w-10 h-10 bg-ground border-2 border-ink flex items-center justify-center hover:bg-accent-100 transition-colors">
-          <Heart size={18} />
-        </button>
+        {!isOwnProfile && currentUser && (
+          <button
+            onClick={() => toggleSaved(musician.id)}
+            className={`absolute top-3 right-3 w-10 h-10 bg-ground border-2 border-ink flex items-center justify-center hover:bg-accent-100 transition-colors ${isSaved ? 'text-accent' : 'text-ink'}`}
+          >
+            <Heart size={18} fill={isSaved ? 'currentColor' : 'none'} />
+          </button>
+        )}
       </div>
 
       {/* Scrollable content */}
@@ -91,6 +101,17 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
           </div>
         )}
 
+        {/* Revealed contact info */}
+        {revealed && (
+          <div className="mx-4 mt-4 border-2 border-accent bg-accent-100 p-3">
+            <p className="text-[11px] font-extrabold uppercase tracking-widest text-accent-700 mb-2">
+              Contact shared with you
+            </p>
+            <p className="text-[16px] font-extrabold text-ink">{revealed.email}</p>
+            {revealed.phone && <p className="text-[16px] font-extrabold text-ink mt-1">{revealed.phone}</p>}
+          </div>
+        )}
+
         {/* Bio */}
         {musician.bio && (
           <div className="px-4 pt-4 pb-4">
@@ -115,19 +136,41 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
           </button>
         ) : (
           <>
-            <button className="h-14 bg-accent hover:bg-accent-600 text-white font-extrabold text-sm flex items-center justify-between px-4 transition-colors">
-              <span className="flex items-center gap-2"><MessageSquare size={14} /> Message</span>
-              <span>→</span>
-            </button>
-            <button className="h-14 border-l-2 border-ink bg-transparent hover:bg-accent-100 text-ink font-extrabold text-sm flex items-center justify-between px-4 transition-colors">
-              {musician.contactEmail ? (
-                <a href={`mailto:${musician.contactEmail}`} className="flex items-center gap-2 w-full" onClick={e => e.stopPropagation()}>
-                  <Mail size={14} /> Contact
-                </a>
-              ) : (
-                <span>Request contact</span>
-              )}
-            </button>
+            {isSeed || !currentUser ? (
+              <button
+                disabled
+                className="h-14 bg-accent opacity-40 text-white font-extrabold text-sm flex items-center justify-between px-4 col-span-2"
+              >
+                <span className="flex items-center gap-2"><MessageSquare size={14} /> Message</span>
+                <span className="text-xs font-normal opacity-70">Sign in to message</span>
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => onOpenMessages?.(musician.id)}
+                  className="h-14 bg-accent hover:bg-accent-600 text-white font-extrabold text-sm flex items-center justify-between px-4 transition-colors"
+                >
+                  <span className="flex items-center gap-2"><MessageSquare size={14} /> Message</span>
+                  <span>→</span>
+                </button>
+                <button
+                  onClick={() => { if (!outgoingStatus) requestContact(musician.id) }}
+                  className={`h-14 border-l-2 border-ink font-extrabold text-sm flex items-center justify-between px-4 transition-colors ${
+                    outgoingStatus
+                      ? 'bg-transparent text-neutral-500 cursor-default'
+                      : 'bg-transparent hover:bg-accent-100 text-ink'
+                  }`}
+                >
+                  <span>
+                    {outgoingStatus === 'pending' ? 'Requested' :
+                     outgoingStatus === 'accepted' ? 'Accepted' :
+                     outgoingStatus === 'declined' ? 'Declined' :
+                     'Request contact'}
+                  </span>
+                  {!outgoingStatus && <span>→</span>}
+                </button>
+              </>
+            )}
           </>
         )}
       </div>

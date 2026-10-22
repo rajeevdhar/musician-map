@@ -9,6 +9,8 @@ import MusicianDetail from './components/MusicianDetail'
 import FilterPanel from './components/FilterPanel'
 import SignupScreen from './components/SignupScreen'
 import OnboardingFlow from './components/OnboardingFlow'
+import SavedTab from './components/SavedTab'
+import InboxTab from './components/InboxTab'
 import AuthModal from './components/AuthModal'
 import ProfileModal from './components/ProfileModal'
 import AdminPanel from './components/AdminPanel'
@@ -25,7 +27,7 @@ const BOTTOM_TABS = [
 ]
 
 export default function App() {
-  const { currentUser, initAuth, needsPasswordReset, musicians, selectedId, setSelectedId, activeTab, setActiveTab, showFilterPanel, isAuthReady } = useStore()
+  const { currentUser, initAuth, needsPasswordReset, musicians, selectedId, setSelectedId, activeTab, setActiveTab, showFilterPanel, isAuthReady, setActiveThreadId, unreadCount } = useStore()
   const [modal, setModal] = useState<Modal>(null)
   const [showMobileDetail, setShowMobileDetail] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
@@ -56,6 +58,11 @@ export default function App() {
   }
 
   const showSignupScreen = isAuthReady && !currentUser && !signupDismissed && !showOnboarding
+
+  const openMessages = (musicianId: string) => {
+    setActiveThreadId(musicianId)
+    setActiveTab('messages')
+  }
 
   // Close mobile detail when selection changes
   useEffect(() => {
@@ -121,20 +128,51 @@ export default function App() {
 
         {/* Mobile-only other tabs */}
         {activeTab !== 'map' && activeTab !== 'list' && (
-          <div className="flex-1 flex items-center justify-center flex-col gap-4 p-8 lg:hidden">
-            {activeTab === 'me' ? (
-              <button
-                onClick={showProfile}
-                className="flex items-center justify-between h-[52px] bg-accent hover:bg-accent-600 text-white font-bold text-sm px-6 transition-colors"
-              >
-                <span>{currentUser ? 'Edit My Profile' : 'Sign In'}</span>
-                <span className="ml-4">→</span>
-              </button>
-            ) : (
-              <p className="text-neutral-500 text-sm text-center">
-                {activeTab === 'saved' ? 'Saved musicians coming soon.' : 'Messages coming soon.'}
-              </p>
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden lg:hidden">
+            {activeTab === 'me' && (
+              <div className="flex-1 flex items-center justify-center flex-col gap-4 p-8">
+                <button
+                  onClick={showProfile}
+                  className="flex items-center justify-between h-[52px] bg-accent hover:bg-accent-600 text-white font-bold text-sm px-6 transition-colors"
+                >
+                  <span>{currentUser ? 'Edit My Profile' : 'Sign In'}</span>
+                  <span className="ml-4">→</span>
+                </button>
+              </div>
             )}
+            {activeTab === 'saved' && (
+              <SavedTab
+                onViewProfile={(id) => { setSelectedId(id); setActiveTab('map'); setShowMobileDetail(true) }}
+              />
+            )}
+            {activeTab === 'messages' && (
+              <InboxTab
+                onViewProfile={(id) => { setSelectedId(id); setActiveTab('map'); setShowMobileDetail(true) }}
+              />
+            )}
+          </div>
+        )}
+
+        {/* Desktop: Saved overlay */}
+        {activeTab === 'saved' && (
+          <div className="hidden lg:flex absolute inset-0 z-10 bg-ground">
+            <div className="flex flex-col w-[420px] border-r-2 border-ink overflow-y-auto">
+              <SavedTab
+                onViewProfile={(id) => { setSelectedId(id); setActiveTab('map') }}
+              />
+            </div>
+            <div className="flex-1 flex items-center justify-center">
+              <p className="text-sm text-neutral-500">Select a saved musician to view their profile.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Desktop: Messages overlay */}
+        {activeTab === 'messages' && (
+          <div className="hidden lg:flex absolute inset-0 z-10 bg-ground">
+            <InboxTab
+              onViewProfile={(id) => { setSelectedId(id); setActiveTab('map') }}
+            />
           </div>
         )}
 
@@ -145,6 +183,7 @@ export default function App() {
               musician={selectedMusician}
               onClose={() => setSelectedId(null)}
               onEditProfile={showProfile}
+              onOpenMessages={openMessages}
             />
           </div>
         )}
@@ -157,6 +196,7 @@ export default function App() {
               onClose={() => { setShowMobileDetail(false); setSelectedId(null) }}
               isMobile
               onEditProfile={() => { setShowMobileDetail(false); showProfile() }}
+              onOpenMessages={(id) => { setShowMobileDetail(false); openMessages(id) }}
             />
           </div>
         )}
@@ -176,7 +216,12 @@ export default function App() {
             }`}
           >
             {activeTab === tab.id && <div className="absolute top-0 left-0 right-0 h-1 bg-accent" />}
-            <tab.Icon size={20} />
+            <div className="relative">
+              <tab.Icon size={20} />
+              {tab.id === 'messages' && unreadCount() > 0 && (
+                <div className="absolute -top-1 -right-1 w-2 h-2 bg-accent" />
+              )}
+            </div>
             <span className="text-[11px] font-extrabold uppercase tracking-wide">{tab.label}</span>
           </button>
         ))}

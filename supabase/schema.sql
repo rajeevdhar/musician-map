@@ -64,3 +64,48 @@ ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS location_precision TEXT DEFAULT 'exact',
   ADD COLUMN IF NOT EXISTS neighborhood TEXT,
   ADD COLUMN IF NOT EXISTS level TEXT;
+
+-- Section 5 additions: saved musicians, messages, contact requests
+CREATE TABLE IF NOT EXISTS public.saved_musicians (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  musician_id TEXT NOT NULL,
+  note TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, musician_id)
+);
+ALTER TABLE public.saved_musicians ENABLE ROW LEVEL SECURITY;
+CREATE POLICY IF NOT EXISTS "saved_own" ON public.saved_musicians
+  FOR ALL USING (auth.uid() = user_id);
+
+CREATE TABLE IF NOT EXISTS public.messages (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  from_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  to_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  body TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  read_at TIMESTAMPTZ
+);
+ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
+CREATE POLICY IF NOT EXISTS "messages_select" ON public.messages
+  FOR SELECT USING (auth.uid() = from_id OR auth.uid() = to_id);
+CREATE POLICY IF NOT EXISTS "messages_insert" ON public.messages
+  FOR INSERT WITH CHECK (auth.uid() = from_id);
+CREATE POLICY IF NOT EXISTS "messages_update" ON public.messages
+  FOR UPDATE USING (auth.uid() = to_id);
+
+CREATE TABLE IF NOT EXISTS public.contact_requests (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  from_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  to_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'declined')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(from_id, to_id)
+);
+ALTER TABLE public.contact_requests ENABLE ROW LEVEL SECURITY;
+CREATE POLICY IF NOT EXISTS "requests_select" ON public.contact_requests
+  FOR SELECT USING (auth.uid() = from_id OR auth.uid() = to_id);
+CREATE POLICY IF NOT EXISTS "requests_insert" ON public.contact_requests
+  FOR INSERT WITH CHECK (auth.uid() = from_id);
+CREATE POLICY IF NOT EXISTS "requests_update" ON public.contact_requests
+  FOR UPDATE USING (auth.uid() = to_id);

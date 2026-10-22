@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { supabase } from './lib/supabase'
-import type { Musician, ActiveModal, Level } from './types'
+import type { Musician, ActiveModal, Level, Message, ContactRequestStatus } from './types'
 import { haversineDistanceMiles } from './lib/musicianUtils'
 
 export interface Filters {
@@ -238,6 +238,33 @@ interface AppStore {
   setShowFilterPanel: (show: boolean) => void
   filterCount: () => number
   filteredMusicians: () => Musician[]
+
+  // ── Saved ─────────────────────────────────────────────────────────────────
+  saved: Record<string, string>
+  fetchSaved: () => Promise<void>
+  toggleSaved: (musicianId: string) => Promise<void>
+  updateNote: (musicianId: string, note: string) => Promise<void>
+
+  // ── Messages ──────────────────────────────────────────────────────────────
+  threads: Record<string, Message[]>
+  unread: Record<string, boolean>
+  activeThreadId: string | null
+  fetchThreads: () => Promise<void>
+  sendMessage: (toId: string, body: string) => Promise<void>
+  markThreadRead: (userId: string) => Promise<void>
+  setActiveThreadId: (id: string | null) => void
+
+  // ── Contact requests ──────────────────────────────────────────────────────
+  contactRequests: {
+    outgoing: Record<string, ContactRequestStatus>
+    incoming: Record<string, 'pending'>
+  }
+  revealedContacts: Record<string, { email: string; phone?: string }>
+  fetchContactRequests: () => Promise<void>
+  requestContact: (musicianId: string) => Promise<void>
+  respondToContactRequest: (fromId: string, accept: boolean) => Promise<void>
+  initMessages: () => Promise<void>
+  unreadCount: () => number
 }
 
 export const useStore = create<AppStore>()((set, get) => ({
@@ -260,7 +287,10 @@ export const useStore = create<AppStore>()((set, get) => ({
           isAuthReady: true,
         })
         // Fetch after the first heartbeat lands so we don't read a stale last_seen_at
-        startHeartbeat(u.id).finally(() => get().fetchMusicians())
+        startHeartbeat(u.id).finally(() => {
+          get().fetchMusicians()
+          get().initMessages()
+        })
       } else {
         set({ isAuthReady: true })
         get().fetchMusicians()
@@ -289,10 +319,21 @@ export const useStore = create<AppStore>()((set, get) => ({
             displayName: u.user_metadata?.displayName ?? u.email!,
           },
         })
-        startHeartbeat(u.id).finally(() => get().fetchMusicians())
+        startHeartbeat(u.id).finally(() => {
+          get().fetchMusicians()
+          get().initMessages()
+        })
       } else if (event === 'SIGNED_OUT') {
         stopHeartbeat()
-        set({ currentUser: null })
+        set({
+          currentUser: null,
+          saved: {},
+          threads: {},
+          unread: {},
+          activeThreadId: null,
+          contactRequests: { outgoing: {}, incoming: {} },
+          revealedContacts: {},
+        })
         get().fetchMusicians()
       }
     })
@@ -481,5 +522,191 @@ export const useStore = create<AppStore>()((set, get) => ({
       )
     }
     return list
+  },
+
+  // ── Saved ─────────────────────────────────────────────────────────────────
+  saved: {},
+
+  fetchSaved: async () => {
+    const user = get().currentUser
+    if (!user) return
+    const { data } = await supabase
+      .from('saved_musicians')
+      .select('musician_id, note')
+      .eq('user_id', user.id)
+    if (data) {
+      const saved: Record<string, string> = {}
+      data.forEach(r => { saved[r.musician_id] = r.note ?? '' })
+      set({ saved })
+    }
+  },
+
+  toggleSaved: async (musicianId) => {
+    const user = get().currentUser
+    if (!user) return
+    const { saved } = get()
+    if (saved[musicianId] !== undefined) {
+      await supabase.from('saved_musicians').delete().eq('user_id', user.id).eq('musician_id', musicianId)
+      const next = { ...saved }
+      delete next[musicianId]
+      set({ saved: next })
+    } else {
+      await supabase.from('saved_musicians').insert({ user_id: user.id, musician_id: musicianId, note: '' })
+      set({ saved: { ...saved, [musicianId]: '' } })
+    }
+  },
+
+  updateNote: async (musicianId, note) => {
+    const user = get().currentUser
+    if (!user) return
+    await supabase.from('saved_musicians').update({ note }).eq('user_id', user.id).eq('musician_id', musicianId)
+    set(s => ({ saved: { ...s.saved, [musicianId]: note } }))
+  },
+
+  // ── Messages ──────────────────────────────────────────────────────────────
+  threads: {},
+  unread: {},
+  activeThreadId: null,
+
+  fetchThreads: async () => {
+    const user = get().currentUser
+    if (!user) return
+    const { data } = await supabase
+      .from('messages')
+      .select('*')
+      .or(`from_id.eq.${user.id},to_id.eq.${user.id}`)
+      .order('created_at', { ascending: true })
+    if (data) {
+      const threads: Record<string, Message[]> = {}
+      const unread: Record<string, boolean> = {}
+      data.forEach(row => {
+        const otherId = row.from_id === user.id ? row.to_id : row.from_id
+        if (!threads[otherId]) threads[otherId] = []
+        threads[otherId].push({
+          id: row.id,
+          fromId: row.from_id,
+          toId: row.to_id,
+          body: row.body,
+          createdAt: row.created_at,
+          readAt: row.read_at ?? undefined,
+        })
+        if (row.to_id === user.id && !row.read_at) unread[otherId] = true
+      })
+      set({ threads, unread })
+    }
+  },
+
+  sendMessage: async (toId, body) => {
+    const user = get().currentUser
+    if (!user) return
+    const { data } = await supabase
+      .from('messages')
+      .insert({ from_id: user.id, to_id: toId, body })
+      .select()
+      .single()
+    if (data) {
+      const msg: Message = {
+        id: data.id,
+        fromId: data.from_id,
+        toId: data.to_id,
+        body: data.body,
+        createdAt: data.created_at,
+      }
+      set(s => ({ threads: { ...s.threads, [toId]: [...(s.threads[toId] ?? []), msg] } }))
+    }
+  },
+
+  markThreadRead: async (userId) => {
+    const user = get().currentUser
+    if (!user) return
+    await supabase
+      .from('messages')
+      .update({ read_at: new Date().toISOString() })
+      .eq('from_id', userId)
+      .eq('to_id', user.id)
+      .is('read_at', null)
+    set(s => { const u = { ...s.unread }; delete u[userId]; return { unread: u } })
+  },
+
+  setActiveThreadId: (id) => set({ activeThreadId: id }),
+
+  // ── Contact requests ──────────────────────────────────────────────────────
+  contactRequests: { outgoing: {}, incoming: {} },
+  revealedContacts: {},
+
+  fetchContactRequests: async () => {
+    const user = get().currentUser
+    if (!user) return
+    const { data } = await supabase
+      .from('contact_requests')
+      .select('*')
+      .or(`from_id.eq.${user.id},to_id.eq.${user.id}`)
+    if (data) {
+      const outgoing: Record<string, ContactRequestStatus> = {}
+      const incoming: Record<string, 'pending'> = {}
+      const revealedContacts: Record<string, { email: string }> = {}
+      data.forEach(row => {
+        if (row.from_id === user.id) {
+          outgoing[row.to_id] = row.status as ContactRequestStatus
+          if (row.status === 'accepted') {
+            const m = get().musicians.find(x => x.id === row.to_id)
+            if (m?.contactEmail) revealedContacts[row.to_id] = { email: m.contactEmail }
+          }
+        } else {
+          if (row.status === 'pending') incoming[row.from_id] = 'pending'
+          if (row.status === 'accepted') {
+            const m = get().musicians.find(x => x.id === row.from_id)
+            if (m?.contactEmail) revealedContacts[row.from_id] = { email: m.contactEmail }
+          }
+        }
+      })
+      set({ contactRequests: { outgoing, incoming }, revealedContacts })
+    }
+  },
+
+  requestContact: async (musicianId) => {
+    const user = get().currentUser
+    if (!user) return
+    await supabase.from('contact_requests').insert({ from_id: user.id, to_id: musicianId })
+    set(s => ({
+      contactRequests: {
+        ...s.contactRequests,
+        outgoing: { ...s.contactRequests.outgoing, [musicianId]: 'pending' },
+      },
+    }))
+  },
+
+  respondToContactRequest: async (fromId, accept) => {
+    const user = get().currentUser
+    if (!user) return
+    const status = accept ? 'accepted' : 'declined'
+    await supabase
+      .from('contact_requests')
+      .update({ status })
+      .eq('from_id', fromId)
+      .eq('to_id', user.id)
+    set(s => {
+      const incoming = { ...s.contactRequests.incoming }
+      delete incoming[fromId]
+      const revealedContacts = { ...s.revealedContacts }
+      if (accept) {
+        const m = get().musicians.find(x => x.id === fromId)
+        if (m?.contactEmail) revealedContacts[fromId] = { email: m.contactEmail }
+      }
+      return { contactRequests: { ...s.contactRequests, incoming }, revealedContacts }
+    })
+  },
+
+  initMessages: async () => {
+    await Promise.all([
+      get().fetchSaved(),
+      get().fetchThreads(),
+      get().fetchContactRequests(),
+    ])
+  },
+
+  unreadCount: () => {
+    const { unread, contactRequests } = get()
+    return Object.keys(unread).length + Object.keys(contactRequests.incoming).length
   },
 }))

@@ -22,6 +22,17 @@ export interface Musician {
 
 export type ActiveModal = 'auth' | 'profile' | 'musician-detail' | 'reset-password' | null
 
+export interface Message {
+  id: string
+  fromId: string
+  toId: string
+  body: string
+  createdAt: string
+  readAt?: string
+}
+
+export type ContactRequestStatus = 'pending' | 'accepted' | 'declined'
+
 export const INSTRUMENT_OPTIONS = [
   'Guitar', 'Bass', 'Drums', 'Keyboard / Piano', 'Vocals', 'Violin',
   'Trumpet', 'Saxophone', 'Cello', 'Flute', 'Banjo', 'Ukulele',
