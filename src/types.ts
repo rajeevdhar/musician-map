@@ -54,5 +54,5 @@ export const GENRE_OPTIONS = [
 
 export const LOOKING_FOR_OPTIONS = [
   'Band Members', 'Jam Partner', 'Session Work', 'Lessons / Teaching',
-  'Recording Collaborator', 'Live Gigs', 'Just Meeting Other Musicians',
+  'Recording Collaborator', 'Live Gigs', 'Students', 'Just Meeting Other Musicians',
 ]
