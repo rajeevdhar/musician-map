@@ -40,7 +40,7 @@ export default function MusicianList({ onViewProfile }: Props) {
       {/* Header */}
       <div className="flex items-end justify-between px-4 pt-4 pb-3 flex-shrink-0 border-b-2 border-ink">
         <div className="flex items-end gap-2">
-          <span className="text-[44px] font-extrabold leading-none text-ink tracking-tight">{musicians.length}</span>
+          <span className="text-[60px] font-black leading-none text-ink tracking-tight">{musicians.length}</span>
           <div className="pb-0.5 flex flex-col">
             <span className="text-[20px] font-extrabold text-ink leading-none mb-1">musicians</span>
             <div className="flex items-center gap-1">
