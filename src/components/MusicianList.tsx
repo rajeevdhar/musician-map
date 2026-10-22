@@ -77,31 +77,30 @@ function MusicianRow({
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left grid border-t-2 border-ink transition-colors hover:bg-accent-100 ${isSelected ? 'bg-accent-100' : ''}`}
-      style={{ gridTemplateColumns: '52px 1fr auto' }}
+      className={`w-full text-left flex transition-colors hover:bg-accent-100 ${isSelected ? 'bg-accent-100' : ''}`}
     >
-      {/* Code block */}
-      <div className="min-h-[52px] m-2 mr-0 bg-accent text-white flex items-start pt-1 pl-1.5 text-[13px] font-extrabold leading-none flex-shrink-0">
-        {code}
+      {/* Code + middle: carries the horizontal divider */}
+      <div className="flex flex-1 border-t-2 border-ink min-w-0">
+        <div className="min-h-[52px] m-2 mr-0 bg-accent text-white flex items-start pt-1 pl-1.5 text-[13px] font-extrabold leading-none flex-shrink-0 w-[52px]">
+          {code}
+        </div>
+        <div className="py-2.5 px-3 min-w-0 flex-1">
+          <p className="text-[16px] font-extrabold text-ink leading-tight truncate">{m.displayName}</p>
+          {(m.instruments.length > 0 || m.genres.length > 0) && (
+            <p className="text-[13px] text-neutral-700 mt-0.5 truncate">
+              {[m.instruments.slice(0, 2).join(', '), m.genres.slice(0, 1).join(', ')].filter(Boolean).join(' · ')}
+            </p>
+          )}
+          {m.lookingFor && (
+            <p className="text-[12px] font-semibold text-accent-700 mt-0.5 truncate">
+              {m.lookingFor.split(',')[0]?.trim()} · {m.locationName.split(',')[0]}
+            </p>
+          )}
+        </div>
       </div>
 
-      {/* Middle */}
-      <div className="py-2.5 px-3 min-w-0">
-        <p className="text-[16px] font-extrabold text-ink leading-tight truncate">{m.displayName}</p>
-        {(m.instruments.length > 0 || m.genres.length > 0) && (
-          <p className="text-[13px] text-neutral-700 mt-0.5 truncate">
-            {[m.instruments.slice(0, 2).join(', '), m.genres.slice(0, 1).join(', ')].filter(Boolean).join(' · ')}
-          </p>
-        )}
-        {m.lookingFor && (
-          <p className="text-[12px] font-semibold text-accent-700 mt-0.5 truncate">
-            {m.lookingFor.split(',')[0]?.trim()} · {m.locationName.split(',')[0]}
-          </p>
-        )}
-      </div>
-
-      {/* Distance */}
-      <div className="flex-shrink-0 border-l-2 border-ink px-4 pt-2.5 flex flex-col justify-start">
+      {/* Distance: faint left separator only, no top border */}
+      <div className="flex-shrink-0 border-l-2 px-4 pt-2.5 flex flex-col justify-start" style={{ borderColor: 'var(--color-divider)' }}>
         {distMiles != null ? (
           <span className="text-[15px] font-extrabold text-ink whitespace-nowrap">{formatDistance(distMiles)}</span>
         ) : (
