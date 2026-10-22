@@ -101,7 +101,7 @@ function MusicianRow({
       </div>
 
       {/* Distance */}
-      <div className="flex-shrink-0 border-l-2 px-4 pt-2.5 flex flex-col justify-start" style={{ borderColor: 'var(--color-divider)' }}>
+      <div className="flex-shrink-0 border-l-2 border-ink px-4 pt-2.5 flex flex-col justify-start">
         {distMiles != null ? (
           <span className="text-[15px] font-extrabold text-ink whitespace-nowrap">{formatDistance(distMiles)}</span>
         ) : (
