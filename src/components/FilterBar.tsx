@@ -14,11 +14,8 @@ const FILTER_ITEMS: { label: string; instruments: string[] }[] = [
   { label: 'Other', instruments: ['Other', 'Flute', 'Banjo', 'Ukulele', 'Mandolin', 'Harmonica'] },
 ]
 
-const DISTANCE_OPTIONS = [1, 5, 10, 25, 50, 100, 0] as const
-const distanceLabel = (d: number) => d === 0 ? 'World' : `${d} mi`
-
 export default function FilterBar() {
-  const { filters, setFilters, setShowFilterPanel, filterCount } = useStore()
+  const { filters, setShowFilterPanel, filterCount } = useStore()
 
   const isActive = (item: typeof FILTER_ITEMS[0]) =>
     item.instruments.some(i => filters.instruments.includes(i))
@@ -54,19 +51,6 @@ export default function FilterBar() {
           </button>
         )
       })}
-
-      {/* Distance selector — always visible */}
-      <div className="flex items-center border-r-2 border-white">
-        <select
-          value={filters.distanceMi}
-          onChange={e => setFilters({ distanceMi: Number(e.target.value) as typeof filters.distanceMi })}
-          className="h-11 bg-ink text-white text-[12px] font-extrabold px-3 cursor-pointer appearance-none focus:outline-none"
-        >
-          {DISTANCE_OPTIONS.map(d => (
-            <option key={d} value={d}>{distanceLabel(d)}</option>
-          ))}
-        </select>
-      </div>
 
       <button
         onClick={() => setShowFilterPanel(true)}

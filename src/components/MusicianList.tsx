@@ -5,12 +5,15 @@ import { getInstrumentCode, haversineDistanceMiles, formatDistance } from '../li
 
 type SortMode = 'nearest' | 'further' | 'az'
 
+const DISTANCE_OPTIONS = [1, 5, 10, 25, 50, 100, 0] as const
+const distanceLabel = (d: number) => d === 0 ? 'World' : `${d} mi`
+
 interface Props {
   onViewProfile?: (m: Musician) => void
 }
 
 export default function MusicianList({ onViewProfile }: Props) {
-  const { filteredMusicians, selectedId, setSelectedId, currentProfile, resetFilters } = useStore()
+  const { filteredMusicians, selectedId, setSelectedId, currentProfile, resetFilters, filters, setFilters } = useStore()
   const [sort, setSort] = useState<SortMode>('nearest')
   const profile = currentProfile()
   const userLat = profile?.lat
@@ -38,7 +41,24 @@ export default function MusicianList({ onViewProfile }: Props) {
       <div className="flex items-end justify-between px-4 pt-4 pb-3 flex-shrink-0 border-b-2 border-ink">
         <div className="flex items-end gap-2">
           <span className="text-[44px] font-extrabold leading-none text-ink tracking-tight">{musicians.length}</span>
-          <span className="text-[20px] font-extrabold text-ink pb-0.5">musicians</span>
+          <div className="pb-0.5 flex flex-col">
+            <span className="text-[20px] font-extrabold text-ink leading-none mb-1">musicians</span>
+            <div className="flex items-center gap-1">
+              <span className="text-[11px] font-semibold text-neutral-500">within</span>
+              <div className="relative">
+                <select
+                  value={filters.distanceMi}
+                  onChange={e => setFilters({ distanceMi: Number(e.target.value) as typeof filters.distanceMi })}
+                  className="text-[11px] font-bold text-ink bg-transparent cursor-pointer focus:outline-none appearance-none pr-3"
+                >
+                  {DISTANCE_OPTIONS.map(d => (
+                    <option key={d} value={d}>{distanceLabel(d)}</option>
+                  ))}
+                </select>
+                <span className="absolute right-0 top-1/2 -translate-y-1/2 text-[9px] text-ink pointer-events-none">▾</span>
+              </div>
+            </div>
+          </div>
         </div>
         <button onClick={toggleSort} className="text-[13px] font-semibold text-neutral-700 pb-1 hover:text-ink transition-colors">
           {sort === 'nearest' ? 'Nearest ↓' : sort === 'further' ? 'Furthest ↑' : 'A–Z ↓'}
