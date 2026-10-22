@@ -1,6 +1,9 @@
+import { useState } from 'react'
 import { useStore } from '../store'
 import type { Musician } from '../types'
 import { getInstrumentCode, haversineDistanceMiles, formatDistance } from '../lib/musicianUtils'
+
+type SortMode = 'nearest' | 'az'
 
 interface Props {
   onViewProfile?: (m: Musician) => void
@@ -8,8 +11,26 @@ interface Props {
 
 export default function MusicianList({ onViewProfile }: Props) {
   const { filteredMusicians, selectedId, setSelectedId, currentProfile, resetFilters } = useStore()
-  const musicians = filteredMusicians()
+  const [sort, setSort] = useState<SortMode>('nearest')
   const profile = currentProfile()
+  const userLat = profile?.lat
+  const userLng = profile?.lng
+
+  const musicians = (() => {
+    const list = [...filteredMusicians()]
+    if (sort === 'nearest' && userLat != null && userLng != null) {
+      list.sort((a, b) => {
+        const da = (!isNaN(a.lat) && !isNaN(a.lng)) ? haversineDistanceMiles(userLat, userLng, a.lat, a.lng) : Infinity
+        const db = (!isNaN(b.lat) && !isNaN(b.lng)) ? haversineDistanceMiles(userLat, userLng, b.lat, b.lng) : Infinity
+        return da - db
+      })
+    } else if (sort === 'az') {
+      list.sort((a, b) => a.displayName.localeCompare(b.displayName))
+    }
+    return list
+  })()
+
+  const toggleSort = () => setSort(s => s === 'nearest' ? 'az' : 'nearest')
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -19,7 +40,9 @@ export default function MusicianList({ onViewProfile }: Props) {
           <span className="text-[44px] font-extrabold leading-none text-ink tracking-tight">{musicians.length}</span>
           <span className="text-[20px] font-extrabold text-ink pb-0.5">musicians</span>
         </div>
-        <button className="text-[13px] font-semibold text-neutral-700 pb-1 hover:text-ink">Nearest ↓</button>
+        <button onClick={toggleSort} className="text-[13px] font-semibold text-neutral-700 pb-1 hover:text-ink transition-colors">
+          {sort === 'nearest' ? 'Nearest ↓' : 'A–Z ↓'}
+        </button>
       </div>
 
       {/* Rows */}
@@ -41,8 +64,8 @@ export default function MusicianList({ onViewProfile }: Props) {
               key={m.id}
               musician={m}
               isSelected={m.id === selectedId}
-              userLat={profile?.lat}
-              userLng={profile?.lng}
+              userLat={userLat}
+              userLng={userLng}
               onClick={() => {
                 setSelectedId(m.id)
                 onViewProfile?.(m)
@@ -69,7 +92,6 @@ function MusicianRow({
   onClick: () => void
 }) {
   const code = getInstrumentCode(m.instruments)
-  const firstName = m.displayName.split(' ')[0]
   const distMiles = userLat != null && userLng != null && !isNaN(m.lat) && !isNaN(m.lng)
     ? haversineDistanceMiles(userLat, userLng, m.lat, m.lng)
     : null
