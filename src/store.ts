@@ -525,7 +525,11 @@ export const useStore = create<AppStore>()((set, get) => ({
       list = list.filter(m => m.level === filters.level)
     }
     if (filters.lookingFor.length > 0) {
-      list = list.filter(m => filters.lookingFor.some(lf => m.lookingFor.includes(lf)))
+      list = list.filter(m => filters.lookingFor.some(lf => {
+        // "Students" filter matches teachers: those who offer lessons or have "Lessons / Teaching"
+        if (lf === 'Students') return m.offersLessons || m.lookingFor.includes('Lessons / Teaching')
+        return m.lookingFor.includes(lf)
+      }))
     }
     if (filters.distanceMi !== 0 && userLat != null && userLng != null && !isNaN(userLat) && !isNaN(userLng)) {
       list = list.filter(m => {
