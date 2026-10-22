@@ -116,6 +116,13 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [offersLessons, setOffersLessons] = useState(source?.offersLessons ?? false)
   const avatarFileRef = useRef<HTMLInputElement>(null)
+  const cropContainerRef = useRef<HTMLDivElement>(null)
+  const cropImgRef = useRef<HTMLImageElement>(null)
+  const [cropMode, setCropMode] = useState(false)
+  const [cropOffset, setCropOffset] = useState({ x: 0, y: 0 })
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+  const [renderedImgSize, setRenderedImgSize] = useState({ w: 0, h: 0 })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -185,6 +192,71 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
     })
   }
 
+  const initCropSize = (img: HTMLImageElement) => {
+    const container = cropContainerRef.current
+    if (!container) return
+    const cW = container.clientWidth
+    const cH = container.clientHeight
+    const aspect = img.naturalWidth / img.naturalHeight
+    let rW = cW, rH = cH
+    if (aspect >= 1) { rH = cH; rW = rH * aspect; if (rW < cW) { rW = cW; rH = rW / aspect } }
+    else { rW = cW; rH = rW / aspect; if (rH < cH) { rH = cH; rW = rH * aspect } }
+    setRenderedImgSize({ w: rW, h: rH })
+    setCropOffset({ x: (cW - rW) / 2, y: (cH - rH) / 2 })
+  }
+
+  const handleCropDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault()
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+    setIsDragging(true)
+    setDragStart({ x: clientX - cropOffset.x, y: clientY - cropOffset.y })
+  }
+
+  const handleCropDragMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDragging) return
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+    const container = cropContainerRef.current
+    if (!container) return
+    const cW = container.clientWidth
+    const cH = container.clientHeight
+    const newX = clientX - dragStart.x
+    const newY = clientY - dragStart.y
+    setCropOffset({
+      x: Math.min(0, Math.max(newX, cW - renderedImgSize.w)),
+      y: Math.min(0, Math.max(newY, cH - renderedImgSize.h)),
+    })
+  }
+
+  const cropAndReupload = (): Promise<string> => {
+    const img = cropImgRef.current
+    const container = cropContainerRef.current
+    if (!img || !container || !avatarUrl || renderedImgSize.w === 0) return Promise.resolve(avatarUrl)
+    const cW = container.clientWidth
+    const cH = container.clientHeight
+    const scaleX = img.naturalWidth / renderedImgSize.w
+    const scaleY = img.naturalHeight / renderedImgSize.h
+    const srcX = -cropOffset.x * scaleX
+    const srcY = -cropOffset.y * scaleY
+    const srcW = cW * scaleX
+    const srcH = cH * scaleY
+    const OUTPUT = 600
+    const canvas = document.createElement('canvas')
+    canvas.width = OUTPUT; canvas.height = OUTPUT
+    canvas.getContext('2d')!.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, OUTPUT, OUTPUT)
+    return new Promise(resolve => {
+      canvas.toBlob(async blob => {
+        if (!blob) { resolve(avatarUrl); return }
+        const path = `${currentUser!.id}/avatar.jpg`
+        const { error } = await supabase.storage.from('avatars').upload(path, blob, { upsert: true, contentType: 'image/jpeg' })
+        if (error) { resolve(avatarUrl); return }
+        const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+        resolve(`${data.publicUrl}?t=${Date.now()}`)
+      }, 'image/jpeg', 0.92)
+    })
+  }
+
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -206,6 +278,9 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
     if (uploadErr) { setError('Upload failed: ' + uploadErr.message); setUploadingAvatar(false); return }
     const { data } = supabase.storage.from('avatars').getPublicUrl(path)
     setAvatarUrl(`${data.publicUrl}?t=${Date.now()}`)
+    setCropMode(true)
+    setCropOffset({ x: 0, y: 0 })
+    setRenderedImgSize({ w: 0, h: 0 })
     setUploadingAvatar(false)
     if (avatarFileRef.current) avatarFileRef.current.value = ''
   }
@@ -218,6 +293,13 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
     if (locationPrecision !== 'hidden' && (!lat || !lng)) { setError('Please set your location'); return }
 
     setSaving(true)
+
+    let finalAvatarUrl = avatarUrl
+    if (cropMode && avatarUrl && !isAdminMode) {
+      finalAvatarUrl = await cropAndReupload()
+      setAvatarUrl(finalAvatarUrl)
+      setCropMode(false)
+    }
 
     let saveLat = lat ?? 0
     let saveLng = lng ?? 0
@@ -265,7 +347,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
         primaryInstrument: primaryInstrument || undefined,
         gear,
         availability,
-        avatarUrl: avatarUrl || undefined,
+        avatarUrl: finalAvatarUrl || undefined,
         offersLessons,
       })
     }
@@ -541,11 +623,46 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
           <div className="p-6 space-y-5">
             <div>
               <div
-                className="h-[200px] bg-neutral-200 border-2 border-ink relative overflow-hidden cursor-pointer group"
-                onClick={() => avatarFileRef.current?.click()}
+                ref={cropContainerRef}
+                className="w-full aspect-square bg-neutral-200 border-2 border-ink relative overflow-hidden group select-none"
+                style={{ cursor: cropMode ? (isDragging ? 'grabbing' : 'grab') : 'pointer' }}
+                onClick={!cropMode ? () => avatarFileRef.current?.click() : undefined}
+                onMouseDown={cropMode && !uploadingAvatar ? handleCropDragStart : undefined}
+                onMouseMove={cropMode ? handleCropDragMove : undefined}
+                onMouseUp={cropMode ? () => setIsDragging(false) : undefined}
+                onMouseLeave={cropMode ? () => setIsDragging(false) : undefined}
+                onTouchStart={cropMode && !uploadingAvatar ? handleCropDragStart : undefined}
+                onTouchMove={cropMode ? handleCropDragMove : undefined}
+                onTouchEnd={cropMode ? () => setIsDragging(false) : undefined}
               >
                 {avatarUrl ? (
-                  <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+                  cropMode ? (
+                    <>
+                      <img
+                        ref={cropImgRef}
+                        src={avatarUrl}
+                        alt="Profile"
+                        draggable={false}
+                        onLoad={e => initCropSize(e.currentTarget)}
+                        style={{
+                          position: 'absolute',
+                          left: cropOffset.x,
+                          top: cropOffset.y,
+                          width: renderedImgSize.w || undefined,
+                          height: renderedImgSize.h || undefined,
+                          maxWidth: 'none',
+                          userSelect: 'none',
+                          pointerEvents: 'none',
+                          visibility: renderedImgSize.w > 0 ? 'visible' : 'hidden',
+                        }}
+                      />
+                      <div className="absolute inset-x-0 bottom-0 h-8 bg-black/60 flex items-center justify-center pointer-events-none">
+                        <span className="text-white text-[10px] font-extrabold tracking-widest uppercase">Drag to reposition</span>
+                      </div>
+                    </>
+                  ) : (
+                    <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+                  )
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full gap-2">
                     <Camera size={28} className="text-neutral-400" />
@@ -558,7 +675,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
                     <span className="text-white text-[12px] font-extrabold">Uploading…</span>
                   </div>
                 )}
-                {avatarUrl && !uploadingAvatar && (
+                {avatarUrl && !cropMode && !uploadingAvatar && (
                   <div className="absolute bottom-0 inset-x-0 h-9 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
                     <Camera size={13} className="text-white" />
                     <span className="text-white text-[11px] font-extrabold uppercase tracking-wider">Change Photo</span>
