@@ -17,6 +17,7 @@ import AdminPanel from './components/AdminPanel'
 import ResetPasswordModal from './components/ResetPasswordModal'
 
 type Modal = 'auth' | 'profile' | 'admin' | null
+export type Theme = 'default' | 'navy' | 'slate'
 
 const DISTANCE_OPTIONS = [1, 5, 10, 25, 50, 100, 0] as const
 const distanceLabel = (d: number) => d === 0 ? 'World' : `${d} mi`
@@ -53,12 +54,18 @@ const BOTTOM_TABS = [
 export default function App() {
   const { currentUser, initAuth, needsPasswordReset, musicians, selectedId, setSelectedId, activeTab, setActiveTab, showFilterPanel, isAuthReady, setActiveThreadId, unreadCount, toast } = useStore()
   const [modal, setModal] = useState<Modal>(null)
+  const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('mm-theme') as Theme) || 'default')
   const [showMobileDetail, setShowMobileDetail] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [signupDismissed, setSignupDismissed] = useState(false)
   const prevUserRef = useRef(currentUser)
 
   useEffect(() => { initAuth() }, []) // eslint-disable-line
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme === 'default' ? '' : theme
+    localStorage.setItem('mm-theme', theme)
+  }, [theme])
 
   // Reset signup state on logout
   useEffect(() => {
@@ -100,6 +107,8 @@ export default function App() {
         onShowProfile={showProfile}
         onShowAdmin={() => setModal('admin')}
         isAdmin={isAdmin}
+        theme={theme}
+        onSetTheme={setTheme}
       />
 
       {/* Desktop-only filter bar */}

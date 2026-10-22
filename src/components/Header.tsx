@@ -1,12 +1,21 @@
 import { useState } from 'react'
 import { useStore } from '../store'
 import { Search, Music2, User, Pencil, Plus, LogOut, Trash2, Shield, Map, List, Heart, MessageSquare, SlidersHorizontal } from 'lucide-react'
+import type { Theme } from '../App'
+
+const THEMES: { id: Theme; color: string; label: string }[] = [
+  { id: 'default', color: '#ec3013', label: 'Red' },
+  { id: 'navy',    color: '#1a2744', label: 'Navy & Gold' },
+  { id: 'slate',   color: '#2a2d35', label: 'Slate & Teal' },
+]
 
 interface Props {
   onShowAuth: () => void
   onShowProfile: () => void
   onShowAdmin: () => void
   isAdmin: boolean
+  theme: Theme
+  onSetTheme: (t: Theme) => void
 }
 
 const DESKTOP_TABS = [
@@ -16,7 +25,7 @@ const DESKTOP_TABS = [
   { id: 'messages' as const, Icon: MessageSquare, label: 'Messages' },
 ]
 
-export default function Header({ onShowAuth, onShowProfile, onShowAdmin, isAdmin }: Props) {
+export default function Header({ onShowAuth, onShowProfile, onShowAdmin, isAdmin, theme, onSetTheme }: Props) {
   const { currentUser, logout, deleteAccount, currentProfile, query, setQuery, activeTab, setActiveTab, setShowFilterPanel, filterCount } = useStore()
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -67,6 +76,23 @@ export default function Header({ onShowAuth, onShowProfile, onShowAdmin, isAdmin
               {tab.label}
             </button>
           ))}
+
+          {/* Theme picker */}
+          <div className="flex items-center gap-2 border-l-2 border-white px-4">
+            {THEMES.map(t => (
+              <button
+                key={t.id}
+                title={t.label}
+                onClick={() => onSetTheme(t.id)}
+                className="w-5 h-5 rounded-full transition-all flex-shrink-0"
+                style={{
+                  background: t.color,
+                  outline: theme === t.id ? '2px solid #fff' : '2px solid transparent',
+                  outlineOffset: '2px',
+                }}
+              />
+            ))}
+          </div>
 
           {/* User menu / Sign In */}
           <div className="flex items-center border-l-2 border-white px-3">
