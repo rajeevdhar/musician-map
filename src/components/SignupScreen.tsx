@@ -95,7 +95,7 @@ export default function SignupScreen({ onSignedUp, onLogin, onSkip }: Props) {
               className="text-white text-[96px] font-extrabold leading-[0.88] tracking-[-0.04em] max-w-[640px]"
               style={{ textWrap: 'balance' } as React.CSSProperties}
             >
-              Find the musicians around you.
+              Band together!
             </h1>
             <p className="text-white/80 text-[18px] font-semibold leading-[1.4] max-w-[440px] mt-6">
               Put yourself on the map. Find a drummer, a band or a jam three blocks away.
@@ -119,7 +119,7 @@ export default function SignupScreen({ onSignedUp, onLogin, onSkip }: Props) {
             className="text-white text-[56px] font-extrabold leading-[0.9] tracking-[-0.03em] mt-4"
             style={{ textWrap: 'balance' } as React.CSSProperties}
           >
-            Find the musicians around you.
+            Band together!
           </h1>
         </div>
         <div className="border-t-2 border-ink p-4 pb-8">
