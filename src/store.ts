@@ -391,17 +391,14 @@ export const useStore = create<AppStore>()((set, get) => ({
   query: '',
   activeTab: 'map',
   filters: { ...DEFAULT_FILTERS },
-  showFilterPanel: !localStorage.getItem('mm-filter-panel-dismissed'),
+  showFilterPanel: false,
 
   setSelectedId: (id) => set({ selectedId: id }),
   setQuery: (q) => set({ query: q }),
   setActiveTab: (tab) => set({ activeTab: tab }),
   setFilters: (partial) => set(s => ({ filters: { ...s.filters, ...partial } })),
   resetFilters: () => set({ filters: { ...DEFAULT_FILTERS } }),
-  setShowFilterPanel: (show) => {
-    if (!show) localStorage.setItem('mm-filter-panel-dismissed', '1')
-    set({ showFilterPanel: show })
-  },
+  setShowFilterPanel: (show) => set({ showFilterPanel: show }),
 
   filterCount: () => {
     const { filters } = get()

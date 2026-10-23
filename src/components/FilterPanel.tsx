@@ -68,8 +68,8 @@ export default function FilterPanel({ isMobile = false }: Props) {
               <div className={`absolute top-0.5 w-4 h-4 bg-white border-2 border-ink transition-all ${filters.onlineOnly ? 'left-[18px]' : 'left-0.5'}`} />
             </div>
             <div>
-              <span className="text-[13px] font-extrabold text-ink">Online now</span>
-              <span className="block text-[11px] text-neutral-500">Active in the last 5 minutes</span>
+              <span className={`text-[13px] font-extrabold transition-colors ${filters.onlineOnly ? 'text-ink' : 'text-neutral-400'}`}>Online now</span>
+              <span className="block text-[11px] text-neutral-400">Active in the last 5 minutes</span>
             </div>
           </button>
         </section>
