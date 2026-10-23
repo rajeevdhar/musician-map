@@ -126,7 +126,7 @@ export default function App() {
 
           {/* Mobile bottom card: shown when musician selected on map */}
           {selectedMusician && activeTab === 'map' && !showMobileDetail && (
-            <div className="lg:hidden absolute bottom-0 left-0 right-0 z-[999] border-t-2 border-ink bg-ground p-4 shadow-lg">
+            <div className="lg:hidden absolute bottom-0 left-0 right-0 z-[999] border-t-2 border-ink bg-ground p-4 shadow-lg" onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="font-extrabold text-ink truncate">{selectedMusician.displayName}</p>
