@@ -1081,8 +1081,6 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
               />
             </div>
             {linksSection}
-            {audioSection}
-            {locationSection}
           </div>
 
           <div className="p-4 space-y-4 border-t-2 border-ink">
@@ -1137,11 +1135,13 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
                 ))}
               </div>
             </div>
+            {audioSection}
           </div>
 
           <div className="p-4 space-y-4 border-t-2 border-ink">
             {gearSection}
             {availabilitySection}
+            {locationSection}
             {precisionSection}
             <div>
               <Label>Account email</Label>

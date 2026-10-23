@@ -111,12 +111,6 @@ export default function App() {
           <MusicianList onViewProfile={(m) => { openMusician(m.id); setShowMobileDetail(true) }} />
         </div>
 
-        {/* Mobile filter panel overlay */}
-        {showFilterPanel && (
-          <div className="lg:hidden absolute inset-0 z-30 flex flex-col">
-            <FilterPanel isMobile />
-          </div>
-        )}
 
         {/* Map area: always on desktop; only on 'map' tab on mobile */}
         <div className={`flex-1 relative min-h-0 ${
@@ -261,6 +255,13 @@ export default function App() {
           onComplete={() => setShowOnboarding(false)}
           onBack={() => { setShowOnboarding(false); setSignupDismissed(true) }}
         />
+      )}
+
+      {/* Mobile filter panel — fixed overlay at root level so it renders above Leaflet's GPU layers */}
+      {showFilterPanel && (
+        <div className="lg:hidden fixed inset-0 z-[500] flex flex-col">
+          <FilterPanel isMobile />
+        </div>
       )}
 
       {/* Overlay modals — rendered after SignupScreen/OnboardingFlow to win z-index */}
