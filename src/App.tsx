@@ -7,6 +7,7 @@ import MusicianMap from './components/MusicianMap'
 import MusicianList from './components/MusicianList'
 import MusicianDetail from './components/MusicianDetail'
 import FilterPanel from './components/FilterPanel'
+import ActiveFilters from './components/ActiveFilters'
 import SignupScreen from './components/SignupScreen'
 import OnboardingFlow from './components/OnboardingFlow'
 import SavedTab from './components/SavedTab'
@@ -106,6 +107,7 @@ export default function App() {
           activeTab === 'list' ? 'flex w-full' : 'hidden'
         } lg:flex lg:w-[380px]`}>
           {showFilterPanel && <FilterPanel />}
+          <ActiveFilters />
           <MusicianList onViewProfile={(m) => { openMusician(m.id); setShowMobileDetail(true) }} />
         </div>
 

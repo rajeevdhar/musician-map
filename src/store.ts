@@ -543,7 +543,9 @@ export const useStore = create<AppStore>()((set, get) => ({
         m.displayName.toLowerCase().includes(q) ||
         m.instruments.some(i => i.toLowerCase().includes(q)) ||
         m.genres.some(g => g.toLowerCase().includes(q)) ||
-        m.locationName.toLowerCase().includes(q)
+        m.locationName.toLowerCase().includes(q) ||
+        (m.lookingFor && m.lookingFor.toLowerCase().includes(q)) ||
+        (m.bio && m.bio.toLowerCase().includes(q))
       )
     }
     return list

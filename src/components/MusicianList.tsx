@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { SlidersHorizontal } from 'lucide-react'
 import { useStore } from '../store'
 import type { Musician } from '../types'
 import { getInstrumentCode, haversineDistanceMiles, formatDistance } from '../lib/musicianUtils'
@@ -13,7 +14,7 @@ interface Props {
 }
 
 export default function MusicianList({ onViewProfile }: Props) {
-  const { filteredMusicians, selectedId, setSelectedId, currentProfile, resetFilters, filters, setFilters } = useStore()
+  const { filteredMusicians, selectedId, setSelectedId, currentProfile, resetFilters, filters, setFilters, setShowFilterPanel, filterCount } = useStore()
   const [sort, setSort] = useState<SortMode>('nearest')
   const profile = currentProfile()
   const userLat = profile?.lat
@@ -60,9 +61,23 @@ export default function MusicianList({ onViewProfile }: Props) {
             </div>
           </div>
         </div>
-        <button onClick={toggleSort} className="text-[13px] font-semibold text-neutral-700 pb-1 hover:text-ink transition-colors">
-          {sort === 'nearest' ? 'Nearest ↓' : sort === 'further' ? 'Furthest ↑' : 'A–Z ↓'}
-        </button>
+        <div className="flex items-center gap-3 pb-1">
+          <button onClick={toggleSort} className="text-[13px] font-semibold text-neutral-700 hover:text-ink transition-colors">
+            {sort === 'nearest' ? 'Nearest ↓' : sort === 'further' ? 'Furthest ↑' : 'A–Z ↓'}
+          </button>
+          <button
+            onClick={() => setShowFilterPanel(true)}
+            className="relative flex items-center gap-1.5 h-8 px-2.5 border-2 border-ink text-[12px] font-extrabold text-ink hover:bg-accent-100 transition-colors"
+          >
+            <SlidersHorizontal size={12} />
+            Filters
+            {filterCount() > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-accent text-white text-[9px] font-extrabold flex items-center justify-center">
+                {filterCount()}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Rows */}
