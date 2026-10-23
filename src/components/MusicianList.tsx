@@ -134,17 +134,17 @@ function MusicianRow({
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left grid border-t-2 border-ink transition-colors hover:bg-accent-100 ${isSelected ? 'bg-accent-100' : ''}`}
+      className={`group w-full text-left grid border-t-2 border-ink transition-colors hover:bg-accent-100 ${isSelected ? 'bg-accent-100' : ''}`}
       style={{ gridTemplateColumns: '52px 1fr auto' }}
     >
       {/* Code block */}
-      <div className="min-h-[52px] m-2 mr-0 bg-accent text-white flex items-start pt-1 pl-1.5 text-[13px] font-extrabold leading-none flex-shrink-0">
+      <div className="min-h-[52px] m-2 mr-0 bg-accent group-hover:bg-ink text-white flex items-start pt-1 pl-1.5 text-[13px] font-extrabold leading-none flex-shrink-0 transition-colors">
         {code}
       </div>
 
       {/* Middle */}
       <div className="py-2.5 px-3 min-w-0">
-        <p className="text-[16px] font-extrabold text-ink leading-tight truncate">{m.displayName}</p>
+        <p className="text-[16px] font-extrabold text-ink group-hover:text-accent leading-tight truncate transition-colors">{m.displayName}</p>
         {(m.instruments.length > 0 || m.genres.length > 0) && (
           <p className="text-[13px] text-neutral-700 mt-0.5 truncate">
             {[m.instruments.slice(0, 2).join(', '), m.genres.slice(0, 1).join(', ')].filter(Boolean).join(' · ')}
