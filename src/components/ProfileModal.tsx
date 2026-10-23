@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { X, Navigation, Camera, Globe, Instagram, Youtube, Music, PlayCircle, Trash2, Tent, Video } from 'lucide-react'
+import { X, Navigation, Camera, Globe, Instagram, Youtube, Music, PlayCircle, Trash2, Tent, Video, KeyRound } from 'lucide-react'
 import { useStore } from '../store'
 import { INSTRUMENT_OPTIONS, GENRE_OPTIONS, LOOKING_FOR_OPTIONS } from '../types'
 import type { Musician, Level } from '../types'
@@ -172,6 +172,11 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
   const suggestTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [confirmRemove, setConfirmRemove] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [showChangePassword, setShowChangePassword] = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+  const [passwordSaving, setPasswordSaving] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState(source?.avatarUrl ?? '')
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const avatarFileRef = useRef<HTMLInputElement>(null)
@@ -466,6 +471,17 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
 
   const handleRemove = async () => { await removeProfile(); onClose() }
   const handleDeleteAccount = async () => { await deleteAccount(); onClose() }
+  const handleChangePassword = async () => {
+    setPasswordError('')
+    if (newPassword.length < 6) { setPasswordError('Password must be at least 6 characters.'); return }
+    if (newPassword !== confirmPassword) { setPasswordError('Passwords do not match.'); return }
+    setPasswordSaving(true)
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    setPasswordSaving(false)
+    if (error) { setPasswordError(error.message); return }
+    setNewPassword(''); setConfirmPassword(''); setShowChangePassword(false)
+    useStore.getState().showToast('Password updated')
+  }
 
   // ── Admin mode: compact modal dialog ────────────────────────────────────
   if (isAdminMode) {
@@ -1122,6 +1138,47 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
             </div>
           </div>
         </div>
+
+        {/* Change password */}
+        {!isAdminMode && (
+          <div className="border-t-2 border-ink px-4 lg:px-6 py-4">
+            {!showChangePassword ? (
+              <button
+                type="button"
+                onClick={() => setShowChangePassword(true)}
+                className="flex items-center gap-2 py-2 px-4 text-[13px] text-ink hover:bg-accent-100 transition-colors"
+              >
+                <KeyRound size={14} />
+                Change password
+              </button>
+            ) : (
+              <div className="border-2 border-ink p-4 space-y-3 max-w-sm">
+                <p className="text-[14px] font-extrabold text-ink">Change password</p>
+                <input
+                  type="password"
+                  placeholder="New password"
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  className="w-full h-10 border-2 border-ink px-3 text-[14px] bg-ground text-ink placeholder:text-neutral-400"
+                />
+                <input
+                  type="password"
+                  placeholder="Confirm new password"
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  className="w-full h-10 border-2 border-ink px-3 text-[14px] bg-ground text-ink placeholder:text-neutral-400"
+                />
+                {passwordError && <p className="text-[12px] text-accent-700 font-semibold">{passwordError}</p>}
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => { setShowChangePassword(false); setNewPassword(''); setConfirmPassword(''); setPasswordError('') }} className="flex-1 h-10 border-2 border-ink text-[13px] font-bold text-ink hover:bg-accent-100">Cancel</button>
+                  <button type="button" onClick={handleChangePassword} disabled={passwordSaving} className="flex-1 h-10 bg-accent hover:bg-accent-600 disabled:opacity-50 text-white font-bold text-[13px]">
+                    {passwordSaving ? 'Saving…' : 'Update'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Dangerous actions */}
         {source && (
