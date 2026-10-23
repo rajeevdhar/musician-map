@@ -2,6 +2,19 @@ import { X } from 'lucide-react'
 import { useStore } from '../store'
 import { GENRE_OPTIONS, LOOKING_FOR_OPTIONS } from '../types'
 
+const INSTRUMENT_OPTIONS = [
+  { label: 'Drums', values: ['Drums'] },
+  { label: 'Bass', values: ['Bass'] },
+  { label: 'Guitar', values: ['Guitar'] },
+  { label: 'Vocals', values: ['Vocals'] },
+  { label: 'Keys', values: ['Keyboard / Piano', 'Synthesizer'] },
+  { label: 'Sax', values: ['Saxophone'] },
+  { label: 'Trumpet', values: ['Trumpet'] },
+  { label: 'Violin', values: ['Violin', 'Cello'] },
+  { label: 'DJ', values: ['DJ / Producer'] },
+  { label: 'Other', values: ['Other'] },
+]
+
 import type { Level } from '../types'
 
 const LEVEL_OPTIONS: { value: Level; label: string }[] = [
@@ -32,6 +45,16 @@ export default function FilterPanel({ isMobile = false }: Props) {
       : [...filters.lookingFor, lf]
     setFilters({ lookingFor })
   }
+
+  const toggleInstrument = (values: string[]) => {
+    const allActive = values.every(v => filters.instruments.includes(v))
+    const next = allActive
+      ? filters.instruments.filter(i => !values.includes(i))
+      : [...new Set([...filters.instruments, ...values])]
+    setFilters({ instruments: next })
+  }
+
+  const instrumentActive = (values: string[]) => values.some(v => filters.instruments.includes(v))
 
   const close = () => setShowFilterPanel(false)
 
@@ -72,6 +95,27 @@ export default function FilterPanel({ isMobile = false }: Props) {
               <span className="block text-[11px] text-neutral-400">Active in the last 5 minutes</span>
             </div>
           </button>
+        </section>
+
+        {/* Instrument — mobile only (desktop uses FilterBar) */}
+        <section className="lg:hidden">
+          <p className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-700 mb-2">Instrument</p>
+          <div className="flex flex-wrap gap-1.5">
+            {INSTRUMENT_OPTIONS.map(({ label, values }) => {
+              const active = instrumentActive(values)
+              return (
+                <button
+                  key={label}
+                  onClick={() => toggleInstrument(values)}
+                  className={`h-[34px] px-2.5 border-2 border-ink text-[13px] font-semibold transition-colors ${
+                    active ? 'bg-ink text-white' : 'bg-transparent text-ink hover:bg-accent-100'
+                  }`}
+                >
+                  {label}
+                </button>
+              )
+            })}
+          </div>
         </section>
 
         {/* Skill level */}

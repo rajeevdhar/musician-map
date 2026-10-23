@@ -84,7 +84,7 @@ export default function App() {
   }, [selectedId])
 
   return (
-    <div className="h-screen flex flex-col bg-ground text-ink font-sans">
+    <div className="h-dvh flex flex-col bg-ground text-ink font-sans">
       <Header
         onShowAuth={() => setModal('auth')}
         onShowProfile={showProfile}
@@ -222,7 +222,7 @@ export default function App() {
       </div>
 
       {/* Mobile bottom tab bar */}
-      <nav className="lg:hidden flex-shrink-0 flex border-t-2 border-ink h-14">
+      <nav className="lg:hidden flex-shrink-0 flex border-t-2 border-ink h-14 pb-[env(safe-area-inset-bottom)]">
         {BOTTOM_TABS.map(tab => (
           <button
             key={tab.id}
