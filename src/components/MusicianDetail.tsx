@@ -190,53 +190,53 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
       </div>
 
       {/* Sticky footer */}
-      <div className="flex-shrink-0 grid grid-cols-2 border-t-4 border-ink">
+      <div className="flex-shrink-0 border-t-4 border-ink">
         {isOwnProfile ? (
           <button
             onClick={onEditProfile ?? onClose}
-            className="col-span-2 h-14 bg-accent hover:bg-accent-600 text-white font-extrabold text-sm flex items-center justify-between px-4 transition-colors"
+            className="w-full h-14 bg-accent hover:bg-accent-600 text-white font-extrabold text-sm flex items-center justify-between px-4 transition-colors"
           >
             <span className="flex items-center gap-2"><Pencil size={14} /> Edit My Profile</span>
             <span>→</span>
           </button>
+        ) : isSeed ? (
+          <div className="h-14 flex items-center px-4 gap-2">
+            <span className="text-xs font-extrabold uppercase tracking-widest text-neutral-400">Sample profile</span>
+          </div>
+        ) : !currentUser ? (
+          <button
+            disabled
+            className="w-full h-14 bg-accent opacity-40 text-white font-extrabold text-sm flex items-center justify-between px-4"
+          >
+            <span className="flex items-center gap-2"><MessageSquare size={14} /> Message</span>
+            <span className="text-xs font-normal opacity-70">Sign in to message</span>
+          </button>
         ) : (
-          <>
-            {isSeed || !currentUser ? (
-              <button
-                disabled
-                className="h-14 bg-accent opacity-40 text-white font-extrabold text-sm flex items-center justify-between px-4 col-span-2"
-              >
-                <span className="flex items-center gap-2"><MessageSquare size={14} /> Message</span>
-                <span className="text-xs font-normal opacity-70">Sign in to message</span>
-              </button>
-            ) : (
-              <>
-                <button
-                  onClick={() => onOpenMessages?.(musician.id)}
-                  className="h-14 bg-accent hover:bg-accent-600 text-white font-extrabold text-sm flex items-center justify-between px-4 transition-colors"
-                >
-                  <span className="flex items-center gap-2"><MessageSquare size={14} /> Message</span>
-                  <span>→</span>
-                </button>
-                <button
-                  onClick={() => { if (!outgoingStatus) requestContact(musician.id) }}
-                  className={`h-14 border-l-2 border-ink font-extrabold text-sm flex items-center justify-between px-4 transition-colors ${
-                    outgoingStatus
-                      ? 'bg-transparent text-neutral-500 cursor-default'
-                      : 'bg-transparent hover:bg-accent-100 text-ink'
-                  }`}
-                >
-                  <span>
-                    {outgoingStatus === 'pending' ? 'Requested' :
-                     outgoingStatus === 'accepted' ? 'Accepted' :
-                     outgoingStatus === 'declined' ? 'Declined' :
-                     'Request contact'}
-                  </span>
-                  {!outgoingStatus && <span>→</span>}
-                </button>
-              </>
-            )}
-          </>
+          <div className="grid grid-cols-2">
+            <button
+              onClick={() => onOpenMessages?.(musician.id)}
+              className="h-14 bg-accent hover:bg-accent-600 text-white font-extrabold text-sm flex items-center justify-between px-4 transition-colors"
+            >
+              <span className="flex items-center gap-2"><MessageSquare size={14} /> Message</span>
+              <span>→</span>
+            </button>
+            <button
+              onClick={() => { if (!outgoingStatus) requestContact(musician.id) }}
+              className={`h-14 border-l-2 border-ink font-extrabold text-sm flex items-center justify-between px-4 transition-colors ${
+                outgoingStatus
+                  ? 'bg-transparent text-neutral-500 cursor-default'
+                  : 'bg-transparent hover:bg-accent-100 text-ink'
+              }`}
+            >
+              <span>
+                {outgoingStatus === 'pending' ? 'Requested' :
+                 outgoingStatus === 'accepted' ? 'Accepted' :
+                 outgoingStatus === 'declined' ? 'Declined' :
+                 'Request contact'}
+              </span>
+              {!outgoingStatus && <span>→</span>}
+            </button>
+          </div>
         )}
       </div>
     </div>
