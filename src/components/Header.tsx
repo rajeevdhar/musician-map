@@ -38,7 +38,7 @@ export default function Header({ onShowAuth, onShowProfile, onShowAdmin, isAdmin
   }
 
   return (
-    <header className="bg-accent flex-shrink-0 relative z-[1001]">
+    <header className="bg-accent flex-shrink-0 relative z-[1100]">
       {/* Desktop: full accent bar grid */}
       <div className="hidden lg:grid h-[68px]" style={{ gridTemplateColumns: '260px 1fr auto' }}>
         {/* Left: wordmark */}

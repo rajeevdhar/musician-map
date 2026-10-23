@@ -174,7 +174,7 @@ export default function App() {
 
         {/* Desktop: Saved overlay */}
         {activeTab === 'saved' && (
-          <div className="hidden lg:flex absolute inset-0 z-10 bg-ground">
+          <div className="hidden lg:flex absolute inset-0 z-[1050] bg-ground">
             <div className="flex flex-col w-[420px] border-r-2 border-ink overflow-y-auto">
               <SavedTab
                 onViewProfile={(id) => { setSelectedId(id); setActiveTab('map') }}
@@ -188,7 +188,7 @@ export default function App() {
 
         {/* Desktop: Messages overlay */}
         {activeTab === 'messages' && (
-          <div className="hidden lg:flex absolute inset-0 z-10 bg-ground">
+          <div className="hidden lg:flex absolute inset-0 z-[1050] bg-ground">
             <InboxTab
               onViewProfile={(id) => { setSelectedId(id); setActiveTab('map') }}
             />
