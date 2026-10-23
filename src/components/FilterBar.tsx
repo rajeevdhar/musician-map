@@ -1,4 +1,3 @@
-import { SlidersHorizontal } from 'lucide-react'
 import { useStore } from '../store'
 
 const FILTER_ITEMS: { label: string; instruments: string[] }[] = [
@@ -15,7 +14,7 @@ const FILTER_ITEMS: { label: string; instruments: string[] }[] = [
 ]
 
 export default function FilterBar() {
-  const { filters, setShowFilterPanel, filterCount } = useStore()
+  const { filters, setFilters } = useStore()
 
   const isActive = (item: typeof FILTER_ITEMS[0]) =>
     item.instruments.some(i => filters.instruments.includes(i))
@@ -27,8 +26,6 @@ export default function FilterBar() {
       : [...filters.instruments, ...item.instruments]
     setFilters({ instruments })
   }
-
-  const count = filterCount()
 
   return (
     <div className="hidden lg:flex border-b-2 border-ink bg-accent">
@@ -51,14 +48,6 @@ export default function FilterBar() {
           </button>
         )
       })}
-
-      <button
-        onClick={() => setShowFilterPanel(true)}
-        className="h-11 px-3 bg-ink text-white text-[13px] font-extrabold flex items-center gap-2 hover:bg-neutral-800 transition-colors whitespace-nowrap"
-      >
-        <SlidersHorizontal size={14} />
-        More filters{count > 0 ? ` ${count}` : ''}
-      </button>
     </div>
   )
 }
