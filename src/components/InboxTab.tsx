@@ -86,9 +86,13 @@ export default function InboxTab({ onViewProfile }: Props) {
                   >
                     {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />}
                     <div className="grid gap-0 pl-2 pr-3 py-2.5" style={{ gridTemplateColumns: '40px 1fr auto' }}>
-                      <div className="w-9 h-9 bg-accent flex items-center justify-center text-white text-[12px] font-extrabold flex-shrink-0 mt-0.5">
-                        {code}
-                      </div>
+                      {musician.avatarUrl ? (
+                        <img src={musician.avatarUrl} alt={musician.displayName} className="w-9 h-9 object-cover flex-shrink-0 mt-0.5 grayscale" />
+                      ) : (
+                        <div className="w-9 h-9 bg-accent flex items-center justify-center text-white text-[12px] font-extrabold flex-shrink-0 mt-0.5">
+                          {code}
+                        </div>
+                      )}
                       <div className="pl-2.5 min-w-0">
                         <p className="text-[15px] font-extrabold text-ink truncate">{musician.displayName}</p>
                         {last && (
@@ -123,9 +127,13 @@ export default function InboxTab({ onViewProfile }: Props) {
                       Contact request
                     </p>
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-9 h-9 bg-accent flex items-center justify-center text-white text-[12px] font-extrabold flex-shrink-0">
-                        {code}
-                      </div>
+                      {musician.avatarUrl ? (
+                        <img src={musician.avatarUrl} alt={musician.displayName} className="w-9 h-9 object-cover flex-shrink-0 grayscale" />
+                      ) : (
+                        <div className="w-9 h-9 bg-accent flex items-center justify-center text-white text-[12px] font-extrabold flex-shrink-0">
+                          {code}
+                        </div>
+                      )}
                       <div>
                         <p className="text-[15px] font-extrabold text-ink">{musician.displayName}</p>
                         <p className="text-[13px] text-neutral-700">{musician.instruments.slice(0, 2).join(', ')}</p>

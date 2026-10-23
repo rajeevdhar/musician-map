@@ -66,12 +66,21 @@ export default function ThreadView({ musicianId, onBack, onViewProfile }: Props)
         >
           <ArrowLeft size={18} />
         </button>
-        <div
-          className="w-9 h-9 bg-accent flex items-center justify-center text-white text-[12px] font-extrabold flex-shrink-0 cursor-pointer hover:bg-accent-600 transition-colors"
-          onClick={() => onViewProfile(musicianId)}
-        >
-          {code}
-        </div>
+        {musician.avatarUrl ? (
+          <img
+            src={musician.avatarUrl}
+            alt={musician.displayName}
+            onClick={() => onViewProfile(musicianId)}
+            className="w-9 h-9 object-cover flex-shrink-0 cursor-pointer grayscale hover:grayscale-0 transition-all"
+          />
+        ) : (
+          <div
+            className="w-9 h-9 bg-accent flex items-center justify-center text-white text-[12px] font-extrabold flex-shrink-0 cursor-pointer hover:bg-accent-600 transition-colors"
+            onClick={() => onViewProfile(musicianId)}
+          >
+            {code}
+          </div>
+        )}
         <div className="flex-1 min-w-0">
           <p className="text-[15px] font-extrabold text-ink leading-tight truncate">{musician.displayName}</p>
           <button

@@ -26,7 +26,7 @@ const DESKTOP_TABS = [
 ]
 
 export default function Header({ onShowAuth, onShowProfile, onShowAdmin, isAdmin, theme, onSetTheme, largeText, onToggleLargeText }: Props) {
-  const { currentUser, logout, deleteAccount, currentProfile, query, setQuery, activeTab, setActiveTab, setShowFilterPanel, filterCount } = useStore()
+  const { currentUser, logout, deleteAccount, currentProfile, query, setQuery, activeTab, setActiveTab, setShowFilterPanel, filterCount, unreadCount } = useStore()
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const profile = currentProfile()
@@ -62,20 +62,28 @@ export default function Header({ onShowAuth, onShowProfile, onShowAdmin, isAdmin
 
         {/* Right: nav tabs + user */}
         <div className="flex items-stretch">
-          {DESKTOP_TABS.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(activeTab === tab.id ? 'map' : tab.id)}
-              className={`flex items-center gap-2 h-[68px] px-5 border-l-2 border-white text-[14px] font-extrabold transition-colors ${
-                activeTab === tab.id
-                  ? 'bg-white text-accent-700'
-                  : 'text-white hover:bg-white/10'
-              }`}
-            >
-              <tab.Icon size={16} />
-              {tab.label}
-            </button>
-          ))}
+          {DESKTOP_TABS.map(tab => {
+            const badge = tab.id === 'messages' && unreadCount() > 0
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(activeTab === tab.id ? 'map' : tab.id)}
+                className={`flex items-center gap-2 h-[68px] px-5 border-l-2 border-white text-[14px] font-extrabold transition-colors ${
+                  activeTab === tab.id
+                    ? 'bg-white text-accent-700'
+                    : 'text-white hover:bg-white/10'
+                }`}
+              >
+                <div className="relative">
+                  <tab.Icon size={16} />
+                  {badge && (
+                    <span className={`absolute -top-1.5 -right-1.5 w-2 h-2 rounded-full ${activeTab === tab.id ? 'bg-accent' : 'bg-white'}`} />
+                  )}
+                </div>
+                {tab.label}
+              </button>
+            )
+          })}
 
           {/* Large text toggle */}
           <button

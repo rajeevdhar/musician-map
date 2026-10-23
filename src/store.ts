@@ -19,6 +19,9 @@ const DEFAULT_FILTERS: Filters = {
   distanceMi: 25,
 }
 
+// ── Realtime channel ───────────────────────────────────────────────────────
+let realtimeChannel: ReturnType<typeof supabase.channel> | null = null
+
 // ── Presence heartbeat ─────────────────────────────────────────────────────
 // Writes profiles.last_seen_at every 60s while signed in, and mirrors the
 // timestamp into local state so the user's own dot turns green immediately
@@ -329,6 +332,7 @@ export const useStore = create<AppStore>()((set, get) => ({
         })
       } else if (event === 'SIGNED_OUT') {
         stopHeartbeat()
+        if (realtimeChannel) { supabase.removeChannel(realtimeChannel); realtimeChannel = null }
         set({
           currentUser: null,
           saved: {},
@@ -743,6 +747,30 @@ export const useStore = create<AppStore>()((set, get) => ({
       get().fetchThreads(),
       get().fetchContactRequests(),
     ])
+    const user = get().currentUser
+    if (!user) return
+    if (realtimeChannel) supabase.removeChannel(realtimeChannel)
+    realtimeChannel = supabase
+      .channel('inbox-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `to_id=eq.${user.id}` },
+        (payload) => {
+          const row = payload.new as { id: string; from_id: string; to_id: string; body: string; created_at: string }
+          const msg: Message = { id: row.id, fromId: row.from_id, toId: row.to_id, body: row.body, createdAt: row.created_at }
+          const otherId = row.from_id
+          const isViewing = get().activeThreadId === otherId
+          set(s => ({
+            threads: { ...s.threads, [otherId]: [...(s.threads[otherId] ?? []), msg] },
+            unread: isViewing ? s.unread : { ...s.unread, [otherId]: true },
+          }))
+          if (!isViewing) {
+            const musician = get().musicians.find(m => m.id === otherId)
+            if (musician) get().showToast(`New message from ${musician.displayName.split(' ')[0]}`)
+          }
+        }
+      )
+      .subscribe()
   },
 
   unreadCount: () => {
