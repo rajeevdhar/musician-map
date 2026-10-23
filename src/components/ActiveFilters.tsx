@@ -12,9 +12,9 @@ export default function ActiveFilters() {
   filters.genres.forEach(g =>
     chips.push({ label: g, onRemove: () => setFilters({ genres: filters.genres.filter(x => x !== g) }) })
   )
-  if (filters.level !== 'Any') {
-    chips.push({ label: filters.level, onRemove: () => setFilters({ level: 'Any' }) })
-  }
+  filters.levels.forEach(l =>
+    chips.push({ label: l, onRemove: () => setFilters({ levels: filters.levels.filter(x => x !== l) }) })
+  )
   filters.lookingFor.forEach(lf =>
     chips.push({ label: lf, onRemove: () => setFilters({ lookingFor: filters.lookingFor.filter(x => x !== lf) }) })
   )

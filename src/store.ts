@@ -6,7 +6,7 @@ import { haversineDistanceMiles } from './lib/musicianUtils'
 export interface Filters {
   instruments: string[]
   genres: string[]
-  level: 'Any' | Level
+  levels: Level[]
   lookingFor: string[]
   distanceMi: 1 | 5 | 10 | 25 | 50 | 100 | 0
 }
@@ -14,7 +14,7 @@ export interface Filters {
 const DEFAULT_FILTERS: Filters = {
   instruments: [],
   genres: [],
-  level: 'Any',
+  levels: [],
   lookingFor: [],
   distanceMi: 25,
 }
@@ -403,7 +403,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     let count = 0
     if (filters.instruments.length > 0) count++
     if (filters.genres.length > 0) count++
-    if (filters.level !== 'Any') count++
+    if (filters.levels.length > 0) count++
     if (filters.lookingFor.length > 0) count++
     if (filters.distanceMi !== 25) count++
     return count
@@ -423,8 +423,8 @@ export const useStore = create<AppStore>()((set, get) => ({
     if (filters.genres.length > 0) {
       list = list.filter(m => m.genres.some(g => filters.genres.includes(g)))
     }
-    if (filters.level !== 'Any') {
-      list = list.filter(m => m.level === filters.level)
+    if (filters.levels.length > 0) {
+      list = list.filter(m => m.level && filters.levels.includes(m.level))
     }
     if (filters.lookingFor.length > 0) {
       list = list.filter(m => filters.lookingFor.some(lf => {

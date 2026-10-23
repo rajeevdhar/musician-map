@@ -2,7 +2,14 @@ import { X } from 'lucide-react'
 import { useStore } from '../store'
 import { GENRE_OPTIONS, LOOKING_FOR_OPTIONS } from '../types'
 
-const LEVEL_OPTIONS = ['Any', 'Beginner', 'Intermediate', 'Advanced', 'Pro'] as const
+import type { Level } from '../types'
+
+const LEVEL_OPTIONS: { value: Level; label: string }[] = [
+  { value: 'Beginner', label: 'Beg' },
+  { value: 'Intermediate', label: 'Int' },
+  { value: 'Advanced', label: 'Adv' },
+  { value: 'Pro', label: 'Pro' },
+]
 
 interface Props {
   isMobile?: boolean
@@ -54,18 +61,28 @@ export default function FilterPanel({ isMobile = false }: Props) {
         {/* Skill level */}
         <section>
           <p className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-700 mb-2">Skill level</p>
-          <div className="border-2 border-ink grid" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
-            {LEVEL_OPTIONS.map((l, i) => (
-              <button
-                key={l}
-                onClick={() => setFilters({ level: l as typeof filters.level })}
-                className={`h-10 text-[12px] font-extrabold text-left pl-2 transition-colors ${i > 0 ? 'border-l-2 border-ink' : ''} ${
-                  filters.level === l ? 'bg-ink text-white' : 'text-ink hover:bg-accent-100'
-                }`}
-              >
-                {l}
-              </button>
-            ))}
+          <div className="border-2 border-ink grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+            {LEVEL_OPTIONS.map(({ value, label }, i) => {
+              const checked = filters.levels.includes(value)
+              const toggle = () => {
+                const next = checked
+                  ? filters.levels.filter(x => x !== value)
+                  : [...filters.levels, value]
+                setFilters({ levels: next })
+              }
+              return (
+                <button
+                  key={value}
+                  onClick={toggle}
+                  title={value}
+                  className={`h-10 text-[12px] font-extrabold transition-colors ${i > 0 ? 'border-l-2 border-ink' : ''} ${
+                    checked ? 'bg-ink text-white' : 'text-ink hover:bg-accent-100'
+                  }`}
+                >
+                  {label}
+                </button>
+              )
+            })}
           </div>
         </section>
 
