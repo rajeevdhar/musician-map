@@ -97,7 +97,7 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
           <div className="px-4 py-3">
             <p className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-700 mb-1">Looking for</p>
             <p className="text-[15px] font-extrabold text-ink leading-tight">
-              {musician.lookingFor ? musician.lookingFor.split(',')[0].trim() : '—'}
+              {musician.lookingFor ? musician.lookingFor.split(',').map(s => s.trim()).filter(Boolean).join(', ') : '—'}
             </p>
           </div>
         </div>
