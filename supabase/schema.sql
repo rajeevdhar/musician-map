@@ -134,7 +134,8 @@ ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS soundcloud_url TEXT,
   ADD COLUMN IF NOT EXISTS bandcamp_url TEXT,
   ADD COLUMN IF NOT EXISTS tiktok_url TEXT,
-  ADD COLUMN IF NOT EXISTS audio_url TEXT;
+  ADD COLUMN IF NOT EXISTS audio_url TEXT,
+  ADD COLUMN IF NOT EXISTS discord_url TEXT;
 
 -- Audio storage bucket (public read, users write to their own folder)
 -- Run once in Supabase SQL editor:

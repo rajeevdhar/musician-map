@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { X, Navigation, Camera, Globe, Instagram, Youtube, Music, PlayCircle, Trash2, Tent, Video, KeyRound } from 'lucide-react'
+import { X, Navigation, Camera, Globe, Instagram, Youtube, Music, PlayCircle, Trash2, Tent, Video, KeyRound, MessageCircle } from 'lucide-react'
 import { useStore } from '../store'
 import { INSTRUMENT_OPTIONS, GENRE_OPTIONS, LOOKING_FOR_OPTIONS } from '../types'
 import type { Musician, Level } from '../types'
@@ -142,6 +142,16 @@ function normalizeTiktok(raw: string): string {
   return `https://tiktok.com/@${handle}`
 }
 
+function normalizeDiscord(raw: string): string {
+  const s = raw.trim()
+  if (!s) return ''
+  if (/^https?:\/\//i.test(s)) return s
+  // Accept server invite codes (e.g. abc123 → discord.gg/abc123) or bare URLs
+  if (/^discord\.gg\//i.test(s)) return `https://${s}`
+  // If it looks like just a username/handle, return as-is
+  return s
+}
+
 export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Props) {
   const { currentUser, saveProfile, currentProfile, removeProfile, deleteAccount, fetchMusicians } = useStore()
   const isAdminMode = !!adminTarget
@@ -193,6 +203,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
   const [soundcloudUrl, setSoundcloudUrl] = useState(source?.soundcloudUrl ?? '')
   const [bandcampUrl, setBandcampUrl] = useState(source?.bandcampUrl ?? '')
   const [tiktokUrl, setTiktokUrl] = useState(source?.tiktokUrl ?? '')
+  const [discordUrl, setDiscordUrl] = useState(source?.discordUrl ?? '')
   const [audioUrl, setAudioUrl] = useState(source?.audioUrl ?? '')
   const [uploadingAudio, setUploadingAudio] = useState(false)
   const audioFileRef = useRef<HTMLInputElement>(null)
@@ -461,6 +472,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
         soundcloudUrl: normalizeUrl(soundcloudUrl) || undefined,
         bandcampUrl: normalizeUrl(bandcampUrl) || undefined,
         tiktokUrl: normalizeTiktok(tiktokUrl) || undefined,
+        discordUrl: normalizeDiscord(discordUrl) || undefined,
         audioUrl: audioUrl || undefined,
       })
     }
@@ -725,6 +737,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
           { icon: Music, placeholder: 'SoundCloud URL', value: soundcloudUrl, onChange: setSoundcloudUrl },
           { icon: Tent, placeholder: 'Bandcamp URL', value: bandcampUrl, onChange: setBandcampUrl },
           { icon: Video, placeholder: 'TikTok URL or @handle', value: tiktokUrl, onChange: setTiktokUrl },
+          { icon: MessageCircle, placeholder: 'Discord (invite link or username)', value: discordUrl, onChange: setDiscordUrl },
         ] as const).map(({ icon: Icon, placeholder, value, onChange }) => (
           <div key={placeholder} className="relative">
             <Icon size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
@@ -930,8 +943,6 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
               />
             </div>
             {linksSection}
-            {audioSection}
-            {locationSection}
           </div>
 
           {/* Col 2: Instruments, genres, level, looking for */}
@@ -987,12 +998,14 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
                 ))}
               </div>
             </div>
+            {audioSection}
           </div>
 
-          {/* Col 3: Gear, availability, precision, account email */}
+          {/* Col 3: Gear, availability, location, precision, account email */}
           <div className="p-6 space-y-5 border-l-2 border-ink">
             {gearSection}
             {availabilitySection}
+            {locationSection}
             {precisionSection}
             <div>
               <Label>Account email</Label>

@@ -297,6 +297,7 @@ export const useStore = create<AppStore>()((set, get) => ({
         soundcloudUrl: row.soundcloud_url ?? undefined,
         bandcampUrl: row.bandcamp_url ?? undefined,
         tiktokUrl: row.tiktok_url ?? undefined,
+        discordUrl: row.discord_url ?? undefined,
         audioUrl: row.audio_url ?? undefined,
       }))
       set({ musicians: dbMusicians })
@@ -336,6 +337,7 @@ export const useStore = create<AppStore>()((set, get) => ({
       soundcloud_url: profile.soundcloudUrl ?? null,
       bandcamp_url: profile.bandcampUrl ?? null,
       tiktok_url: profile.tiktokUrl ?? null,
+      discord_url: profile.discordUrl ?? null,
       audio_url: profile.audioUrl ?? null,
     })
     if (!error) {

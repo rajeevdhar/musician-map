@@ -31,6 +31,7 @@ export interface Musician {
   soundcloudUrl?: string
   bandcampUrl?: string
   tiktokUrl?: string
+  discordUrl?: string
   audioUrl?: string
 }
 
