@@ -25,6 +25,11 @@ export interface Musician {
   yearsPlaying?: number
   isTest?: boolean
   offersLessons?: boolean
+  websiteUrl?: string
+  instagramUrl?: string
+  youtubeUrl?: string
+  soundcloudUrl?: string
+  audioUrl?: string
 }
 
 export type ActiveModal = 'auth' | 'profile' | 'musician-detail' | 'reset-password' | null

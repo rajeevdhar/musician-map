@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { X, Navigation, Camera } from 'lucide-react'
+import { X, Navigation, Camera, Globe, Instagram, Youtube, Music, PlayCircle, Trash2 } from 'lucide-react'
 import { useStore } from '../store'
 import { INSTRUMENT_OPTIONS, GENRE_OPTIONS, LOOKING_FOR_OPTIONS } from '../types'
 import type { Musician, Level } from '../types'
@@ -159,6 +159,13 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [renderedImgSize, setRenderedImgSize] = useState({ w: 0, h: 0 })
+  const [websiteUrl, setWebsiteUrl] = useState(source?.websiteUrl ?? '')
+  const [instagramUrl, setInstagramUrl] = useState(source?.instagramUrl ?? '')
+  const [youtubeUrl, setYoutubeUrl] = useState(source?.youtubeUrl ?? '')
+  const [soundcloudUrl, setSoundcloudUrl] = useState(source?.soundcloudUrl ?? '')
+  const [audioUrl, setAudioUrl] = useState(source?.audioUrl ?? '')
+  const [uploadingAudio, setUploadingAudio] = useState(false)
+  const audioFileRef = useRef<HTMLInputElement>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -228,6 +235,24 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
   const addGear = () => {
     const t = gearInput.trim()
     if (t && !gear.includes(t)) { setGear(g => [...g, t]); setGearInput('') }
+  }
+
+  const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 20 * 1024 * 1024) { setError('Audio file must be under 20 MB'); return }
+    setUploadingAudio(true)
+    setError('')
+    const ext = file.name.split('.').pop() ?? 'mp3'
+    const path = `${currentUser!.id}/clip.${ext}`
+    const { error: uploadErr } = await supabase.storage
+      .from('musician-audio')
+      .upload(path, file, { upsert: true, contentType: file.type })
+    if (uploadErr) { setError('Audio upload failed: ' + uploadErr.message); setUploadingAudio(false); return }
+    const { data } = supabase.storage.from('musician-audio').getPublicUrl(path)
+    setAudioUrl(`${data.publicUrl}?t=${Date.now()}`)
+    setUploadingAudio(false)
+    if (audioFileRef.current) audioFileRef.current.value = ''
   }
 
   const toggleAvailability = (day: number, slot: number) => {
@@ -400,6 +425,11 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
         availability,
         avatarUrl: finalAvatarUrl || undefined,
         offersLessons: lookingFor.includes('Students'),
+        websiteUrl: websiteUrl.trim() || undefined,
+        instagramUrl: instagramUrl.trim() || undefined,
+        youtubeUrl: youtubeUrl.trim() || undefined,
+        soundcloudUrl: soundcloudUrl.trim() || undefined,
+        audioUrl: audioUrl || undefined,
       })
     }
 
@@ -641,10 +671,73 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
     </div>
   )
 
+  const linksSection = (
+    <div>
+      <Label>Links</Label>
+      <div className="space-y-2">
+        {([
+          { icon: Globe, placeholder: 'Website URL', value: websiteUrl, onChange: setWebsiteUrl },
+          { icon: Instagram, placeholder: 'Instagram URL', value: instagramUrl, onChange: setInstagramUrl },
+          { icon: Youtube, placeholder: 'YouTube URL', value: youtubeUrl, onChange: setYoutubeUrl },
+          { icon: Music, placeholder: 'SoundCloud URL', value: soundcloudUrl, onChange: setSoundcloudUrl },
+        ] as const).map(({ icon: Icon, placeholder, value, onChange }) => (
+          <div key={placeholder} className="relative">
+            <Icon size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
+            <input
+              type="url"
+              value={value}
+              onChange={e => onChange(e.target.value)}
+              placeholder={placeholder}
+              className="w-full h-10 bg-white border-2 border-ink pl-8 pr-2 text-[13px] text-ink focus:outline-none"
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+
+  const audioSection = (
+    <div>
+      <Label>Audio clip</Label>
+      {audioUrl ? (
+        <div className="border-2 border-ink p-3 space-y-2">
+          <audio controls src={audioUrl} className="w-full h-8" style={{ colorScheme: 'light' }} />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => audioFileRef.current?.click()}
+              className="flex-1 h-8 border-2 border-ink text-[11px] font-extrabold text-ink hover:bg-accent-100 transition-colors"
+            >
+              Replace
+            </button>
+            <button
+              type="button"
+              onClick={() => setAudioUrl('')}
+              className="w-8 h-8 border-2 border-ink flex items-center justify-center text-accent hover:bg-accent-100 transition-colors"
+            >
+              <Trash2 size={12} />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => audioFileRef.current?.click()}
+          disabled={uploadingAudio}
+          className="w-full h-12 border-2 border-ink border-dashed flex items-center justify-center gap-2 text-[12px] font-extrabold text-neutral-500 hover:bg-accent-100 transition-colors disabled:opacity-50"
+        >
+          <PlayCircle size={16} />
+          {uploadingAudio ? 'Uploading…' : 'Upload MP3 / WAV (max 20 MB)'}
+        </button>
+      )}
+    </div>
+  )
+
   return (
     <form onSubmit={handleSubmit} className="fixed inset-0 z-[2000] bg-ground flex flex-col overflow-hidden">
-      {/* Hidden file input — always in DOM so both desktop and mobile can trigger it */}
+      {/* Hidden file inputs */}
       <input ref={avatarFileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+      <input ref={audioFileRef} type="file" accept="audio/*" className="hidden" onChange={handleAudioUpload} />
 
       {/* Header */}
       <div
@@ -791,6 +884,8 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
                 placeholder="Tell other musicians about yourself…"
               />
             </div>
+            {linksSection}
+            {audioSection}
             {locationSection}
           </div>
 
@@ -927,6 +1022,8 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
                 placeholder="Tell other musicians about yourself…"
               />
             </div>
+            {linksSection}
+            {audioSection}
             {locationSection}
           </div>
 

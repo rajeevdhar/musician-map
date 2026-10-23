@@ -403,6 +403,11 @@ export const useStore = create<AppStore>()((set, get) => ({
         yearsPlaying: row.years_playing ?? undefined,
         isTest: row.is_test ?? false,
         offersLessons: row.offers_lessons ?? false,
+        websiteUrl: row.website_url ?? undefined,
+        instagramUrl: row.instagram_url ?? undefined,
+        youtubeUrl: row.youtube_url ?? undefined,
+        soundcloudUrl: row.soundcloud_url ?? undefined,
+        audioUrl: row.audio_url ?? undefined,
       }))
       // Seed ids never collide with UUID-based DB ids, but guard anyway
       const dbIds = new Set(dbMusicians.map(m => m.id))
@@ -438,6 +443,11 @@ export const useStore = create<AppStore>()((set, get) => ({
       years_playing: profile.yearsPlaying ?? null,
       avatar_url: profile.avatarUrl ?? null,
       offers_lessons: profile.offersLessons ?? false,
+      website_url: profile.websiteUrl ?? null,
+      instagram_url: profile.instagramUrl ?? null,
+      youtube_url: profile.youtubeUrl ?? null,
+      soundcloud_url: profile.soundcloudUrl ?? null,
+      audio_url: profile.audioUrl ?? null,
     })
     if (!error) {
       await get().fetchMusicians()

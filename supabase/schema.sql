@@ -126,6 +126,26 @@ ALTER TABLE public.profiles
 ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS offers_lessons BOOLEAN DEFAULT FALSE;
 
+-- Rich profile fields: social links + audio clip
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS website_url TEXT,
+  ADD COLUMN IF NOT EXISTS instagram_url TEXT,
+  ADD COLUMN IF NOT EXISTS youtube_url TEXT,
+  ADD COLUMN IF NOT EXISTS soundcloud_url TEXT,
+  ADD COLUMN IF NOT EXISTS audio_url TEXT;
+
+-- Audio storage bucket (public read, users write to their own folder)
+-- Run once in Supabase SQL editor:
+-- INSERT INTO storage.buckets (id, name, public) VALUES ('musician-audio', 'musician-audio', true) ON CONFLICT (id) DO NOTHING;
+-- DROP POLICY IF EXISTS "audio_public_read" ON storage.objects;
+-- DROP POLICY IF EXISTS "audio_user_insert" ON storage.objects;
+-- DROP POLICY IF EXISTS "audio_user_update" ON storage.objects;
+-- DROP POLICY IF EXISTS "audio_user_delete" ON storage.objects;
+-- CREATE POLICY "audio_public_read" ON storage.objects FOR SELECT USING (bucket_id = 'musician-audio');
+-- CREATE POLICY "audio_user_insert" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'musician-audio' AND split_part(name, '/', 1) = auth.uid()::text);
+-- CREATE POLICY "audio_user_update" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'musician-audio' AND split_part(name, '/', 1) = auth.uid()::text);
+-- CREATE POLICY "audio_user_delete" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'musician-audio' AND split_part(name, '/', 1) = auth.uid()::text);
+
 -- Avatar storage bucket (public read, users write to their own folder)
 -- Run once in Supabase SQL editor:
 -- INSERT INTO storage.buckets (id, name, public) VALUES ('avatars', 'avatars', true) ON CONFLICT (id) DO NOTHING;

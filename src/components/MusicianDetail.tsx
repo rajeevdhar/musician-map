@@ -1,6 +1,7 @@
+import { useRef, useState } from 'react'
 import type { Musician } from '../types'
 import { useStore } from '../store'
-import { ArrowLeft, X, Heart, MapPin, Pencil, MessageSquare } from 'lucide-react'
+import { ArrowLeft, X, Heart, MapPin, Pencil, MessageSquare, Globe, Instagram, Youtube, Music, Play, Pause } from 'lucide-react'
 import { getInstrumentCode } from '../lib/musicianUtils'
 import { isOnline, presenceText } from '../lib/presence'
 
@@ -21,6 +22,21 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
   const isSaved = saved[musician.id] !== undefined
   const outgoingStatus = contactRequests.outgoing[musician.id]
   const revealed = revealedContacts[musician.id]
+  const audioRef = useRef<HTMLAudioElement>(null)
+  const [playing, setPlaying] = useState(false)
+
+  const toggleAudio = () => {
+    if (!audioRef.current) return
+    if (playing) { audioRef.current.pause(); setPlaying(false) }
+    else { audioRef.current.play(); setPlaying(true) }
+  }
+
+  const socialLinks = [
+    { url: musician.websiteUrl, Icon: Globe, label: 'Website' },
+    { url: musician.instagramUrl, Icon: Instagram, label: 'Instagram' },
+    { url: musician.youtubeUrl, Icon: Youtube, label: 'YouTube' },
+    { url: musician.soundcloudUrl, Icon: Music, label: 'SoundCloud' },
+  ].filter(l => l.url)
 
   return (
     <div className="flex flex-col h-full">
@@ -118,9 +134,54 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
 
         {/* Bio */}
         {musician.bio && (
-          <div className="px-4 pt-4 pb-4">
+          <div className="px-4 pt-4">
             <p className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-700 mb-2">Bio</p>
             <p className="text-sm text-neutral-700 leading-relaxed">{musician.bio}</p>
+          </div>
+        )}
+
+        {/* Audio clip */}
+        {musician.audioUrl && (
+          <div className="px-4 pt-4">
+            <p className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-700 mb-2">Audio</p>
+            <div className="flex items-center gap-3 border-2 border-ink px-3 py-2">
+              <button
+                onClick={toggleAudio}
+                className="w-9 h-9 flex-shrink-0 bg-accent hover:bg-accent-600 text-white flex items-center justify-center transition-colors"
+              >
+                {playing ? <Pause size={16} /> : <Play size={16} />}
+              </button>
+              <span className="text-[12px] font-semibold text-neutral-700 truncate">
+                {playing ? 'Playing…' : 'Play clip'}
+              </span>
+              <audio
+                ref={audioRef}
+                src={musician.audioUrl}
+                onEnded={() => setPlaying(false)}
+                className="hidden"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Social links */}
+        {socialLinks.length > 0 && (
+          <div className="px-4 pt-4">
+            <p className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-700 mb-2">Links</p>
+            <div className="flex flex-wrap gap-2">
+              {socialLinks.map(({ url, Icon, label }) => (
+                <a
+                  key={label}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 h-8 px-3 border-2 border-ink text-[12px] font-extrabold text-ink hover:bg-accent-100 transition-colors"
+                >
+                  <Icon size={13} />
+                  {label}
+                </a>
+              ))}
+            </div>
           </div>
         )}
 
