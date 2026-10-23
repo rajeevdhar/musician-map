@@ -134,7 +134,7 @@ function MusicianRow({
   return (
     <button
       onClick={onClick}
-      className={`group w-full text-left grid border-t-2 border-ink transition-colors hover:bg-accent-100 ${isSelected ? 'bg-accent-100' : ''}`}
+      className={`group w-full text-left grid border-t-2 border-ink transition-colors hover:bg-accent-100 active:bg-accent-200 ${isSelected ? 'bg-accent-100' : ''}`}
       style={{ gridTemplateColumns: '52px 1fr auto' }}
     >
       {/* Code block */}
