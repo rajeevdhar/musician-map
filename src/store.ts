@@ -55,7 +55,7 @@ function startHeartbeat(userId: string): Promise<void> {
     lastPingIso = iso
     applyOwnPing(userId, iso)
   }
-  heartbeatTimer = setInterval(ping, 300_000)
+  heartbeatTimer = setInterval(ping, 240_000)
   return ping()
 }
 function stopHeartbeat() {
@@ -643,9 +643,9 @@ export const useStore = create<AppStore>()((set, get) => ({
     ])
     const user = get().currentUser
     if (!user) return
-    if (realtimeChannel) supabase.removeChannel(realtimeChannel)
+    if (realtimeChannel) await supabase.removeChannel(realtimeChannel)
     realtimeChannel = supabase
-      .channel('inbox-realtime')
+      .channel(`inbox-realtime-${Date.now()}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `to_id=eq.${user.id}` },
