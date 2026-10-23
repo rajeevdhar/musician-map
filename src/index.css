@@ -83,6 +83,8 @@ a:hover { color: var(--color-accent-600); }
 .mf-pin-wrap { transform: translate(-50%, -50%); position: relative; width: max-content; }
 .mf-pin { height: 30px; padding: 0 10px; display: flex; align-items: center; gap: 6px; background: var(--color-accent); color: #fff; font: 800 12px var(--font-heading); white-space: nowrap; box-shadow: var(--shadow-sm); cursor: pointer; transition: transform .15s ease, box-shadow .15s ease, background .15s ease; }
 .mf-pin span { font-weight: 600; }
+.mf-online-dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; flex-shrink: 0; box-shadow: 0 0 0 1.5px rgba(0,0,0,.25); }
+.mf-tip-online { font-size: 10px; font-weight: 700; color: #22c55e; letter-spacing: .02em; }
 .mf-pin.is-selected { background: var(--color-text); }
 .mf-pin.is-teacher { background: #b45309; }
 .mf-pin.is-teacher.is-selected { background: var(--color-text); }

@@ -13,6 +13,7 @@ function esc(s: string) {
 function makeMusicianPin(musician: Musician, isSelected: boolean) {
   const firstName = musician.displayName.split(' ')[0]
   const isTeacher = musician.offersLessons ?? false
+  const online = isOnline(musician.lastSeenAt)
 
   const city = musician.locationName.split(',')[0]
   const instrumentStr = musician.instruments.slice(0, 2).join(', ')
@@ -20,9 +21,10 @@ function makeMusicianPin(musician: Musician, isSelected: boolean) {
   const bio = musician.bio && musician.bio.length > 72 ? musician.bio.slice(0, 72) + '…' : musician.bio
 
   const pinClass = ['mf-pin', isSelected ? 'is-selected' : '', isTeacher ? 'is-teacher' : ''].filter(Boolean).join(' ')
+  const dot = online ? '<span class="mf-online-dot"></span>' : ''
 
   const tooltip = `<div class="mf-pin-tooltip">
-    <div class="mf-tip-name">${esc(musician.displayName)}</div>
+    <div class="mf-tip-name">${esc(musician.displayName)}${online ? ' <span class="mf-tip-online">● online</span>' : ''}</div>
     ${meta ? `<div class="mf-tip-meta">${esc(meta)}</div>` : ''}
     ${bio ? `<div class="mf-tip-bio">${esc(bio)}</div>` : ''}
     ${isTeacher ? '<div class="mf-tip-teacher">OFFERS LESSONS</div>' : ''}
@@ -30,7 +32,7 @@ function makeMusicianPin(musician: Musician, isSelected: boolean) {
 
   return new L.DivIcon({
     className: '',
-    html: `<div class="mf-pin-wrap"><div class="${pinClass}">${esc(firstName)}</div>${tooltip}</div>`,
+    html: `<div class="mf-pin-wrap"><div class="${pinClass}">${dot}${esc(firstName)}</div>${tooltip}</div>`,
     iconSize: [0, 0],
     iconAnchor: [0, 0],
   })
