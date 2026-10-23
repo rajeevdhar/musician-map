@@ -119,6 +119,21 @@ interface Props {
   onAdminSaved?: () => void
 }
 
+function normalizeUrl(raw: string): string {
+  const s = raw.trim()
+  if (!s) return ''
+  if (/^https?:\/\//i.test(s)) return s
+  return 'https://' + s
+}
+
+function normalizeInstagram(raw: string): string {
+  const s = raw.trim()
+  if (!s) return ''
+  if (/^https?:\/\//i.test(s)) return s
+  const handle = s.replace(/^@/, '')
+  return `https://instagram.com/${handle}`
+}
+
 export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Props) {
   const { currentUser, saveProfile, currentProfile, removeProfile, deleteAccount, fetchMusicians } = useStore()
   const isAdminMode = !!adminTarget
@@ -425,10 +440,10 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
         availability,
         avatarUrl: finalAvatarUrl || undefined,
         offersLessons: lookingFor.includes('Students'),
-        websiteUrl: websiteUrl.trim() || undefined,
-        instagramUrl: instagramUrl.trim() || undefined,
-        youtubeUrl: youtubeUrl.trim() || undefined,
-        soundcloudUrl: soundcloudUrl.trim() || undefined,
+        websiteUrl: normalizeUrl(websiteUrl) || undefined,
+        instagramUrl: normalizeInstagram(instagramUrl) || undefined,
+        youtubeUrl: normalizeUrl(youtubeUrl) || undefined,
+        soundcloudUrl: normalizeUrl(soundcloudUrl) || undefined,
         audioUrl: audioUrl || undefined,
       })
     }
@@ -676,15 +691,15 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
       <Label>Links</Label>
       <div className="space-y-2">
         {([
-          { icon: Globe, placeholder: 'Website URL', value: websiteUrl, onChange: setWebsiteUrl },
-          { icon: Instagram, placeholder: 'Instagram URL', value: instagramUrl, onChange: setInstagramUrl },
+          { icon: Globe, placeholder: 'Website URL (www.yoursite.com)', value: websiteUrl, onChange: setWebsiteUrl },
+          { icon: Instagram, placeholder: 'Instagram (@handle or URL)', value: instagramUrl, onChange: setInstagramUrl },
           { icon: Youtube, placeholder: 'YouTube URL', value: youtubeUrl, onChange: setYoutubeUrl },
           { icon: Music, placeholder: 'SoundCloud URL', value: soundcloudUrl, onChange: setSoundcloudUrl },
         ] as const).map(({ icon: Icon, placeholder, value, onChange }) => (
           <div key={placeholder} className="relative">
             <Icon size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
             <input
-              type="url"
+              type="text"
               value={value}
               onChange={e => onChange(e.target.value)}
               placeholder={placeholder}
