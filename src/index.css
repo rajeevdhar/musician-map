@@ -130,6 +130,9 @@ a:hover { color: var(--color-accent-600); }
 /* Large text mode — zooms content areas, not the map */
 [data-fontsize="large"] .large-text-zoom { zoom: 1.25; }
 [data-fontsize="large"] .modal-box { zoom: 1.2; }
+[data-fontsize="large"] .mf-pin { font-size: 15px; height: 38px; padding: 0 13px; }
+[data-fontsize="large"] .mf-cluster { font-size: 16px; height: 38px; padding: 0 13px; }
+[data-fontsize="large"] .mf-pin-tooltip { zoom: 1.25; }
 
 /* Shared */
 .tag { display: inline-flex; align-items: center; height: 24px; padding: 0 8px; font: 600 12px var(--font-body); border: 2px solid var(--color-text); }

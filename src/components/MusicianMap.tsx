@@ -186,7 +186,7 @@ export default function MusicianMap() {
       </MapContainer>
 
       {/* Map legend */}
-      <div className="absolute bottom-6 left-3 z-[999] bg-ink text-white text-[11px] font-semibold pointer-events-none space-y-1.5 px-3 py-2.5">
+      <div className="large-text-zoom absolute bottom-6 left-3 z-[999] bg-ink text-white text-[11px] font-semibold pointer-events-none space-y-1.5 px-3 py-2.5">
         <div className="flex items-center gap-2">
           <span className="inline-block w-3 h-3 flex-shrink-0" style={{ background: 'var(--color-accent)' }} />
           <span>Musician</span>
