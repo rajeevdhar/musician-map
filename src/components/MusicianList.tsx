@@ -63,7 +63,7 @@ export default function MusicianList({ onViewProfile }: Props) {
         </div>
         <div className="flex items-center gap-3 pb-1">
           <button onClick={toggleSort} className="text-[13px] font-semibold text-neutral-700 hover:text-ink transition-colors">
-            {sort === 'nearest' ? 'Nearest ↓' : sort === 'further' ? 'Furthest ↑' : 'A–Z ↓'}
+            {sort === 'nearest' ? 'Nearest ↑' : sort === 'further' ? 'Furthest ↓' : 'A–Z ↑'}
           </button>
           <button
             onClick={() => setShowFilterPanel(true)}

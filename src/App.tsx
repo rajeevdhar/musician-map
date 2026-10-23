@@ -227,8 +227,8 @@ export default function App() {
           <button
             key={tab.id}
             onClick={() => {
-              setActiveTab(tab.id)
               if (tab.id === 'me') { showProfile(); return }
+              setActiveTab(tab.id)
             }}
             className={`flex-1 flex flex-col items-center justify-center gap-0.5 relative transition-colors ${
               activeTab === tab.id ? 'text-accent' : 'text-neutral-500'
