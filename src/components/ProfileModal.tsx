@@ -1,9 +1,10 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { X, Navigation, Camera } from 'lucide-react'
 import { useStore } from '../store'
 import { INSTRUMENT_OPTIONS, GENRE_OPTIONS, LOOKING_FOR_OPTIONS } from '../types'
 import type { Musician, Level } from '../types'
 import { supabase } from '../lib/supabase'
+import L from 'leaflet'
 
 type Precision = 'exact' | 'area' | 'hidden'
 type GeoStatus = 'idle' | 'searching' | 'found' | 'error'
@@ -15,20 +16,53 @@ const SLOTS = ['Morning', 'Afternoon', 'Evening']
 function jitter(n: number, r = 0.03) { return n + (Math.random() - 0.5) * 2 * r }
 function emptyAvail(): boolean[][] { return Array.from({ length: 7 }, () => [false, false, false]) }
 
-async function geocodeLocation(query: string): Promise<{ lat: number; lng: number; display: string } | null> {
+type Suggestion = { lat: number; lng: number; display: string }
+
+async function fetchSuggestions(query: string): Promise<Suggestion[]> {
+  if (query.length < 3) return []
   try {
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5`
     const res = await fetch(url, { headers: { 'User-Agent': 'MusicianMap/1.0' } })
     const data = await res.json()
-    if (data?.[0]) {
-      return {
-        lat: parseFloat(data[0].lat),
-        lng: parseFloat(data[0].lon),
-        display: data[0].display_name.split(',').slice(0, 3).join(', '),
-      }
-    }
-  } catch {}
-  return null
+    return (data as { lat: string; lon: string; display_name: string }[]).map(r => ({
+      lat: parseFloat(r.lat),
+      lng: parseFloat(r.lon),
+      display: r.display_name.split(',').slice(0, 3).join(', '),
+    }))
+  } catch { return [] }
+}
+
+function LocationPinMap({ lat, lng, onChange }: { lat: number; lng: number; onChange: (lat: number, lng: number) => void }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const mapRef = useRef<L.Map | null>(null)
+  const markerRef = useRef<L.Marker | null>(null)
+  useEffect(() => {
+    if (!containerRef.current || isNaN(lat) || isNaN(lng)) return
+    const map = L.map(containerRef.current, { zoomControl: true }).setView([lat, lng], 14)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap',
+      maxZoom: 19,
+    }).addTo(map)
+    const marker = L.marker([lat, lng], { draggable: true }).addTo(map)
+    marker.on('dragend', () => {
+      const pos = marker.getLatLng()
+      onChange(pos.lat, pos.lng)
+    })
+    mapRef.current = map
+    markerRef.current = marker
+    setTimeout(() => { if (mapRef.current) map.invalidateSize() }, 100)
+    return () => { map.remove(); mapRef.current = null; markerRef.current = null }
+  }, []) // eslint-disable-line
+
+  useEffect(() => {
+    if (!mapRef.current || !markerRef.current || isNaN(lat) || isNaN(lng)) return
+    const c = mapRef.current.getCenter()
+    if (Math.abs(c.lat - lat) < 1e-9 && Math.abs(c.lng - lng) < 1e-9) return
+    markerRef.current.setLatLng([lat, lng])
+    mapRef.current.setView([lat, lng], 14, { animate: true, duration: 0.6 })
+  }, [lat, lng])
+
+  return <div ref={containerRef} style={{ height: '180px' }} className="border-2 border-ink mt-2" />
 }
 
 async function resizeImage(file: File): Promise<Blob> {
@@ -105,11 +139,14 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
   const [availability, setAvailability] = useState<boolean[][]>(source?.availability ?? emptyAvail())
   const [locationPrecision, setLocationPrecision] = useState<Precision>(source?.locationPrecision ?? 'exact')
   const [locationQuery, setLocationQuery] = useState(source?.locationName ?? '')
-  const [lat, setLat] = useState<number | null>(source?.lat ?? null)
-  const [lng, setLng] = useState<number | null>(source?.lng ?? null)
+  const [lat, setLat] = useState<number | null>(() => { const v = source?.lat; return v != null && !isNaN(v) ? v : null })
+  const [lng, setLng] = useState<number | null>(() => { const v = source?.lng; return v != null && !isNaN(v) ? v : null })
   const [locationName, setLocationName] = useState(source?.locationName ?? '')
   const [locationChanged, setLocationChanged] = useState(false)
   const [geoStatus, setGeoStatus] = useState<GeoStatus>('idle')
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const suggestTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [confirmRemove, setConfirmRemove] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState(source?.avatarUrl ?? '')
@@ -165,17 +202,27 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
     )
   }
 
-  const searchLocation = async () => {
-    if (!locationQuery.trim()) return
-    setGeoStatus('searching')
-    const result = await geocodeLocation(locationQuery)
-    if (result) {
-      setLat(result.lat); setLng(result.lng)
-      setLocationName(result.display); setLocationQuery(result.display)
-      setLocationChanged(true); setGeoStatus('found')
+  const handleLocationInput = (q: string) => {
+    setLocationQuery(q)
+    setGeoStatus('idle')
+    if (suggestTimer.current) clearTimeout(suggestTimer.current)
+    if (q.length >= 3) {
+      suggestTimer.current = setTimeout(async () => {
+        const s = await fetchSuggestions(q)
+        setSuggestions(s)
+        setShowSuggestions(s.length > 0)
+      }, 350)
     } else {
-      setGeoStatus('error')
+      setSuggestions([])
+      setShowSuggestions(false)
     }
+  }
+
+  const pickSuggestion = (s: Suggestion) => {
+    setLat(s.lat); setLng(s.lng)
+    setLocationName(s.display); setLocationQuery(s.display)
+    setLocationChanged(true); setGeoStatus('found')
+    setShowSuggestions(false); setSuggestions([])
   }
 
   const addGear = () => {
@@ -408,19 +455,31 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
             </div>
             <div>
               <Label>Location</Label>
-              <div className="flex gap-2">
+              <div className="relative">
                 <input
                   type="text"
                   value={locationQuery}
-                  onChange={e => { setLocationQuery(e.target.value); setGeoStatus('idle') }}
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); void searchLocation() } }}
-                  className="flex-1 h-12 bg-white border-2 border-ink px-3 text-[15px] focus:outline-none"
-                  placeholder="City, neighborhood…"
+                  onChange={e => handleLocationInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Escape') setShowSuggestions(false) }}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                  className="w-full h-12 bg-white border-2 border-ink px-3 text-[15px] focus:outline-none"
+                  placeholder="City, neighborhood, address…"
                 />
-                <button type="button" onClick={searchLocation} className="px-3 h-12 border-2 border-ink text-[13px] font-bold hover:bg-accent-100">Search</button>
+                {showSuggestions && (
+                  <div className="absolute left-0 right-0 bg-white border-2 border-ink border-t-0 z-10 shadow-md">
+                    {suggestions.map((s, i) => (
+                      <button key={i} type="button" onMouseDown={() => pickSuggestion(s)}
+                        className="w-full text-left px-3 py-2.5 text-[13px] border-t border-neutral-200 first:border-t-0 hover:bg-accent-100 text-ink truncate">
+                        {s.display}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-              {geoStatus === 'found' && <p className="text-[12px] text-accent-700 font-bold mt-1">Set: {locationName}</p>}
               {geoStatus === 'error' && <p className="text-[12px] text-accent-700 mt-1">Location not found.</p>}
+              {lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng) && (
+                <LocationPinMap lat={lat} lng={lng} onChange={(newLat, newLng) => { setLat(newLat); setLng(newLng); setLocationChanged(true) }} />
+              )}
             </div>
             {error && <p className="text-[13px] text-accent-700 bg-accent-100 border-2 border-accent px-3 py-2">{error}</p>}
             <div className="flex gap-3 pt-1">
@@ -439,25 +498,38 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
   const locationSection = (
     <div>
       <Label>Location</Label>
-      <div className="flex gap-2 mb-1">
-        <input
-          type="text"
-          value={locationQuery}
-          onChange={e => { setLocationQuery(e.target.value); setGeoStatus('idle') }}
-          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); void searchLocation() } }}
-          className="flex-1 h-10 bg-white border-2 border-ink px-2 text-[14px] text-ink focus:outline-none"
-          placeholder="City, neighborhood, ZIP…"
-        />
-        <button type="button" onClick={searchLocation} className="px-3 h-10 border-2 border-ink text-[12px] font-extrabold hover:bg-accent-100 transition-colors">
-          Search
-        </button>
-        <button type="button" onClick={detectLocation} title="Use my current location" className="w-10 h-10 border-2 border-ink flex items-center justify-center hover:bg-accent-100 transition-colors flex-shrink-0">
+      <div className="relative flex gap-2 mb-1">
+        <div className="relative flex-1">
+          <input
+            type="text"
+            value={locationQuery}
+            onChange={e => handleLocationInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Escape') setShowSuggestions(false) }}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+            className="w-full h-10 bg-white border-2 border-ink px-2 text-[14px] text-ink focus:outline-none"
+            placeholder="City, neighborhood, address…"
+          />
+          {showSuggestions && (
+            <div className="absolute left-0 right-0 bg-white border-2 border-ink border-t-0 z-10 shadow-md">
+              {suggestions.map((s, i) => (
+                <button key={i} type="button" onMouseDown={() => pickSuggestion(s)}
+                  className="w-full text-left px-3 py-2 text-[13px] border-t border-neutral-200 first:border-t-0 hover:bg-accent-100 text-ink truncate">
+                  {s.display}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <button type="button" onClick={detectLocation} title="Use my current location"
+          className="w-10 h-10 border-2 border-ink flex items-center justify-center hover:bg-accent-100 transition-colors flex-shrink-0">
           <Navigation size={14} />
         </button>
       </div>
       {geoStatus === 'searching' && <p className="text-[12px] text-neutral-500">Detecting…</p>}
-      {geoStatus === 'found' && <p className="text-[12px] text-accent-700 font-bold">Set: {locationName}</p>}
       {geoStatus === 'error' && <p className="text-[12px] text-accent-700">Not found. Try a more specific address.</p>}
+      {lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng) && (
+        <LocationPinMap lat={lat} lng={lng} onChange={(newLat, newLng) => { setLat(newLat); setLng(newLng); setLocationChanged(true) }} />
+      )}
     </div>
   )
 
