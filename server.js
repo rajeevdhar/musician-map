@@ -66,7 +66,7 @@ app.get('/api/admin/user-stats', requireAdmin, async (req, res) => {
 // Admin: update any profile (bypasses RLS via service role)
 app.patch('/api/admin/profile/:id', requireAdmin, async (req, res) => {
   if (!supabaseAdmin) return res.status(503).json({ error: 'Admin client not configured' })
-  const allowed = ['display_name','bio','instruments','genres','contact_email','lat','lng','location_name','looking_for']
+  const allowed = ['display_name','bio','instruments','genres','contact_email','lat','lng','location_name','looking_for','website_url','instagram_url','youtube_url','soundcloud_url','bandcamp_url','tiktok_url']
   const update = {}
   for (const key of allowed) {
     if (req.body[key] !== undefined) update[key] = req.body[key]

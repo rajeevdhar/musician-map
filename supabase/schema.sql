@@ -132,6 +132,8 @@ ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS instagram_url TEXT,
   ADD COLUMN IF NOT EXISTS youtube_url TEXT,
   ADD COLUMN IF NOT EXISTS soundcloud_url TEXT,
+  ADD COLUMN IF NOT EXISTS bandcamp_url TEXT,
+  ADD COLUMN IF NOT EXISTS tiktok_url TEXT,
   ADD COLUMN IF NOT EXISTS audio_url TEXT;
 
 -- Audio storage bucket (public read, users write to their own folder)

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { X, Navigation, Camera, Globe, Instagram, Youtube, Music, PlayCircle, Trash2 } from 'lucide-react'
+import { X, Navigation, Camera, Globe, Instagram, Youtube, Music, PlayCircle, Trash2, Tent, Video } from 'lucide-react'
 import { useStore } from '../store'
 import { INSTRUMENT_OPTIONS, GENRE_OPTIONS, LOOKING_FOR_OPTIONS } from '../types'
 import type { Musician, Level } from '../types'
@@ -134,6 +134,14 @@ function normalizeInstagram(raw: string): string {
   return `https://instagram.com/${handle}`
 }
 
+function normalizeTiktok(raw: string): string {
+  const s = raw.trim()
+  if (!s) return ''
+  if (/^https?:\/\//i.test(s)) return s
+  const handle = s.replace(/^@/, '')
+  return `https://tiktok.com/@${handle}`
+}
+
 export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Props) {
   const { currentUser, saveProfile, currentProfile, removeProfile, deleteAccount, fetchMusicians } = useStore()
   const isAdminMode = !!adminTarget
@@ -178,6 +186,8 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
   const [instagramUrl, setInstagramUrl] = useState(source?.instagramUrl ?? '')
   const [youtubeUrl, setYoutubeUrl] = useState(source?.youtubeUrl ?? '')
   const [soundcloudUrl, setSoundcloudUrl] = useState(source?.soundcloudUrl ?? '')
+  const [bandcampUrl, setBandcampUrl] = useState(source?.bandcampUrl ?? '')
+  const [tiktokUrl, setTiktokUrl] = useState(source?.tiktokUrl ?? '')
   const [audioUrl, setAudioUrl] = useState(source?.audioUrl ?? '')
   const [uploadingAudio, setUploadingAudio] = useState(false)
   const audioFileRef = useRef<HTMLInputElement>(null)
@@ -444,6 +454,8 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
         instagramUrl: normalizeInstagram(instagramUrl) || undefined,
         youtubeUrl: normalizeUrl(youtubeUrl) || undefined,
         soundcloudUrl: normalizeUrl(soundcloudUrl) || undefined,
+        bandcampUrl: normalizeUrl(bandcampUrl) || undefined,
+        tiktokUrl: normalizeTiktok(tiktokUrl) || undefined,
         audioUrl: audioUrl || undefined,
       })
     }
@@ -695,6 +707,8 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
           { icon: Instagram, placeholder: 'Instagram (@handle or URL)', value: instagramUrl, onChange: setInstagramUrl },
           { icon: Youtube, placeholder: 'YouTube URL', value: youtubeUrl, onChange: setYoutubeUrl },
           { icon: Music, placeholder: 'SoundCloud URL', value: soundcloudUrl, onChange: setSoundcloudUrl },
+          { icon: Tent, placeholder: 'Bandcamp URL', value: bandcampUrl, onChange: setBandcampUrl },
+          { icon: Video, placeholder: 'TikTok URL or @handle', value: tiktokUrl, onChange: setTiktokUrl },
         ] as const).map(({ icon: Icon, placeholder, value, onChange }) => (
           <div key={placeholder} className="relative">
             <Icon size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />

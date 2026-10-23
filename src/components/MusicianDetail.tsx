@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import type { Musician } from '../types'
 import { useStore } from '../store'
-import { ArrowLeft, X, Heart, MapPin, Pencil, MessageSquare, Globe, Instagram, Youtube, Music, Play, Pause } from 'lucide-react'
+import { ArrowLeft, X, Heart, MapPin, Pencil, MessageSquare, Globe, Instagram, Youtube, Music, Play, Pause, Tent, Video } from 'lucide-react'
 import { getInstrumentCode } from '../lib/musicianUtils'
 import { isOnline, presenceText } from '../lib/presence'
 
@@ -36,6 +36,8 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
     { url: musician.instagramUrl, Icon: Instagram, label: 'Instagram' },
     { url: musician.youtubeUrl, Icon: Youtube, label: 'YouTube' },
     { url: musician.soundcloudUrl, Icon: Music, label: 'SoundCloud' },
+    { url: musician.bandcampUrl, Icon: Tent, label: 'Bandcamp' },
+    { url: musician.tiktokUrl, Icon: Video, label: 'TikTok' },
   ].filter(l => l.url)
 
   return (

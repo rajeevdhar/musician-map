@@ -29,6 +29,8 @@ export interface Musician {
   instagramUrl?: string
   youtubeUrl?: string
   soundcloudUrl?: string
+  bandcampUrl?: string
+  tiktokUrl?: string
   audioUrl?: string
 }
 
