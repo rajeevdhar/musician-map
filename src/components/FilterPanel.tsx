@@ -117,7 +117,7 @@ export default function FilterPanel({ isMobile = false }: Props) {
             onClick={close}
             className="w-full h-[52px] bg-accent hover:bg-accent-600 text-white font-extrabold text-sm flex items-center justify-between px-4 transition-colors"
           >
-            <span>Show {count} musicians</span>
+            <span>Show {count} {count === 1 ? 'musician' : 'musicians'}</span>
             <span>→</span>
           </button>
         </div>

@@ -91,7 +91,7 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
           <div className="px-4 py-3 border-r-2 border-ink">
             <p className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-700 mb-1">Genres</p>
             <p className="text-[15px] font-extrabold text-ink leading-tight">
-              {musician.genres.length > 0 ? musician.genres.slice(0, 2).join(', ') : '—'}
+              {musician.genres.length > 0 ? musician.genres.join(', ') : '—'}
             </p>
           </div>
           <div className="px-4 py-3">
@@ -108,15 +108,6 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
             <p className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-700 mb-2">Instruments</p>
             <div className="flex flex-wrap gap-1.5">
               {musician.instruments.map(i => <span key={i} className="tag">{i}</span>)}
-            </div>
-          </div>
-        )}
-
-        {musician.genres.length > 0 && (
-          <div className="px-4 pt-4">
-            <p className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-700 mb-2">Genres</p>
-            <div className="flex flex-wrap gap-1.5">
-              {musician.genres.map(g => <span key={g} className="tag">{g}</span>)}
             </div>
           </div>
         )}
