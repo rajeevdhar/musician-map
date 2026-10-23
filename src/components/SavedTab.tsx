@@ -35,7 +35,7 @@ export default function SavedTab({ onViewProfile }: Props) {
         const code = getInstrumentCode(m.instruments)
         const isArea = m.locationPrecision === 'area'
         const note = saved[m.id] ?? ''
-        const isSeed = m.id.startsWith('seed-')
+        const isSeed = m.isTest === true
         return (
           <SavedRow
             key={m.id}

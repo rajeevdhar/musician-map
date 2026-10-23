@@ -79,122 +79,6 @@ function newerIso(a?: string, b?: string): string | undefined {
   return new Date(a).getTime() >= new Date(b).getTime() ? a : b
 }
 
-// Seed musicians rendered client-side — not stored in the DB.
-// Real registered users go into Supabase's `profiles` table.
-const SEED_MUSICIANS: Musician[] = [
-  {
-    id: 'seed-1',
-    email: 'maya.chen@example.com',
-    displayName: 'Maya Chen',
-    bio: 'Jazz pianist and composer. Gigging around the Bay Area for 8 years. Influenced by Thelonious Monk and Brad Mehldau.',
-    instruments: ['Keyboard / Piano'],
-    genres: ['Jazz', 'Blues'],
-    contactEmail: 'maya.chen@example.com',
-    lat: 37.7749,
-    lng: -122.4194,
-    locationName: 'San Francisco, CA',
-    lookingFor: 'Band Members, Recording Collaborator',
-    createdAt: '2026-09-01T00:00:00Z',
-  },
-  {
-    id: 'seed-2',
-    email: 'darius.knight@example.com',
-    displayName: 'Darius Knight',
-    bio: 'Blues guitarist and vocalist. 15 years on the Chicago circuit. Own a PA and a van — ready to gig anywhere.',
-    instruments: ['Guitar', 'Vocals'],
-    genres: ['Blues', 'Rock', 'R&B / Soul'],
-    contactEmail: 'darius.knight@example.com',
-    lat: 41.8781,
-    lng: -87.6298,
-    locationName: 'Chicago, IL',
-    lookingFor: 'Band Members, Live Gigs',
-    createdAt: '2026-09-05T00:00:00Z',
-  },
-  {
-    id: 'seed-3',
-    email: 'sarah.flores@example.com',
-    displayName: 'Sarah Flores',
-    bio: 'Country/Americana vocalist and acoustic guitarist. Songwriter with two indie albums out. Looking for a solid rhythm section.',
-    instruments: ['Vocals', 'Guitar'],
-    genres: ['Country', 'Folk / Acoustic'],
-    contactEmail: 'sarah.flores@example.com',
-    lat: 36.1627,
-    lng: -86.7816,
-    locationName: 'Nashville, TN',
-    lookingFor: 'Band Members, Live Gigs',
-    createdAt: '2026-09-10T00:00:00Z',
-  },
-  {
-    id: 'seed-4',
-    email: 'tom.okafor@example.com',
-    displayName: 'Tom Okafor',
-    bio: 'Session drummer with studio experience. Comfortable in any genre but love playing funk and hip-hop. Available for hire.',
-    instruments: ['Drums'],
-    genres: ['Funk', 'Hip-Hop / Rap', 'R&B / Soul', 'Jazz'],
-    contactEmail: 'tom.okafor@example.com',
-    lat: 34.0522,
-    lng: -118.2437,
-    locationName: 'Los Angeles, CA',
-    lookingFor: 'Session Work, Band Members',
-    createdAt: '2026-09-12T00:00:00Z',
-  },
-  {
-    id: 'seed-5',
-    email: 'elena.vasquez@example.com',
-    displayName: 'Elena Vasquez',
-    bio: 'Classically trained violinist crossing into indie and folk. Looking for collaborative projects that blend acoustic and electric textures.',
-    instruments: ['Violin'],
-    genres: ['Classical', 'Indie', 'Folk / Acoustic'],
-    contactEmail: 'elena.vasquez@example.com',
-    lat: 47.6062,
-    lng: -122.3321,
-    locationName: 'Seattle, WA',
-    lookingFor: 'Band Members, Recording Collaborator',
-    createdAt: '2026-09-15T00:00:00Z',
-  },
-  {
-    id: 'seed-6',
-    email: 'jake.morrison@example.com',
-    displayName: 'Jake Morrison',
-    bio: 'Bass player and music producer. Deep in the Austin scene for 6 years. Into everything from Afrobeat to metal — versatile and reliable.',
-    instruments: ['Bass', 'DJ / Producer'],
-    genres: ['Rock', 'Electronic / EDM', 'Funk', 'Alternative'],
-    contactEmail: 'jake.morrison@example.com',
-    lat: 30.2672,
-    lng: -97.7431,
-    locationName: 'Austin, TX',
-    lookingFor: 'Band Members, Jam Partner, Recording Collaborator',
-    createdAt: '2026-09-18T00:00:00Z',
-  },
-  {
-    id: 'seed-7',
-    email: 'priya.nair@example.com',
-    displayName: 'Priya Nair',
-    bio: 'Saxophonist with a love for jazz fusion and Latin music. Originally from Miami, now gigging locally and doing studio sessions.',
-    instruments: ['Saxophone'],
-    genres: ['Jazz', 'Latin', 'R&B / Soul'],
-    contactEmail: 'priya.nair@example.com',
-    lat: 25.7617,
-    lng: -80.1918,
-    locationName: 'Miami, FL',
-    lookingFor: 'Band Members, Session Work, Jam Partner',
-    createdAt: '2026-09-20T00:00:00Z',
-  },
-  {
-    id: 'seed-8',
-    email: 'ben.walsh@example.com',
-    displayName: 'Ben Walsh',
-    bio: 'Singer-songwriter and acoustic guitarist. Performing original folk-rock in the Denver area. Looking for a co-writer or a full band.',
-    instruments: ['Guitar', 'Vocals', 'Harmonica'],
-    genres: ['Folk / Acoustic', 'Rock', 'Alternative'],
-    contactEmail: 'ben.walsh@example.com',
-    lat: 39.7392,
-    lng: -104.9903,
-    locationName: 'Denver, CO',
-    lookingFor: 'Band Members, Recording Collaborator, Just Meeting Other Musicians',
-    createdAt: '2026-09-22T00:00:00Z',
-  },
-]
 
 export interface AppUser {
   id: string
@@ -368,7 +252,7 @@ export const useStore = create<AppStore>()((set, get) => ({
   },
 
   // ── Musicians ─────────────────────────────────────────────────────────────
-  musicians: SEED_MUSICIANS,
+  musicians: [],
   isLoadingMusicians: false,
 
   fetchMusicians: async () => {
@@ -413,10 +297,7 @@ export const useStore = create<AppStore>()((set, get) => ({
         soundcloudUrl: row.soundcloud_url ?? undefined,
         audioUrl: row.audio_url ?? undefined,
       }))
-      // Seed ids never collide with UUID-based DB ids, but guard anyway
-      const dbIds = new Set(dbMusicians.map(m => m.id))
-      const visibleSeeds = SEED_MUSICIANS.filter(s => !dbIds.has(s.id))
-      set({ musicians: [...visibleSeeds, ...dbMusicians] })
+      set({ musicians: dbMusicians })
     }
     set({ isLoadingMusicians: false })
   },

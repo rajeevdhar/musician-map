@@ -18,7 +18,7 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
   const isOwnProfile = currentUser?.id === musician.id
   const code = getInstrumentCode(musician.instruments)
   const online = isOnline(musician.lastSeenAt)
-  const isSeed = musician.id.startsWith('seed-')
+  const isSeed = musician.isTest === true
   const isSaved = saved[musician.id] !== undefined
   const outgoingStatus = contactRequests.outgoing[musician.id]
   const revealed = revealedContacts[musician.id]

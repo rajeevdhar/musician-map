@@ -104,7 +104,7 @@ export default function AdminPanel({ onClose }: Props) {
     setActionState(s => { const n = { ...s }; delete n[`del-${id}`]; return n })
   }
 
-  const registeredOnMap = musicians.filter(m => !m.id.startsWith('seed-')).length
+  const registeredOnMap = musicians.filter(m => !m.isTest).length
   const onlineCount = dbProfiles.filter(m => isOnline(m.lastSeenAt)).length
   const testCount = dbProfiles.filter(m => m.isTest).length
 
@@ -167,7 +167,7 @@ export default function AdminPanel({ onClose }: Props) {
             ) : filtered.length === 0 ? (
               <div className="text-center py-10 text-gray-400 text-sm">
                 {dbProfiles.length === 0
-                  ? 'No registered profiles yet. Seed musicians are client-side only.'
+                  ? 'No profiles in database yet.'
                   : 'No profiles match your search.'}
               </div>
             ) : (
@@ -188,8 +188,7 @@ export default function AdminPanel({ onClose }: Props) {
             )}
 
             <p className="text-xs text-gray-400 border-t border-gray-100 pt-3">
-              Seed musicians (Maya Chen, Darius Knight, etc.) are hard-coded client-side and not in the database.
-              Only real registered users with saved profiles are listed. Online = active within last 5 minutes.
+              Test profiles are marked TEST and can be edited or deleted. Online = active within last 5 minutes.
             </p>
           </div>
         </div>
