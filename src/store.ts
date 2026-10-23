@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { supabase } from './lib/supabase'
 import type { Musician, ActiveModal, Level, Message, ContactRequestStatus } from './types'
 import { haversineDistanceMiles } from './lib/musicianUtils'
+import { isOnline } from './lib/presence'
 
 export interface Filters {
   instruments: string[]
@@ -9,6 +10,7 @@ export interface Filters {
   levels: Level[]
   lookingFor: string[]
   distanceMi: 1 | 5 | 10 | 25 | 50 | 100 | 0
+  onlineOnly: boolean
 }
 
 const DEFAULT_FILTERS: Filters = {
@@ -17,6 +19,7 @@ const DEFAULT_FILTERS: Filters = {
   levels: [],
   lookingFor: [],
   distanceMi: 25,
+  onlineOnly: false,
 }
 
 // ── Realtime channel ───────────────────────────────────────────────────────
@@ -408,6 +411,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     if (filters.levels.length > 0) count++
     if (filters.lookingFor.length > 0) count++
     if (filters.distanceMi !== 25) count++
+    if (filters.onlineOnly) count++
     return count
   },
 
@@ -440,6 +444,9 @@ export const useStore = create<AppStore>()((set, get) => ({
         if (isNaN(m.lat) || isNaN(m.lng)) return true
         return haversineDistanceMiles(userLat, userLng, m.lat, m.lng) <= filters.distanceMi
       })
+    }
+    if (filters.onlineOnly) {
+      list = list.filter(m => isOnline(m.lastSeenAt))
     }
     if (query.trim()) {
       const q = query.toLowerCase()

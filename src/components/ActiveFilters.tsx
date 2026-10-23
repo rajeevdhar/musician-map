@@ -18,6 +18,8 @@ export default function ActiveFilters() {
   filters.lookingFor.forEach(lf =>
     chips.push({ label: lf, onRemove: () => setFilters({ lookingFor: filters.lookingFor.filter(x => x !== lf) }) })
   )
+  if (filters.onlineOnly)
+    chips.push({ label: '● Online now', onRemove: () => setFilters({ onlineOnly: false }) })
 
   if (chips.length === 0) return null
 

@@ -58,6 +58,22 @@ export default function FilterPanel({ isMobile = false }: Props) {
 
       {/* Scrollable content */}
       <div className={`px-4 py-4 space-y-6 ${isMobile ? 'flex-1 overflow-y-auto' : 'overflow-y-auto max-h-[340px]'}`}>
+        {/* Online only */}
+        <section>
+          <button
+            onClick={() => setFilters({ onlineOnly: !filters.onlineOnly })}
+            className="flex items-center gap-3 w-full text-left hover:bg-accent-100 transition-colors -mx-1 px-1 py-1 rounded"
+          >
+            <div className={`w-10 h-6 flex-shrink-0 border-2 border-ink relative transition-colors ${filters.onlineOnly ? 'bg-accent' : 'bg-white'}`}>
+              <div className={`absolute top-0.5 w-4 h-4 bg-white border-2 border-ink transition-all ${filters.onlineOnly ? 'left-[18px]' : 'left-0.5'}`} />
+            </div>
+            <div>
+              <span className="text-[13px] font-extrabold text-ink">Online now</span>
+              <span className="block text-[11px] text-neutral-500">Active in the last 5 minutes</span>
+            </div>
+          </button>
+        </section>
+
         {/* Skill level */}
         <section>
           <p className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-700 mb-2">Skill level</p>
