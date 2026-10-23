@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useStore } from '../store'
-import { Search, Music2, User, Pencil, Plus, LogOut, Trash2, Shield, Map, List, Heart, MessageSquare, SlidersHorizontal } from 'lucide-react'
+import { Search, Music2, User, Pencil, Plus, LogOut, Trash2, Shield, Heart, MessageSquare, SlidersHorizontal } from 'lucide-react'
 import type { Theme } from '../App'
 
 const THEMES: { id: Theme; color: string; label: string }[] = [
@@ -21,8 +21,6 @@ interface Props {
 }
 
 const DESKTOP_TABS = [
-  { id: 'map' as const, Icon: Map, label: 'Map' },
-  { id: 'list' as const, Icon: List, label: 'List' },
   { id: 'saved' as const, Icon: Heart, label: 'Saved' },
   { id: 'messages' as const, Icon: MessageSquare, label: 'Messages' },
 ]
@@ -67,7 +65,7 @@ export default function Header({ onShowAuth, onShowProfile, onShowAdmin, isAdmin
           {DESKTOP_TABS.map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => setActiveTab(activeTab === tab.id ? 'map' : tab.id)}
               className={`flex items-center gap-2 h-[68px] px-5 border-l-2 border-white text-[14px] font-extrabold transition-colors ${
                 activeTab === tab.id
                   ? 'bg-white text-accent-700'
