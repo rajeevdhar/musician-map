@@ -81,22 +81,22 @@ function SavedRow({ code, isArea, name, instruments, genres, note, isSeed, onVie
   return (
     <div className="border-t-2 border-ink">
       <div
-        className="grid gap-0 cursor-pointer hover:bg-accent-100 transition-colors"
+        className="group grid gap-0 cursor-pointer hover:bg-accent-100 active:bg-accent-200 transition-colors"
         style={{ gridTemplateColumns: '52px 1fr auto' }}
         onClick={onView}
       >
         {/* Code block */}
-        <div className={`min-h-[52px] m-2 mr-0 flex items-start pt-1 pl-1.5 text-[13px] font-extrabold ${
+        <div className={`min-h-[52px] m-2 mr-0 flex items-start pt-1 pl-1.5 text-[13px] font-extrabold transition-colors ${
           isArea
             ? 'border-2 border-dashed border-accent text-accent-700'
-            : 'bg-accent text-white'
+            : 'bg-accent group-hover:bg-ink text-white'
         }`}>
           {code}
         </div>
 
         {/* Middle */}
         <div className="px-3 py-2.5 min-w-0">
-          <p className="text-[16px] font-extrabold text-ink leading-tight truncate">{name}</p>
+          <p className="text-[16px] font-extrabold text-ink group-hover:text-accent leading-tight truncate transition-colors">{name}</p>
           <p className="text-[13px] text-neutral-700 truncate mt-0.5">
             {instruments.slice(0, 2).join(', ')}
             {genres.length > 0 && ` · ${genres.slice(0, 2).join(', ')}`}

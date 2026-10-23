@@ -80,8 +80,8 @@ export default function InboxTab({ onViewProfile }: Props) {
                   <button
                     key={id}
                     onClick={() => setActiveThreadId(id)}
-                    className={`w-full text-left border-t-2 border-ink transition-colors relative ${
-                      isActive ? 'bg-accent-100' : 'hover:bg-accent-100'
+                    className={`group w-full text-left border-t-2 border-ink transition-colors relative ${
+                      isActive ? 'bg-accent-100' : 'hover:bg-accent-100 active:bg-accent-200'
                     }`}
                   >
                     {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />}
@@ -89,12 +89,12 @@ export default function InboxTab({ onViewProfile }: Props) {
                       {musician.avatarUrl ? (
                         <img src={musician.avatarUrl} alt={musician.displayName} className="w-9 h-9 object-cover flex-shrink-0 mt-0.5 grayscale" />
                       ) : (
-                        <div className="w-9 h-9 bg-accent flex items-center justify-center text-white text-[12px] font-extrabold flex-shrink-0 mt-0.5">
+                        <div className="w-9 h-9 bg-accent group-hover:bg-ink text-white text-[12px] font-extrabold flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors">
                           {code}
                         </div>
                       )}
                       <div className="pl-2.5 min-w-0">
-                        <p className="text-[15px] font-extrabold text-ink truncate">{musician.displayName}</p>
+                        <p className="text-[15px] font-extrabold text-ink group-hover:text-accent truncate transition-colors">{musician.displayName}</p>
                         {last && (
                           <p className="text-[13px] text-neutral-700 truncate">
                             {isMine ? 'You: ' : ''}{last.body}
