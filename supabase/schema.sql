@@ -161,6 +161,29 @@ ALTER TABLE public.profiles
 -- CREATE POLICY "avatars_user_update" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'avatars' AND split_part(name, '/', 1) = auth.uid()::text);
 -- CREATE POLICY "avatars_user_delete" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'avatars' AND split_part(name, '/', 1) = auth.uid()::text);
 
+-- Section 8: User reports (run in Supabase SQL editor)
+-- Stores flags submitted by signed-in users against another user's profile.
+-- Admin reviews and resolves via the AdminPanel Reports tab.
+CREATE TABLE IF NOT EXISTS public.reports (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  reported_profile_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  reporter_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  reason TEXT NOT NULL CHECK (reason IN ('inappropriate_image','offensive_content','harassment','spam','fake_profile','other')),
+  details TEXT DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','reviewed','actioned','dismissed')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  reviewed_at TIMESTAMPTZ,
+  UNIQUE(reported_profile_id, reporter_id)  -- one report per reporter per profile
+);
+ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
+-- Any signed-in user can file a report
+CREATE POLICY IF NOT EXISTS "reports_insert_auth" ON public.reports
+  FOR INSERT TO authenticated WITH CHECK (auth.uid() = reporter_id);
+-- Reporters can see their own submissions (for UI feedback)
+CREATE POLICY IF NOT EXISTS "reports_select_own" ON public.reports
+  FOR SELECT USING (auth.uid() = reporter_id);
+-- Admin reads/updates via service role key (bypasses RLS) — no additional policy needed.
+
 -- Section 7: Private contact details (see supabase/migrations/2026-10-24_private_contacts_step*.sql)
 -- profiles.email, profiles.contact_email and profiles.phone were publicly readable and have been
 -- REMOVED (step 2). contact_email + phone now live here: owner-only, or readable by the other

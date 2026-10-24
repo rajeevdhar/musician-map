@@ -122,6 +122,52 @@ app.delete('/api/admin/user/:id', requireAdmin, async (req, res) => {
   res.json({ ok: true })
 })
 
+// ── Report a profile (any authenticated user) ─────────────────────────────────
+const VALID_REASONS = ['inappropriate_image','offensive_content','harassment','spam','fake_profile','other']
+
+app.post('/api/report/:profileId', async (req, res) => {
+  const user = await verifyJwt(req)
+  if (!user) return res.status(401).json({ error: 'Unauthorized' })
+  if (!supabaseAdmin) return res.status(503).json({ error: 'Admin client not configured' })
+  const { reason, details } = req.body
+  if (!VALID_REASONS.includes(reason)) return res.status(400).json({ error: 'Invalid reason' })
+  const { error } = await supabaseAdmin.from('reports').insert({
+    reported_profile_id: req.params.profileId,
+    reporter_id: user.id,
+    reason,
+    details: (details ?? '').slice(0, 500),
+  })
+  if (error) {
+    if (error.code === '23505') return res.status(409).json({ error: 'Already reported' })
+    return res.status(500).json({ error: error.message })
+  }
+  res.json({ ok: true })
+})
+
+// ── Admin: list reports ───────────────────────────────────────────────────────
+app.get('/api/admin/reports', requireAdmin, async (req, res) => {
+  if (!supabaseAdmin) return res.status(503).json({ error: 'Admin client not configured' })
+  const { data, error } = await supabaseAdmin
+    .from('reports')
+    .select('id, reason, details, status, created_at, reported_profile_id, reporter_id, profiles!reported_profile_id(display_name, avatar_url)')
+    .order('created_at', { ascending: false })
+  if (error) return res.status(500).json({ error: error.message })
+  res.json({ reports: data })
+})
+
+// ── Admin: update report status ───────────────────────────────────────────────
+app.patch('/api/admin/reports/:id', requireAdmin, async (req, res) => {
+  if (!supabaseAdmin) return res.status(503).json({ error: 'Admin client not configured' })
+  const { status } = req.body
+  if (!['reviewed','actioned','dismissed'].includes(status)) return res.status(400).json({ error: 'Invalid status' })
+  const { error } = await supabaseAdmin
+    .from('reports')
+    .update({ status, reviewed_at: new Date().toISOString() })
+    .eq('id', req.params.id)
+  if (error) return res.status(500).json({ error: error.message })
+  res.json({ ok: true })
+})
+
 // Serve built frontend in production (Railway single-service deployment)
 if (isProd) {
   // Vite hashes all filenames in /assets — safe to cache for a year

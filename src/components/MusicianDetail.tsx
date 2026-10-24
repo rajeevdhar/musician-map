@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react'
 import type { Musician } from '../types'
 import { useStore } from '../store'
-import { ArrowLeft, X, Heart, MapPin, Pencil, MessageSquare, Globe, Instagram, Youtube, Music, Play, Pause, Tent, Video } from 'lucide-react'
+import { ArrowLeft, X, Heart, MapPin, Pencil, MessageSquare, Globe, Instagram, Youtube, Music, Play, Pause, Tent, Video, Flag } from 'lucide-react'
 import { getInstrumentCode } from '../lib/musicianUtils'
 import { isOnline, presenceText } from '../lib/presence'
+import ReportModal from './ReportModal'
 
 interface Props {
   musician: Musician
@@ -24,6 +25,7 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
   const revealed = revealedContacts[musician.id]
   const audioRef = useRef<HTMLAudioElement>(null)
   const [playing, setPlaying] = useState(false)
+  const [showReport, setShowReport] = useState(false)
 
   const toggleAudio = () => {
     if (!audioRef.current) return
@@ -41,6 +43,14 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
   ].filter(l => l.url)
 
   return (
+    <>
+    {showReport && (
+      <ReportModal
+        profileId={musician.id}
+        displayName={musician.displayName}
+        onClose={() => setShowReport(false)}
+      />
+    )}
     <div className="flex flex-col h-full">
       {/* Photo area */}
       <div className="w-full h-[240px] lg:aspect-square lg:h-auto bg-neutral-300 relative flex-shrink-0 overflow-hidden">
@@ -178,6 +188,19 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
           </div>
         )}
 
+        {/* Report link — logged-in users only, not own profile, not seed profiles */}
+        {currentUser && !isOwnProfile && !isSeed && (
+          <div className="px-4 pt-6 pb-2">
+            <button
+              onClick={() => setShowReport(true)}
+              className="flex items-center gap-1.5 text-[11px] font-semibold text-neutral-400 hover:text-accent-700 transition-colors"
+            >
+              <Flag size={11} />
+              Report this profile
+            </button>
+          </div>
+        )}
+
         {/* Bottom padding so sticky footer doesn't overlap */}
         <div className="h-16" />
       </div>
@@ -233,5 +256,6 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
         )}
       </div>
     </div>
+    </>
   )
 }
