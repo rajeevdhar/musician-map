@@ -7,20 +7,26 @@ interface Props {
 }
 
 export default function AuthModal({ onClose }: Props) {
-  const [tab, setTab] = useState<'login' | 'forgot'>('login')
+  const [tab, setTab] = useState<'login' | 'register' | 'forgot'>('login')
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [resetSent, setResetSent] = useState(false)
-  const { login } = useStore()
+  const { login, register } = useStore()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
-    if (tab === 'login') {
+    if (tab === 'register') {
+      if (password.length < 6) { setError('Password must be at least 6 characters'); setLoading(false); return }
+      const result = await register(email, password, name.trim())
+      if (result.ok) onClose()
+      else setError(result.error ?? 'Sign-up failed')
+    } else if (tab === 'login') {
       const result = await login(email, password)
       if (result.ok) onClose()
       else setError(result.error ?? 'Login failed')
@@ -40,12 +46,26 @@ export default function AuthModal({ onClose }: Props) {
       <div className="modal-box">
         <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b-2 border-ink">
           <h2 className="text-xl font-extrabold text-ink">
-            {tab === 'login' ? 'Welcome back' : 'Reset Password'}
+            {tab === 'login' ? 'Welcome back' : tab === 'register' ? 'Create account' : 'Reset Password'}
           </h2>
           <button onClick={onClose} className="text-neutral-500 hover:text-ink text-2xl leading-none">×</button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {tab === 'register' && (
+            <div>
+              <label className="block text-xs font-extrabold uppercase tracking-widest text-neutral-700 mb-1">Your name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="Your name"
+                className="w-full h-12 bg-white border-2 border-ink px-3 text-sm focus:outline-none"
+                required
+              />
+            </div>
+          )}
+
           <div>
             <label className="block text-xs font-extrabold uppercase tracking-widest text-neutral-700 mb-1">Email</label>
             <input
@@ -58,26 +78,28 @@ export default function AuthModal({ onClose }: Props) {
             />
           </div>
 
-          {tab === 'login' && (
+          {(tab === 'login' || tab === 'register') && (
             <div>
               <label className="block text-xs font-extrabold uppercase tracking-widest text-neutral-700 mb-1">Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder={tab === 'register' ? '6+ characters' : '••••••••'}
                 className="w-full h-12 bg-white border-2 border-ink px-3 text-sm focus:outline-none"
                 required
               />
-              <div className="flex justify-end mt-1">
-                <button
-                  type="button"
-                  onClick={() => { setTab('forgot'); setError(''); setResetSent(false) }}
-                  className="text-xs text-accent-700 hover:text-accent-600"
-                >
-                  Forgot password?
-                </button>
-              </div>
+              {tab === 'login' && (
+                <div className="flex justify-end mt-1">
+                  <button
+                    type="button"
+                    onClick={() => { setTab('forgot'); setError(''); setResetSent(false) }}
+                    className="text-xs text-accent-700 hover:text-accent-600"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -104,9 +126,35 @@ export default function AuthModal({ onClose }: Props) {
                 disabled={loading}
                 className="w-full flex items-center justify-between h-[52px] bg-accent hover:bg-accent-600 disabled:opacity-60 text-white font-bold px-4 text-sm transition-colors"
               >
-                <span>{loading ? 'Please wait…' : tab === 'login' ? 'Sign In' : 'Send Reset Link'}</span>
+                <span>{loading ? 'Please wait…' : tab === 'login' ? 'Sign In' : tab === 'register' ? 'Create account' : 'Send Reset Link'}</span>
                 <span>→</span>
               </button>
+
+              {tab === 'login' && (
+                <p className="text-sm text-center text-neutral-500">
+                  No account?{' '}
+                  <button
+                    type="button"
+                    onClick={() => { setTab('register'); setError('') }}
+                    className="font-extrabold text-ink hover:text-accent transition-colors"
+                  >
+                    Register →
+                  </button>
+                </p>
+              )}
+
+              {tab === 'register' && (
+                <p className="text-sm text-center text-neutral-500">
+                  Already have an account?{' '}
+                  <button
+                    type="button"
+                    onClick={() => { setTab('login'); setError('') }}
+                    className="font-extrabold text-ink hover:text-accent transition-colors"
+                  >
+                    Sign in →
+                  </button>
+                </p>
+              )}
 
               {tab === 'forgot' && (
                 <button
