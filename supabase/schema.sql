@@ -177,10 +177,12 @@ CREATE TABLE IF NOT EXISTS public.reports (
 );
 ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
 -- Any signed-in user can file a report
-CREATE POLICY IF NOT EXISTS "reports_insert_auth" ON public.reports
+DROP POLICY IF EXISTS "reports_insert_auth" ON public.reports;
+CREATE POLICY "reports_insert_auth" ON public.reports
   FOR INSERT TO authenticated WITH CHECK (auth.uid() = reporter_id);
 -- Reporters can see their own submissions (for UI feedback)
-CREATE POLICY IF NOT EXISTS "reports_select_own" ON public.reports
+DROP POLICY IF EXISTS "reports_select_own" ON public.reports;
+CREATE POLICY "reports_select_own" ON public.reports
   FOR SELECT USING (auth.uid() = reporter_id);
 -- Admin reads/updates via service role key (bypasses RLS) — no additional policy needed.
 
