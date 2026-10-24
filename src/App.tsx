@@ -259,7 +259,7 @@ export default function App() {
 
       {/* Mobile filter panel — fixed overlay at root level so it renders above Leaflet's GPU layers */}
       {showFilterPanel && (
-        <div className="lg:hidden fixed inset-0 z-[500] flex flex-col">
+        <div className="lg:hidden fixed inset-0 z-[1200] flex flex-col">
           <FilterPanel isMobile />
         </div>
       )}

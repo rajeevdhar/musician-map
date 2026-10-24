@@ -43,7 +43,7 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
   return (
     <div className="flex flex-col h-full">
       {/* Photo area */}
-      <div className="w-full aspect-square bg-neutral-300 relative flex-shrink-0 overflow-hidden">
+      <div className="w-full h-[240px] lg:aspect-square lg:h-auto bg-neutral-300 relative flex-shrink-0 overflow-hidden">
         {musician.avatarUrl ? (
           <img src={musician.avatarUrl} alt={musician.displayName} className="w-full h-full object-cover grayscale" />
         ) : (

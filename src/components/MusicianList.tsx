@@ -70,7 +70,7 @@ export default function MusicianList({ onViewProfile }: Props) {
             className="relative flex items-center gap-1.5 h-8 px-2.5 border-2 border-ink text-[12px] font-extrabold text-ink hover:bg-accent-100 transition-colors"
           >
             <SlidersHorizontal size={12} />
-            Filters
+            <span className="hidden sm:inline">Filters</span>
             {filterCount() > 0 && (
               <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-accent text-white text-[9px] font-extrabold flex items-center justify-center">
                 {filterCount()}
