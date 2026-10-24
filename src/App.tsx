@@ -108,7 +108,10 @@ export default function App() {
         } lg:flex lg:w-[380px]`}>
           {showFilterPanel && <FilterPanel />}
           <ActiveFilters />
-          <MusicianList onViewProfile={(m) => { openMusician(m.id); setShowMobileDetail(true) }} />
+          <MusicianList onViewProfile={(m) => {
+            if (!currentUser) { setModal('auth'); return }
+            openMusician(m.id); setShowMobileDetail(true)
+          }} />
         </div>
 
 
@@ -129,7 +132,10 @@ export default function App() {
                   </p>
                 </div>
                 <button
-                  onClick={() => setShowMobileDetail(true)}
+                  onClick={() => {
+                    if (!currentUser) { setModal('auth'); return }
+                    setShowMobileDetail(true)
+                  }}
                   className="flex items-center justify-between flex-shrink-0 h-11 bg-accent hover:bg-accent-600 text-white font-bold text-sm px-4 transition-colors"
                 >
                   View profile →
@@ -192,12 +198,27 @@ export default function App() {
         {/* Desktop: detail panel */}
         {selectedId && selectedMusician && (
           <div className="hidden lg:flex w-[420px] flex-shrink-0 flex-col border-l-2 border-ink overflow-y-auto large-text-zoom">
-            <MusicianDetail
-              musician={selectedMusician}
-              onClose={() => setSelectedId(null)}
-              onEditProfile={showProfile}
-              onOpenMessages={openMessages}
-            />
+            {currentUser ? (
+              <MusicianDetail
+                musician={selectedMusician}
+                onClose={() => setSelectedId(null)}
+                onEditProfile={showProfile}
+                onOpenMessages={openMessages}
+              />
+            ) : (
+              <div className="flex flex-col h-full">
+                <div className="flex-1 flex flex-col items-center justify-center gap-6 px-8 text-center">
+                  <p className="text-[22px] font-extrabold text-ink leading-tight">{selectedMusician.displayName}</p>
+                  <p className="text-sm text-neutral-600">Sign in to view full profiles and connect with musicians.</p>
+                  <button
+                    onClick={() => setModal('auth')}
+                    className="h-12 px-6 bg-accent hover:bg-accent-600 text-white font-extrabold text-sm transition-colors"
+                  >
+                    Sign in to view →
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
