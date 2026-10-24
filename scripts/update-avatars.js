@@ -57,13 +57,18 @@ const AVATAR_MAP = {
 }
 
 async function main() {
-  // Fetch all test profiles
-  const { data: profiles, error } = await supabase
+  // Fetch all test profiles (emails live in Supabase Auth, not in the public profiles table)
+  const { data: rows, error } = await supabase
     .from('profiles')
-    .select('id, email')
+    .select('id')
     .eq('is_test', true)
 
   if (error) { console.error('Error fetching profiles:', error.message); process.exit(1) }
+
+  const { data: authData, error: authErr } = await supabase.auth.admin.listUsers({ perPage: 1000 })
+  if (authErr) { console.error('Error listing auth users:', authErr.message); process.exit(1) }
+  const emailById = new Map(authData.users.map(u => [u.id, u.email]))
+  const profiles = rows.map(r => ({ id: r.id, email: emailById.get(r.id) }))
 
   let updated = 0
   let skipped = 0

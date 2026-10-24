@@ -2,12 +2,14 @@ export type Level = 'Beginner' | 'Intermediate' | 'Advanced' | 'Pro'
 
 export interface Musician {
   id: string           // same as user.id
-  email: string
+  // Private: only populated for the signed-in user's own profile (and in the admin panel).
+  // Never read from the public profiles table.
+  email?: string
   displayName: string
   bio: string
   instruments: string[]
   genres: string[]
-  contactEmail: string
+  contactEmail?: string
   lat: number
   lng: number
   locationName: string

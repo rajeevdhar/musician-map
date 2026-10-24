@@ -473,12 +473,10 @@ async function main() {
     // Insert profile
     const { error: profileErr } = await supabase.from('profiles').insert({
       id: userId,
-      email: p.email,
       display_name: p.displayName,
       bio: p.bio,
       instruments: p.instruments,
       genres: p.genres,
-      contact_email: p.email,
       lat: p.lat,
       lng: p.lng,
       location_name: p.locationName,
@@ -497,6 +495,12 @@ async function main() {
       await supabase.auth.admin.deleteUser(userId)
       continue
     }
+
+    // Private contact details live in profile_contacts (not the public profiles table)
+    const { error: contactErr } = await supabase
+      .from('profile_contacts')
+      .insert({ id: userId, contact_email: p.email })
+    if (contactErr) console.error(`  WARN contact row for ${p.email}:`, contactErr.message)
 
     console.log(`  created ${p.displayName} (${p.email})`)
     created++

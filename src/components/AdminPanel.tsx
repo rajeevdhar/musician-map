@@ -4,6 +4,7 @@ import type { Musician } from '../types'
 import { useStore } from '../store'
 import ProfileModal from './ProfileModal'
 import { isOnline, presenceText } from '../lib/presence'
+import { PUBLIC_PROFILE_COLUMNS } from '../lib/profileColumns'
 
 interface Props {
   onClose: () => void
@@ -51,19 +52,24 @@ export default function AdminPanel({ onClose }: Props) {
 
   const loadAll = async () => {
     setIsLoading(true)
-    const [profilesResult, statsResult] = await Promise.all([
-      supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+    const [profilesResult, statsResult, contactsResult] = await Promise.all([
+      supabase.from('profiles').select(PUBLIC_PROFILE_COLUMNS).order('created_at', { ascending: false }),
       adminFetch('/api/admin/user-stats', 'GET'),
+      adminFetch('/api/admin/contacts', 'GET'),
     ])
 
-    setDbProfiles((profilesResult.data ?? []).map(row => ({
+    // Private details come from admin-only server endpoint (service role), not the public table
+    const contactById: Record<string, { email?: string; contactEmail?: string; phone?: string | null }> = {}
+    for (const c of contactsResult.contacts ?? []) contactById[c.id] = c
+
+    setDbProfiles(((profilesResult.data ?? []) as any[]).map(row => ({
       id: row.id,
-      email: row.email,
+      email: contactById[row.id]?.email,
       displayName: row.display_name,
       bio: row.bio ?? '',
       instruments: row.instruments ?? [],
       genres: row.genres ?? [],
-      contactEmail: row.contact_email ?? '',
+      contactEmail: contactById[row.id]?.contactEmail ?? '',
       lat: row.lat,
       lng: row.lng,
       locationName: row.location_name ?? '',
@@ -111,7 +117,7 @@ export default function AdminPanel({ onClose }: Props) {
   const filtered = dbProfiles.filter(m =>
     !search.trim() ||
     m.displayName.toLowerCase().includes(search.toLowerCase()) ||
-    m.email.toLowerCase().includes(search.toLowerCase()) ||
+    (m.email ?? '').toLowerCase().includes(search.toLowerCase()) ||
     m.locationName.toLowerCase().includes(search.toLowerCase())
   )
 

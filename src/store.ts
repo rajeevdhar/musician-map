@@ -3,6 +3,7 @@ import { supabase } from './lib/supabase'
 import type { Musician, ActiveModal, Level, Message, ContactRequestStatus } from './types'
 import { haversineDistanceMiles } from './lib/musicianUtils'
 import { isOnline } from './lib/presence'
+import { PUBLIC_PROFILE_COLUMNS } from './lib/profileColumns'
 
 export interface Filters {
   instruments: string[]
@@ -262,18 +263,16 @@ export const useStore = create<AppStore>()((set, get) => ({
     set({ isLoadingMusicians: true })
     const { data, error } = await supabase
       .from('profiles')
-      .select('*')
+      .select(PUBLIC_PROFILE_COLUMNS)
       .order('created_at', { ascending: true })
 
     if (!error) {
-      const dbMusicians: Musician[] = (data ?? []).map(row => ({
+      const dbMusicians: Musician[] = (data ?? []).map((row: any) => ({
         id: row.id,
-        email: row.email,
         displayName: row.display_name,
         bio: row.bio ?? '',
         instruments: row.instruments ?? [],
         genres: row.genres ?? [],
-        contactEmail: row.contact_email ?? '',
         lat: row.lat,
         lng: row.lng,
         locationName: row.location_name ?? '',
@@ -290,7 +289,6 @@ export const useStore = create<AppStore>()((set, get) => ({
         primaryInstrument: row.primary_instrument ?? undefined,
         gear: Array.isArray(row.gear) ? row.gear : [],
         availability: row.availability as boolean[][] ?? undefined,
-        phone: row.phone ?? undefined,
         yearsPlaying: row.years_playing ?? undefined,
         isTest: row.is_test ?? false,
         offersLessons: row.offers_lessons ?? false,
@@ -303,6 +301,21 @@ export const useStore = create<AppStore>()((set, get) => ({
         discordUrl: row.discord_url ?? undefined,
         audioUrl: row.audio_url ?? undefined,
       }))
+      // Merge the signed-in user's OWN private contact details (RLS: owner-only row)
+      const me = get().currentUser
+      if (me) {
+        const { data: own } = await supabase
+          .from('profile_contacts')
+          .select('contact_email, phone')
+          .eq('id', me.id)
+          .maybeSingle()
+        const mine = dbMusicians.find(m => m.id === me.id)
+        if (mine) {
+          mine.email = me.email
+          mine.contactEmail = own?.contact_email ?? ''
+          mine.phone = own?.phone ?? undefined
+        }
+      }
       set({ musicians: dbMusicians })
     }
     set({ isLoadingMusicians: false })
@@ -313,12 +326,10 @@ export const useStore = create<AppStore>()((set, get) => ({
     if (!user) return
     const { error } = await supabase.from('profiles').upsert({
       id: user.id,
-      email: user.email,
       display_name: profile.displayName,
       bio: profile.bio,
       instruments: profile.instruments,
       genres: profile.genres,
-      contact_email: profile.contactEmail,
       lat: profile.lat,
       lng: profile.lng,
       location_name: profile.locationName,
@@ -330,7 +341,6 @@ export const useStore = create<AppStore>()((set, get) => ({
       primary_instrument: profile.primaryInstrument ?? null,
       gear: profile.gear ?? [],
       availability: profile.availability ?? null,
-      phone: profile.phone ?? null,
       years_playing: profile.yearsPlaying ?? null,
       avatar_url: profile.avatarUrl ?? null,
       offers_lessons: profile.offersLessons ?? false,
@@ -343,9 +353,19 @@ export const useStore = create<AppStore>()((set, get) => ({
       discord_url: profile.discordUrl ?? null,
       audio_url: profile.audioUrl ?? null,
     })
-    if (!error) {
+    // Private contact details go to the owner-only table, never to public profiles
+    const contactRow: Record<string, unknown> = {
+      id: user.id,
+      contact_email: profile.contactEmail ?? user.email,
+      updated_at: new Date().toISOString(),
+    }
+    if (profile.phone !== undefined) contactRow.phone = profile.phone
+    const { error: contactErr } = await supabase.from('profile_contacts').upsert(contactRow)
+    if (!error && !contactErr) {
       await get().fetchMusicians()
       get().showToast('Profile saved')
+    } else {
+      console.warn('Profile save failed:', error?.message ?? contactErr?.message)
     }
   },
 
@@ -359,6 +379,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     if (!user) return
     // RLS policy allows the owner to delete their own row
     await supabase.from('profiles').delete().eq('id', user.id)
+    await supabase.from('profile_contacts').delete().eq('id', user.id)
     await get().fetchMusicians()
   },
 
@@ -582,22 +603,27 @@ export const useStore = create<AppStore>()((set, get) => ({
     if (data) {
       const outgoing: Record<string, ContactRequestStatus> = {}
       const incoming: Record<string, 'pending'> = {}
-      const revealedContacts: Record<string, { email: string }> = {}
+      const acceptedIds: string[] = []
       data.forEach(row => {
         if (row.from_id === user.id) {
           outgoing[row.to_id] = row.status as ContactRequestStatus
-          if (row.status === 'accepted') {
-            const m = get().musicians.find(x => x.id === row.to_id)
-            if (m?.contactEmail) revealedContacts[row.to_id] = { email: m.contactEmail }
-          }
+          if (row.status === 'accepted') acceptedIds.push(row.to_id)
         } else {
           if (row.status === 'pending') incoming[row.from_id] = 'pending'
-          if (row.status === 'accepted') {
-            const m = get().musicians.find(x => x.id === row.from_id)
-            if (m?.contactEmail) revealedContacts[row.from_id] = { email: m.contactEmail }
-          }
+          if (row.status === 'accepted') acceptedIds.push(row.from_id)
         }
       })
+      // Contact details are only readable for accepted requests (enforced by RLS on profile_contacts)
+      const revealedContacts: Record<string, { email: string; phone?: string }> = {}
+      if (acceptedIds.length > 0) {
+        const { data: contacts } = await supabase
+          .from('profile_contacts')
+          .select('id, contact_email, phone')
+          .in('id', acceptedIds)
+        contacts?.forEach(c => {
+          if (c.contact_email) revealedContacts[c.id] = { email: c.contact_email, phone: c.phone ?? undefined }
+        })
+      }
       set({ contactRequests: { outgoing, incoming }, revealedContacts })
     }
   },
@@ -623,14 +649,21 @@ export const useStore = create<AppStore>()((set, get) => ({
       .update({ status })
       .eq('from_id', fromId)
       .eq('to_id', user.id)
+    let revealed: { email: string; phone?: string } | null = null
+    if (accept) {
+      // Readable now that the request is accepted (RLS on profile_contacts)
+      const { data: c } = await supabase
+        .from('profile_contacts')
+        .select('contact_email, phone')
+        .eq('id', fromId)
+        .maybeSingle()
+      if (c?.contact_email) revealed = { email: c.contact_email, phone: c.phone ?? undefined }
+    }
     set(s => {
       const incoming = { ...s.contactRequests.incoming }
       delete incoming[fromId]
       const revealedContacts = { ...s.revealedContacts }
-      if (accept) {
-        const m = get().musicians.find(x => x.id === fromId)
-        if (m?.contactEmail) revealedContacts[fromId] = { email: m.contactEmail }
-      }
+      if (revealed) revealedContacts[fromId] = revealed
       return { contactRequests: { ...s.contactRequests, incoming }, revealedContacts }
     })
   },

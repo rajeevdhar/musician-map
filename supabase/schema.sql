@@ -160,3 +160,28 @@ ALTER TABLE public.profiles
 -- CREATE POLICY "avatars_user_insert" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'avatars' AND split_part(name, '/', 1) = auth.uid()::text);
 -- CREATE POLICY "avatars_user_update" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'avatars' AND split_part(name, '/', 1) = auth.uid()::text);
 -- CREATE POLICY "avatars_user_delete" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'avatars' AND split_part(name, '/', 1) = auth.uid()::text);
+
+-- Section 7: Private contact details (see supabase/migrations/2026-10-24_private_contacts_step*.sql)
+-- profiles.email, profiles.contact_email and profiles.phone were publicly readable and have been
+-- REMOVED (step 2). contact_email + phone now live here: owner-only, or readable by the other
+-- party of an ACCEPTED contact request. The account email stays in auth.users only.
+CREATE TABLE IF NOT EXISTS public.profile_contacts (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  contact_email TEXT DEFAULT '',
+  phone TEXT,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE public.profile_contacts ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "contacts_owner_all" ON public.profile_contacts;
+CREATE POLICY "contacts_owner_all" ON public.profile_contacts
+  FOR ALL USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+DROP POLICY IF EXISTS "contacts_accepted_read" ON public.profile_contacts;
+CREATE POLICY "contacts_accepted_read" ON public.profile_contacts
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.contact_requests r
+      WHERE r.status = 'accepted'
+        AND ((r.from_id = auth.uid() AND r.to_id = profile_contacts.id)
+          OR (r.to_id   = auth.uid() AND r.from_id = profile_contacts.id))
+    )
+  );

@@ -63,16 +63,43 @@ app.get('/api/admin/user-stats', requireAdmin, async (req, res) => {
   })
 })
 
+// Admin: account emails (from Supabase Auth) + private contact details, keyed by user id
+app.get('/api/admin/contacts', requireAdmin, async (req, res) => {
+  if (!supabaseAdmin) return res.status(503).json({ error: 'Admin client not configured' })
+  const [{ data: { users }, error: uErr }, { data: contacts, error: cErr }] = await Promise.all([
+    supabaseAdmin.auth.admin.listUsers({ perPage: 1000 }),
+    supabaseAdmin.from('profile_contacts').select('id, contact_email, phone'),
+  ])
+  if (uErr) return res.status(500).json({ error: uErr.message })
+  if (cErr) return res.status(500).json({ error: cErr.message })
+  const byId = new Map((contacts ?? []).map(c => [c.id, c]))
+  res.json({
+    contacts: users.map(u => ({
+      id: u.id,
+      email: u.email,
+      contactEmail: byId.get(u.id)?.contact_email ?? '',
+      phone: byId.get(u.id)?.phone ?? null,
+    })),
+  })
+})
+
 // Admin: update any profile (bypasses RLS via service role)
 app.patch('/api/admin/profile/:id', requireAdmin, async (req, res) => {
   if (!supabaseAdmin) return res.status(503).json({ error: 'Admin client not configured' })
-  const allowed = ['display_name','bio','instruments','genres','contact_email','lat','lng','location_name','looking_for','website_url','instagram_url','youtube_url','soundcloud_url','bandcamp_url','tiktok_url','discord_url']
+  const allowed = ['display_name','bio','instruments','genres','lat','lng','location_name','looking_for','website_url','instagram_url','youtube_url','soundcloud_url','bandcamp_url','tiktok_url','discord_url']
   const update = {}
   for (const key of allowed) {
     if (req.body[key] !== undefined) update[key] = req.body[key]
   }
   const { error } = await supabaseAdmin.from('profiles').update(update).eq('id', req.params.id)
   if (error) return res.status(500).json({ error: error.message })
+  // contact_email is private: it lives in profile_contacts, not in public profiles
+  if (req.body.contact_email !== undefined) {
+    const { error: cErr } = await supabaseAdmin
+      .from('profile_contacts')
+      .upsert({ id: req.params.id, contact_email: req.body.contact_email, updated_at: new Date().toISOString() })
+    if (cErr) return res.status(500).json({ error: cErr.message })
+  }
   res.json({ ok: true })
 })
 

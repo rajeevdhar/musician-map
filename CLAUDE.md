@@ -42,16 +42,16 @@ src/
     AuthModal.tsx      — sign in / register / forgot password tabs
     ResetPasswordModal.tsx — shown after clicking a password reset email link
     AdminPanel.tsx     — admin-only panel: all profiles, online status, edit/delete
-    MapLegend.tsx      — map legend overlay
 
 server.js              — Express API server (served at /api/*)
 supabase/schema.sql    — full DB schema + RLS policies
 ```
 
 ## Key design decisions
-- **Seed musicians** (Maya Chen, Darius Knight, etc.) are hard-coded in `store.ts` — not in the DB. They fill the map on first load.
+- **Private contact details** (`contact_email`, `phone`) live in `profile_contacts`, NOT in the public `profiles` table (which anyone can read). RLS: owner only, or the other party of an *accepted* `contact_requests` row. The account email lives only in Supabase Auth. **Never `select('*')` on `profiles`; use `PUBLIC_PROFILE_COLUMNS` from `src/lib/profileColumns.ts`, and never add private fields to `profiles`.**
+- **Test profiles** are seeded into the DB by `scripts/seed-test-profiles.js` (flagged `is_test`).
 - **Admin access** is checked client-side (`currentUser.email === VITE_ADMIN_EMAIL`) and server-side (`requireAdmin` middleware verifies JWT + ADMIN_EMAIL env var).
-- **Online status**: a heartbeat in `store.ts` updates `profiles.last_seen_at` every 60s while a user is logged in. "Online" = active within last 5 minutes. Shown in both AdminPanel and MusicianDetail.
+- **Online status**: a heartbeat in `store.ts` updates `profiles.last_seen_at` every 240s while a user is logged in. "Online" = active within last 5 minutes. Shown in both AdminPanel and MusicianDetail.
 - **Password recovery**: Supabase fires `PASSWORD_RECOVERY` auth event (not `SIGNED_IN`) when a user clicks a reset link. The store handles this by setting `needsPasswordReset: true` and showing `ResetPasswordModal`, which calls `supabase.auth.updateUser({ password })`.
 - **Admin profile editing**: `ProfileModal` accepts an `adminTarget?: Musician` prop. In admin mode it saves via `PATCH /api/admin/profile/:id` with the admin's JWT, bypassing RLS via the service role key.
 
@@ -63,6 +63,7 @@ All admin endpoints require `Authorization: Bearer <jwt>` where the JWT belongs 
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/admin/user-stats` | List all auth users with `last_sign_in_at` |
+| GET | `/api/admin/contacts` | Account emails (Auth) + private contact details, for the admin panel |
 | PATCH | `/api/admin/profile/:id` | Update any profile (admin only) |
 | DELETE | `/api/admin/profile/:id` | Delete a profile row (admin only) |
 | DELETE | `/api/admin/user/:id` | Delete an auth user + their profile (admin only) |
