@@ -207,21 +207,21 @@ export default function AdminPanel({ onClose }: Props) {
           {activeTab === 'profiles' && (
             <div className="p-6 space-y-5">
               <div className="grid grid-cols-4 gap-0 border-2 border-ink">
-                <div className="p-3 text-center border-r-2 border-ink">
-                  <p className="text-2xl font-extrabold text-ink">{dbProfiles.length}</p>
-                  <p className="text-[11px] font-extrabold text-neutral-700 uppercase tracking-widest mt-0.5">Registered</p>
+                <div className="p-2 text-center border-r-2 border-ink">
+                  <p className="text-xl font-extrabold text-ink">{dbProfiles.length}</p>
+                  <p className="text-[10px] font-extrabold text-neutral-700 uppercase tracking-wide mt-0.5">Reg'd</p>
                 </div>
-                <div className="p-3 text-center border-r-2 border-ink">
-                  <p className="text-2xl font-extrabold text-ink">{registeredOnMap}</p>
-                  <p className="text-[11px] font-extrabold text-neutral-700 uppercase tracking-widest mt-0.5">On Map</p>
+                <div className="p-2 text-center border-r-2 border-ink">
+                  <p className="text-xl font-extrabold text-ink">{registeredOnMap}</p>
+                  <p className="text-[10px] font-extrabold text-neutral-700 uppercase tracking-wide mt-0.5">On Map</p>
                 </div>
-                <div className="p-3 text-center border-r-2 border-ink">
-                  <p className="text-2xl font-extrabold text-accent">{onlineCount}</p>
-                  <p className="text-[11px] font-extrabold text-neutral-700 uppercase tracking-widest mt-0.5">Online Now</p>
+                <div className="p-2 text-center border-r-2 border-ink">
+                  <p className="text-xl font-extrabold text-accent">{onlineCount}</p>
+                  <p className="text-[10px] font-extrabold text-neutral-700 uppercase tracking-wide mt-0.5">Online</p>
                 </div>
-                <div className="p-3 text-center">
-                  <p className="text-2xl font-extrabold text-neutral-400">{testCount}</p>
-                  <p className="text-[11px] font-extrabold text-neutral-700 uppercase tracking-widest mt-0.5">Test</p>
+                <div className="p-2 text-center">
+                  <p className="text-xl font-extrabold text-neutral-400">{testCount}</p>
+                  <p className="text-[10px] font-extrabold text-neutral-700 uppercase tracking-wide mt-0.5">Test</p>
                 </div>
               </div>
 
