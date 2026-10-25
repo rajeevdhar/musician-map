@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from './store'
 import { startTour, hasSeenTour } from './lib/tour'
-import { Map, List, Heart, MessageSquare, User, Shield } from 'lucide-react'
+import { Map, List, Heart, MessageSquare, User, Shield, Pencil, MapPin, LogOut } from 'lucide-react'
+import { getInitials, getInstrumentCode } from './lib/musicianUtils'
+import { isOnline } from './lib/presence'
 import Header from './components/Header'
 import FilterBar from './components/FilterBar'
 import MusicianMap from './components/MusicianMap'
@@ -30,7 +32,7 @@ const BOTTOM_TABS = [
 ]
 
 export default function App() {
-  const { currentUser, initAuth, needsPasswordReset, musicians, selectedId, setSelectedId, activeTab, setActiveTab, showFilterPanel, isAuthReady, setActiveThreadId, unreadCount, toast } = useStore()
+  const { currentUser, initAuth, needsPasswordReset, musicians, selectedId, setSelectedId, activeTab, setActiveTab, showFilterPanel, isAuthReady, setActiveThreadId, unreadCount, toast, currentProfile, logout } = useStore()
   const [modal, setModal] = useState<Modal>(null)
   const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('mm-theme') as Theme) || 'default')
   const [largeText, setLargeText] = useState(() => localStorage.getItem('mm-fontsize') === 'large')
@@ -125,25 +127,40 @@ export default function App() {
           activeTab === 'map' ? 'flex' : 'hidden'
         } lg:flex`}>
           <MusicianMap />
+          {/* Active filter chips overlay on mobile map view */}
+          <div className="lg:hidden absolute top-0 left-0 right-0 z-[1001] bg-ground">
+            <ActiveFilters />
+          </div>
 
           {/* Mobile bottom card: shown when musician selected on map */}
           {selectedMusician && activeTab === 'map' && !showMobileDetail && (
-            <div className="lg:hidden absolute bottom-0 left-0 right-0 z-[999] border-t-2 border-ink bg-ground p-4 shadow-lg" onClick={e => e.stopPropagation()}>
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-extrabold text-ink truncate">{selectedMusician.displayName}</p>
-                  <p className="text-sm text-neutral-700 truncate">
-                    {selectedMusician.instruments.slice(0, 2).join(', ')} · {selectedMusician.locationName.split(',')[0]}
+            <div className="lg:hidden absolute bottom-0 left-0 right-0 z-[999] border-t-2 border-ink bg-ground shadow-lg" onClick={e => e.stopPropagation()}>
+              <div className="grid" style={{ gridTemplateColumns: '52px 1fr auto' }}>
+                {/* Instrument code block */}
+                <div className="self-stretch m-2 mr-0 bg-accent text-white flex items-center justify-center text-[13px] font-extrabold leading-none flex-shrink-0">
+                  {getInstrumentCode(selectedMusician.instruments)}
+                </div>
+                {/* Info */}
+                <div className="py-2.5 px-3 min-w-0">
+                  <p className="text-[16px] font-extrabold text-ink leading-tight truncate flex items-center gap-1.5">
+                    {isOnline(selectedMusician.lastSeenAt) && (
+                      <span className="inline-block w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
+                    )}
+                    {selectedMusician.displayName}
+                  </p>
+                  <p className="text-[13px] text-neutral-700 mt-0.5 truncate">
+                    {[selectedMusician.instruments.slice(0, 2).join(', '), selectedMusician.locationName.split(',')[0]].filter(Boolean).join(' · ')}
                   </p>
                 </div>
+                {/* CTA */}
                 <button
                   onClick={() => {
                     if (!currentUser) { setModal('auth'); return }
                     setShowMobileDetail(true)
                   }}
-                  className="flex items-center justify-between flex-shrink-0 h-11 bg-accent hover:bg-accent-600 text-white font-bold text-sm px-4 transition-colors"
+                  className="flex items-center gap-1.5 flex-shrink-0 border-l-2 border-ink bg-accent hover:bg-accent-600 text-white font-extrabold text-[13px] px-4 transition-colors"
                 >
-                  View profile →
+                  View →
                 </button>
               </div>
             </div>
@@ -153,26 +170,94 @@ export default function App() {
         {/* Mobile-only other tabs */}
         {activeTab !== 'map' && activeTab !== 'list' && (
           <div className="flex-1 flex flex-col min-h-0 overflow-hidden lg:hidden">
-            {activeTab === 'me' && (
-              <div className="flex-1 flex items-center justify-center flex-col gap-4 p-8">
-                <button
-                  onClick={showProfile}
-                  className="flex items-center justify-between h-[52px] bg-accent hover:bg-accent-600 text-white font-bold text-sm px-6 transition-colors"
-                >
-                  <span>{currentUser ? 'Edit My Profile' : 'Sign In'}</span>
-                  <span className="ml-4">→</span>
-                </button>
-                {isAdmin && (
-                  <button
-                    onClick={() => setModal('admin')}
-                    className="flex items-center gap-2 h-[52px] border-2 border-ink hover:bg-accent-100 text-ink font-bold text-sm px-6 transition-colors"
-                  >
-                    <Shield size={16} />
-                    <span>Admin Panel</span>
-                  </button>
-                )}
-              </div>
-            )}
+            {activeTab === 'me' && (() => {
+              const profile = currentProfile()
+              if (!currentUser || !profile) {
+                return (
+                  <div className="flex-1 flex flex-col items-center justify-center gap-5 px-8 text-center">
+                    <div className="w-16 h-16 bg-ink flex items-center justify-center flex-shrink-0">
+                      <User size={28} className="text-white" />
+                    </div>
+                    <div>
+                      <p className="text-[20px] font-extrabold text-ink leading-tight">Not signed in</p>
+                      <p className="text-[13px] text-neutral-600 mt-1.5 leading-relaxed">Sign in to create a profile and connect with musicians near you.</p>
+                    </div>
+                    <button
+                      onClick={() => setModal('auth')}
+                      className="h-12 px-8 bg-accent hover:bg-accent-600 text-white font-extrabold text-sm transition-colors"
+                    >
+                      Sign in →
+                    </button>
+                  </div>
+                )
+              }
+              const initials = getInitials(profile.displayName)
+              const code = getInstrumentCode(profile.instruments)
+              return (
+                <div className="flex-1 flex flex-col overflow-y-auto">
+                  {/* Avatar */}
+                  <div className="w-full h-[200px] bg-neutral-200 relative flex-shrink-0">
+                    {profile.avatarUrl ? (
+                      <img src={profile.avatarUrl} alt={profile.displayName} className="w-full h-full object-cover grayscale" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-ink">
+                        <span className="text-[72px] font-black text-white leading-none tracking-tighter select-none">{initials}</span>
+                      </div>
+                    )}
+                  </div>
+                  {/* Accent header */}
+                  <div className="bg-accent border-t-2 border-ink px-4 pt-3 pb-4 flex-shrink-0">
+                    <p className="text-[11px] font-extrabold uppercase tracking-widest text-white/70 mb-1">
+                      {code} · {profile.instruments[0] ?? 'Musician'}
+                    </p>
+                    <h2 className="text-[32px] font-extrabold text-white leading-none tracking-tight">{profile.displayName}</h2>
+                    {profile.locationName && (
+                      <p className="text-[13px] font-semibold text-white/80 mt-1.5 flex items-center gap-1">
+                        <MapPin size={11} />
+                        {profile.locationName}
+                      </p>
+                    )}
+                  </div>
+                  {/* Info row */}
+                  {(profile.genres.length > 0 || profile.level) && (
+                    <div className="px-4 py-3 border-b-2 border-ink flex-shrink-0">
+                      <p className="text-[12px] text-neutral-600 leading-snug">
+                        {[profile.genres.slice(0, 3).join(', '), profile.level].filter(Boolean).join(' · ')}
+                      </p>
+                    </div>
+                  )}
+                  {/* Actions */}
+                  <div className="px-4 pt-5 flex flex-col gap-3">
+                    <button
+                      onClick={showProfile}
+                      className="w-full h-12 bg-accent hover:bg-accent-600 text-white font-extrabold text-sm flex items-center justify-between px-4 transition-colors"
+                    >
+                      <span className="flex items-center gap-2"><Pencil size={14} /> Edit My Profile</span>
+                      <span>→</span>
+                    </button>
+                    {isAdmin && (
+                      <button
+                        onClick={() => setModal('admin')}
+                        className="w-full h-12 border-2 border-ink hover:bg-accent-100 text-ink font-extrabold text-sm flex items-center gap-2 px-4 transition-colors"
+                      >
+                        <Shield size={14} />
+                        Admin Panel
+                      </button>
+                    )}
+                  </div>
+                  {/* Sign out */}
+                  <div className="px-4 pt-6 pb-4">
+                    <button
+                      onClick={logout}
+                      className="flex items-center gap-1.5 text-[12px] font-semibold text-neutral-400 hover:text-accent-700 transition-colors"
+                    >
+                      <LogOut size={12} />
+                      Sign out
+                    </button>
+                  </div>
+                </div>
+              )
+            })()}
             {activeTab === 'saved' && (
               <SavedTab
                 onViewProfile={(id) => { setSelectedId(id); setActiveTab('map'); setShowMobileDetail(true) }}

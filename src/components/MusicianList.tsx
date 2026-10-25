@@ -91,15 +91,49 @@ export default function MusicianList({ onViewProfile }: Props) {
       {/* Rows */}
       <div className="overflow-y-auto flex-1">
         {musicians.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full gap-4 px-8 text-center">
-            <p className="text-[20px] font-extrabold text-ink">No one matches yet.</p>
-            <p className="text-sm text-neutral-700">Try a wider distance or fewer filters.</p>
-            <button
-              onClick={resetFilters}
-              className="h-[42px] px-5 border-2 border-ink text-sm font-extrabold text-ink hover:bg-accent-100 transition-colors"
-            >
-              Reset filters
-            </button>
+          <div className="flex flex-col items-center justify-center h-full gap-5 px-5 text-center">
+            {/* Scoreboard counter box */}
+            <div className="w-full border-4 border-ink relative overflow-hidden flex-shrink-0">
+              <div
+                className="absolute inset-0 opacity-[0.045]"
+                style={{
+                  backgroundImage: 'repeating-linear-gradient(45deg, #1a1a1a 0, #1a1a1a 1px, transparent 0, transparent 50%)',
+                  backgroundSize: '8px 8px',
+                }}
+              />
+              <div className="relative py-6 flex flex-col items-center">
+                <span className="text-[80px] font-black text-accent leading-none select-none">0</span>
+                <span className="text-[11px] font-extrabold uppercase tracking-widest text-ink mt-0.5">
+                  {filterCount() > 0 ? 'matches found' : filters.distanceMi === 0 ? 'musicians yet' : 'in this area'}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-[13px] text-neutral-600 leading-relaxed max-w-[210px] mx-auto">
+                {filterCount() > 0
+                  ? 'Your filters are too narrow — try removing some.'
+                  : filters.distanceMi === 0
+                  ? 'No one has joined yet. Invite a musician near you.'
+                  : 'Try expanding the search distance.'}
+              </p>
+            </div>
+
+            {filterCount() > 0 ? (
+              <button
+                onClick={resetFilters}
+                className="h-10 px-6 bg-accent text-white text-[13px] font-extrabold hover:bg-accent-600 transition-colors"
+              >
+                Reset all filters
+              </button>
+            ) : filters.distanceMi !== 0 ? (
+              <button
+                onClick={() => setFilters({ distanceMi: 0 })}
+                className="h-10 px-6 border-2 border-ink text-[13px] font-extrabold text-ink hover:bg-accent-100 transition-colors"
+              >
+                Show worldwide
+              </button>
+            ) : null}
           </div>
         ) : (
           musicians.map(m => (

@@ -99,21 +99,29 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
           </p>
         </div>
 
-        {/* Stat row */}
-        <div className="grid grid-cols-2 border-y-2 border-ink">
-          <div className="px-4 py-3 border-r-2 border-ink">
-            <p className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-700 mb-1">Genres</p>
-            <p className="text-[15px] font-extrabold text-ink leading-tight">
-              {musician.genres.length > 0 ? musician.genres.join(', ') : '—'}
-            </p>
+        {/* Genres + Looking for */}
+        {(musician.genres.length > 0 || musician.lookingFor) && (
+          <div className="border-b-2 border-ink">
+            {musician.genres.length > 0 && (
+              <div className="px-4 py-3 border-b-2 border-ink">
+                <p className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-700 mb-2">Genres</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {musician.genres.map(g => <span key={g} className="tag">{g}</span>)}
+                </div>
+              </div>
+            )}
+            {musician.lookingFor && (
+              <div className="px-4 py-3">
+                <p className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-700 mb-2">Looking for</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {musician.lookingFor.split(',').map(s => s.trim()).filter(Boolean).map(lf => (
+                    <span key={lf} className="tag">{lf}</span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-          <div className="px-4 py-3">
-            <p className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-700 mb-1">Looking for</p>
-            <p className="text-[15px] font-extrabold text-ink leading-tight">
-              {musician.lookingFor ? musician.lookingFor.split(',').map(s => s.trim()).filter(Boolean).join(', ') : '—'}
-            </p>
-          </div>
-        </div>
+        )}
 
         {/* Tags */}
         {musician.instruments.length > 0 && (
