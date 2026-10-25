@@ -80,7 +80,7 @@ export default function FilterPanel({ isMobile = false }: Props) {
       </div>
 
       {/* Scrollable content */}
-      <div className={`px-4 py-4 space-y-6 ${isMobile ? 'flex-1 overflow-y-auto' : 'overflow-y-auto max-h-[340px]'}`}>
+      <div className={`px-4 py-4 space-y-6 ${isMobile ? 'flex-1 overflow-y-auto' : 'overflow-y-auto max-h-[min(340px,45vh)]'}`}>
         {/* Online only */}
         <section>
           <button
