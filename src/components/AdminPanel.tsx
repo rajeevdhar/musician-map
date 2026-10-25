@@ -166,8 +166,8 @@ export default function AdminPanel({ onClose }: Props) {
   return (
     <>
       <div className="modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
-        <div className="modal-box" style={{ maxWidth: '720px', overflowY: 'scroll' }}>
-          <div className="sticky top-0 bg-white flex items-center justify-between px-6 pt-5 pb-3 border-b border-gray-100 z-10">
+        <div className="modal-box" style={{ maxWidth: '720px', display: 'flex', flexDirection: 'column', height: 'min(90vh, calc(100dvh - 32px))', overflowY: 'hidden' }}>
+          <div className="flex-shrink-0 bg-white flex items-center justify-between px-6 pt-5 pb-3 border-b border-gray-100">
             <div>
               <h2 className="text-xl font-extrabold text-ink">Admin Panel</h2>
               <p className="text-xs text-neutral-700">{dbProfiles.length} profile{dbProfiles.length !== 1 ? 's' : ''} in database</p>
@@ -176,7 +176,7 @@ export default function AdminPanel({ onClose }: Props) {
           </div>
 
           {/* Tabs */}
-          <div className="flex border-b-2 border-ink px-6">
+          <div className="flex-shrink-0 flex border-b-2 border-ink px-6">
             <button
               onClick={() => setActiveTab('profiles')}
               className={`px-4 py-2.5 text-xs font-extrabold uppercase tracking-widest transition-colors border-b-2 -mb-[2px] ${activeTab === 'profiles' ? 'border-accent text-accent' : 'border-transparent text-neutral-500 hover:text-ink'}`}
@@ -196,6 +196,7 @@ export default function AdminPanel({ onClose }: Props) {
             </button>
           </div>
 
+          <div className="overflow-y-auto flex-1 min-h-0">
           {activeTab === 'profiles' && (
             <div className="p-6 space-y-5">
               <div className="grid grid-cols-4 gap-0 border-2 border-ink">
@@ -285,6 +286,7 @@ export default function AdminPanel({ onClose }: Props) {
               )}
             </div>
           )}
+          </div>
         </div>
       </div>
 
