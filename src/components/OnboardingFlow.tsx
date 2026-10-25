@@ -56,9 +56,7 @@ async function geocodeCity(query: string): Promise<{ lat: number; lng: number; d
   }
 }
 
-function jitter(n: number, radius = 0.03) {
-  return n + (Math.random() - 0.5) * 2 * radius
-}
+function roundCoord(n: number) { return Math.round(n * 100) / 100 }
 
 export default function OnboardingFlow({ onComplete, onBack }: Props) {
   const { saveProfile, currentUser } = useStore()
@@ -129,9 +127,9 @@ export default function OnboardingFlow({ onComplete, onBack }: Props) {
     setSaving(true)
     let lat = data.lat ?? 0
     let lng = data.lng ?? 0
-    if (data.locationPrecision === 'area' && data.lat !== null) {
-      lat = jitter(lat)
-      lng = jitter(lng)
+    if (data.locationPrecision !== 'hidden' && data.lat !== null) {
+      lat = roundCoord(lat)
+      lng = roundCoord(lng)
     }
     await saveProfile({
       displayName: currentUser.displayName,
@@ -274,9 +272,6 @@ export default function OnboardingFlow({ onComplete, onBack }: Props) {
             {/* Map preview */}
             <div className="h-[140px] border-2 border-ink bg-neutral-200 relative overflow-hidden mb-5 flex-shrink-0">
               <div className="absolute inset-0 flex items-center justify-center">
-                {data.locationPrecision === 'exact' && (
-                  <div className="w-[18px] h-[18px] bg-accent" style={{ transition: 'all .25s' }} />
-                )}
                 {data.locationPrecision === 'area' && (
                   <div
                     className="w-[110px] h-[110px]"
@@ -293,16 +288,14 @@ export default function OnboardingFlow({ onComplete, onBack }: Props) {
               </div>
               <div className="absolute bottom-0 left-0 bg-ink text-white text-[11px] font-extrabold px-2 py-1">
                 Others see:{' '}
-                {data.locationPrecision === 'exact' ? 'Exact pin' :
-                 data.locationPrecision === 'area' ? 'Approximate area' : 'Nothing'}
+                {data.locationPrecision === 'area' ? 'City / zip area' : 'Nothing'}
               </div>
             </div>
 
             {/* Radio rows */}
             <div className="flex flex-col gap-2">
               {([
-                { value: 'exact', label: 'Exact pin', desc: 'Your precise location appears on the map.' },
-                { value: 'area', label: 'Approximate area', desc: 'Only the neighborhood is shown. Your exact address is never stored.' },
+                { value: 'area', label: 'City / zip area', desc: 'Shown within ~1 km of your location. Your exact address is never stored.' },
                 { value: 'hidden', label: 'Hidden from map', desc: "You won't appear on the map, but can still browse and message others." },
               ] as { value: Precision; label: string; desc: string }[]).map(opt => (
                 <button
