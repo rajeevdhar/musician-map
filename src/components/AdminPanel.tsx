@@ -165,7 +165,7 @@ export default function AdminPanel({ onClose }: Props) {
 
   return (
     <>
-      <div className="modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="modal-backdrop" style={{ alignItems: 'flex-start' }} onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
         <div className="modal-box" style={{ maxWidth: '720px', display: 'flex', flexDirection: 'column', height: 'min(90vh, calc(100dvh - 32px))', overflowY: 'hidden' }}>
           {/* Tabs + close */}
           <div className="flex-shrink-0 flex items-center border-b-2 border-ink px-6">
