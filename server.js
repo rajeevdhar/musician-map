@@ -16,11 +16,28 @@ const supabaseAdmin = process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_R
     })
   : null
 
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY
+
+// Separate client with anon key for JWT verification (works with both legacy and new key formats)
+const supabaseVerify = process.env.SUPABASE_URL && SUPABASE_ANON_KEY
+  ? createClient(process.env.SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+  : supabaseAdmin
+
+// Returns a Supabase client that acts as the authenticated user (respects RLS)
+function supabaseAsUser(token) {
+  return createClient(process.env.SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  })
+}
+
 // Verify the JWT belongs to a real user; also check admin email for privileged routes
 async function verifyJwt(req) {
   const token = req.headers.authorization?.split(' ')[1]
-  if (!token || !supabaseAdmin) return null
-  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token)
+  if (!token || !supabaseVerify) return null
+  const { data: { user }, error } = await supabaseVerify.auth.getUser(token)
   return error ? null : user
 }
 
@@ -126,12 +143,13 @@ app.delete('/api/admin/user/:id', requireAdmin, async (req, res) => {
 const VALID_REASONS = ['inappropriate_image','offensive_content','harassment','spam','fake_profile','other']
 
 app.post('/api/report/:profileId', async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1]
   const user = await verifyJwt(req)
   if (!user) return res.status(401).json({ error: 'Unauthorized' })
-  if (!supabaseAdmin) return res.status(503).json({ error: 'Admin client not configured' })
   const { reason, details } = req.body
   if (!VALID_REASONS.includes(reason)) return res.status(400).json({ error: 'Invalid reason' })
-  const { error } = await supabaseAdmin.from('reports').insert({
+  // Use the user's own JWT so RLS enforces reporter_id = auth.uid()
+  const { error } = await supabaseAsUser(token).from('reports').insert({
     reported_profile_id: req.params.profileId,
     reporter_id: user.id,
     reason,
