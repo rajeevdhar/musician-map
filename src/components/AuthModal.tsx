@@ -14,6 +14,7 @@ export default function AuthModal({ onClose }: Props) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [resetSent, setResetSent] = useState(false)
+  const [ageConfirmed, setAgeConfirmed] = useState(false)
   const { login, register } = useStore()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -22,6 +23,7 @@ export default function AuthModal({ onClose }: Props) {
     setLoading(true)
 
     if (tab === 'register') {
+      if (!ageConfirmed) { setError('You must confirm you are 16 or older to register'); setLoading(false); return }
       if (password.length < 6) { setError('Password must be at least 6 characters'); setLoading(false); return }
       const result = await register(email, password, name.trim())
       if (result.ok) onClose()
@@ -103,6 +105,26 @@ export default function AuthModal({ onClose }: Props) {
             </div>
           )}
 
+          {tab === 'register' && (
+            <label className="flex items-start gap-3 cursor-pointer select-none">
+              <div
+                onClick={() => setAgeConfirmed(v => !v)}
+                className={`mt-0.5 w-5 h-5 flex-shrink-0 border-2 flex items-center justify-center transition-colors ${
+                  ageConfirmed ? 'bg-ink border-ink' : 'border-ink hover:bg-accent-100'
+                }`}
+              >
+                {ageConfirmed && (
+                  <svg width="11" height="9" viewBox="0 0 11 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 4L4 7.5L10 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
+              </div>
+              <span className="text-[13px] text-neutral-700 leading-snug" onClick={() => setAgeConfirmed(v => !v)}>
+                I confirm that I am <strong className="text-ink">16 years of age or older</strong>
+              </span>
+            </label>
+          )}
+
           {error && (
             <p className="text-sm text-accent-700 bg-accent-100 border-2 border-accent px-3 py-2">{error}</p>
           )}
@@ -135,7 +157,7 @@ export default function AuthModal({ onClose }: Props) {
                   No account?{' '}
                   <button
                     type="button"
-                    onClick={() => { setTab('register'); setError('') }}
+                    onClick={() => { setTab('register'); setError(''); setAgeConfirmed(false) }}
                     className="font-extrabold text-ink hover:text-accent transition-colors"
                   >
                     Register →
