@@ -24,7 +24,7 @@ export default function ActiveFilters() {
   if (chips.length === 0) return null
 
   return (
-    <div className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 border-b-2 border-ink overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+    <div className="flex-shrink-0 flex flex-wrap items-center gap-1.5 px-3 py-2 border-b-2 border-ink">
       {chips.map(chip => (
         <button
           key={chip.label}
