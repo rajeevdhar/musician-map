@@ -167,7 +167,7 @@ app.get('/api/admin/reports', requireAdmin, async (req, res) => {
   if (!supabaseAdmin) return res.status(503).json({ error: 'Admin client not configured' })
   const { data, error } = await supabaseAdmin
     .from('reports')
-    .select('id, reason, details, status, created_at, reported_profile_id, reporter_id, profiles!reported_profile_id(display_name, avatar_url)')
+    .select('id, reason, details, status, created_at, reported_profile_id, reporter_id')
     .order('created_at', { ascending: false })
   if (error) return res.status(500).json({ error: error.message })
   res.json({ reports: data })
