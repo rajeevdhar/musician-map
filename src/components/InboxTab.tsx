@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useStore } from '../store'
-import { getInstrumentCode } from '../lib/musicianUtils'
+import { getInitials } from '../lib/musicianUtils'
 import ThreadView from './ThreadView'
 
 interface Props {
@@ -75,7 +75,7 @@ export default function InboxTab({ onViewProfile }: Props) {
                 const isMine = last?.fromId === currentUser?.id
                 const hasUnread = unread[id]
                 const isActive = activeThreadId === id
-                const code = getInstrumentCode(musician.instruments)
+                const initials = getInitials(musician.displayName)
                 return (
                   <button
                     key={id}
@@ -89,8 +89,8 @@ export default function InboxTab({ onViewProfile }: Props) {
                       {musician.avatarUrl ? (
                         <img src={musician.avatarUrl} alt={musician.displayName} className="w-9 h-9 object-cover flex-shrink-0 mt-0.5 grayscale" />
                       ) : (
-                        <div className="w-9 h-9 bg-accent group-hover:bg-ink text-white text-[12px] font-extrabold flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors">
-                          {code}
+                        <div className="w-9 h-9 bg-ink text-white text-[13px] font-extrabold flex-shrink-0 mt-0.5 flex items-center justify-center select-none">
+                          {initials}
                         </div>
                       )}
                       <div className="pl-2.5 min-w-0">
@@ -120,7 +120,7 @@ export default function InboxTab({ onViewProfile }: Props) {
               {incomingIds.map(fromId => {
                 const musician = musicians.find(m => m.id === fromId)
                 if (!musician) return null
-                const code = getInstrumentCode(musician.instruments)
+                const initials = getInitials(musician.displayName)
                 return (
                   <div key={fromId} className="border-t-2 border-ink mx-3 mt-3 border-2 border-accent bg-accent-100 p-3">
                     <p className="text-[11px] font-extrabold uppercase tracking-widest text-accent-700 mb-2">
@@ -130,8 +130,8 @@ export default function InboxTab({ onViewProfile }: Props) {
                       {musician.avatarUrl ? (
                         <img src={musician.avatarUrl} alt={musician.displayName} className="w-9 h-9 object-cover flex-shrink-0 grayscale" />
                       ) : (
-                        <div className="w-9 h-9 bg-accent flex items-center justify-center text-white text-[12px] font-extrabold flex-shrink-0">
-                          {code}
+                        <div className="w-9 h-9 bg-ink flex items-center justify-center text-white text-[13px] font-extrabold flex-shrink-0 select-none">
+                          {initials}
                         </div>
                       )}
                       <div>

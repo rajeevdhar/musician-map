@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, ArrowUp } from 'lucide-react'
 import { useStore } from '../store'
-import { getInstrumentCode } from '../lib/musicianUtils'
+import { getInitials } from '../lib/musicianUtils'
 
 interface Props {
   musicianId: string
@@ -45,7 +45,7 @@ export default function ThreadView({ musicianId, onBack, onViewProfile }: Props)
     inputRef.current?.focus()
   }
 
-  const code = musician ? getInstrumentCode(musician.instruments) : '??'
+  const initials = musician ? getInitials(musician.displayName) : '??'
   const firstName = musician?.displayName.split(' ')[0] ?? 'them'
 
   if (!musician) {
@@ -75,10 +75,10 @@ export default function ThreadView({ musicianId, onBack, onViewProfile }: Props)
           />
         ) : (
           <div
-            className="w-9 h-9 bg-accent flex items-center justify-center text-white text-[12px] font-extrabold flex-shrink-0 cursor-pointer hover:bg-accent-600 transition-colors"
+            className="w-9 h-9 bg-ink flex items-center justify-center text-white text-[13px] font-extrabold flex-shrink-0 cursor-pointer hover:bg-neutral-700 transition-colors select-none"
             onClick={() => onViewProfile(musicianId)}
           >
-            {code}
+            {initials}
           </div>
         )}
         <div className="flex-1 min-w-0">

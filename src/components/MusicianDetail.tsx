@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import type { Musician } from '../types'
 import { useStore } from '../store'
 import { ArrowLeft, X, Heart, MapPin, Pencil, MessageSquare, Globe, Instagram, Youtube, Music, Play, Pause, Tent, Video, Flag } from 'lucide-react'
-import { getInstrumentCode } from '../lib/musicianUtils'
+import { getInstrumentCode, getInitials } from '../lib/musicianUtils'
 import { isOnline, presenceText } from '../lib/presence'
 import ReportModal from './ReportModal'
 
@@ -18,6 +18,7 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
   const { currentUser, saved, toggleSaved, contactRequests, revealedContacts, requestContact } = useStore()
   const isOwnProfile = currentUser?.id === musician.id
   const code = getInstrumentCode(musician.instruments)
+  const initials = getInitials(musician.displayName)
   const online = isOnline(musician.lastSeenAt)
   const isSeed = musician.isTest === true
   const isSaved = saved[musician.id] !== undefined
@@ -57,8 +58,8 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
         {musician.avatarUrl ? (
           <img src={musician.avatarUrl} alt={musician.displayName} className="w-full h-full object-cover grayscale" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-neutral-200">
-            <span className="text-[48px] font-extrabold text-neutral-400">{code}</span>
+          <div className="w-full h-full flex items-center justify-center bg-ink">
+            <span className="text-[72px] font-black text-white leading-none tracking-tighter select-none">{initials}</span>
           </div>
         )}
         {/* Close / back */}

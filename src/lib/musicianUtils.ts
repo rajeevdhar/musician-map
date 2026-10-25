@@ -18,6 +18,13 @@ export const INSTRUMENT_CODES: Record<string, string> = {
   'Other': 'OT',
 }
 
+export function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+
 export function getInstrumentCode(instruments: string[]): string {
   if (!instruments.length) return 'MU'
   return INSTRUMENT_CODES[instruments[0]] ?? instruments[0].slice(0, 2).toUpperCase()
