@@ -3,6 +3,7 @@ import { SlidersHorizontal } from 'lucide-react'
 import { useStore } from '../store'
 import type { Musician } from '../types'
 import { getInstrumentCode, haversineDistanceMiles, formatDistance } from '../lib/musicianUtils'
+import { isOnline } from '../lib/presence'
 
 type SortMode = 'nearest' | 'further' | 'az'
 
@@ -127,6 +128,7 @@ function MusicianRow({
   onClick: () => void
 }) {
   const code = getInstrumentCode(m.instruments)
+  const online = isOnline(m.lastSeenAt)
   const distMiles = userLat != null && userLng != null && !isNaN(m.lat) && !isNaN(m.lng)
     ? haversineDistanceMiles(userLat, userLng, m.lat, m.lng)
     : null
@@ -134,20 +136,26 @@ function MusicianRow({
   return (
     <button
       onClick={onClick}
-      className={`group w-full text-left grid border-t-2 border-ink transition-colors hover:bg-accent-100 active:bg-accent-200 ${isSelected ? 'bg-accent-100' : ''}`}
+      className={`group w-full text-left grid border-t-2 border-ink transition-colors hover:bg-accent-100 active:bg-accent-200 relative ${isSelected ? 'bg-accent-100' : ''}`}
       style={{ gridTemplateColumns: '52px 1fr auto' }}
     >
+      {/* Selected / hover left stripe */}
+      <span className={`absolute left-0 top-0 bottom-0 w-[3px] bg-accent transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`} />
+
       {/* Code block */}
-      <div className="min-h-[52px] m-2 mr-0 bg-accent group-hover:bg-ink text-white flex items-start pt-1 pl-1.5 text-[13px] font-extrabold leading-none flex-shrink-0 transition-colors">
+      <div className="self-stretch m-2 mr-0 bg-accent group-hover:bg-ink text-white flex items-center justify-center text-[13px] font-extrabold leading-none flex-shrink-0 transition-colors">
         {code}
       </div>
 
       {/* Middle */}
       <div className="py-2.5 px-3 min-w-0">
-        <p className="text-[16px] font-extrabold text-ink group-hover:text-accent leading-tight truncate transition-colors">{m.displayName}</p>
+        <p className="text-[16px] font-extrabold text-ink group-hover:text-accent leading-tight truncate transition-colors flex items-center gap-1.5">
+          {online && <span className="inline-block w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />}
+          {m.displayName}
+        </p>
         {(m.instruments.length > 0 || m.genres.length > 0) && (
           <p className="text-[13px] text-neutral-700 mt-0.5 truncate">
-            {[m.instruments.slice(0, 2).join(', '), m.genres.slice(0, 1).join(', ')].filter(Boolean).join(' · ')}
+            {[m.instruments.slice(0, 2).join(', '), m.genres.slice(0, 1).join(', '), m.level || null].filter(Boolean).join(' · ')}
           </p>
         )}
         {m.lookingFor && (
