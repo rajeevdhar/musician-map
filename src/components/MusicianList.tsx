@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { SlidersHorizontal } from 'lucide-react'
+import { SlidersHorizontal, ArrowUpDown } from 'lucide-react'
 import { useStore } from '../store'
 import type { Musician } from '../types'
 import { getInstrumentCode, haversineDistanceMiles, formatDistance } from '../lib/musicianUtils'
@@ -62,9 +62,16 @@ export default function MusicianList({ onViewProfile }: Props) {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-3 pb-1">
-          <button onClick={toggleSort} className="text-[13px] font-semibold text-neutral-700 hover:text-ink hover:underline underline-offset-2 transition-colors">
-            {sort === 'nearest' ? 'Nearest ↑' : sort === 'further' ? 'Furthest ↓' : 'A–Z ↑'}
+        <div className="flex items-center gap-2 pb-1">
+          <button
+            onClick={toggleSort}
+            title={sort === 'nearest' ? 'Sort: Nearest first' : sort === 'further' ? 'Sort: Furthest first' : 'Sort: A–Z'}
+            className="relative flex items-center gap-1.5 h-8 px-2.5 border-2 border-ink text-[12px] font-extrabold text-ink hover:bg-accent-100 transition-colors"
+          >
+            <ArrowUpDown size={12} />
+            <span className="hidden sm:inline">
+              {sort === 'nearest' ? 'Nearest' : sort === 'further' ? 'Furthest' : 'A–Z'}
+            </span>
           </button>
           <button
             onClick={() => setShowFilterPanel(true)}
