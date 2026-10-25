@@ -61,8 +61,22 @@ export default function AdminPanel({ onClose }: Props) {
   const [activeTab, setActiveTab] = useState<'profiles' | 'reports'>('profiles')
   const [reports, setReports] = useState<Report[]>([])
   const [reportsLoading, setReportsLoading] = useState(false)
+  const [chromeOffset, setChromeOffset] = useState(0)
 
   useEffect(() => { loadAll() }, [])
+
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    const update = () => setChromeOffset(vv.offsetTop)
+    vv.addEventListener('resize', update)
+    vv.addEventListener('scroll', update)
+    update()
+    return () => {
+      vv.removeEventListener('resize', update)
+      vv.removeEventListener('scroll', update)
+    }
+  }, [])
 
   const adminFetch = async (path: string, method: string) => {
     const { data: { session } } = await supabase.auth.getSession()
@@ -165,8 +179,8 @@ export default function AdminPanel({ onClose }: Props) {
 
   return (
     <>
-      <div className="modal-backdrop" style={{ alignItems: 'flex-start' }} onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
-        <div className="modal-box" style={{ maxWidth: '720px', display: 'flex', flexDirection: 'column', height: 'min(90vh, calc(100dvh - 32px))', overflowY: 'hidden' }}>
+      <div className="modal-backdrop" style={{ alignItems: 'flex-start', paddingTop: `${chromeOffset + 16}px` }} onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+        <div className="modal-box" style={{ maxWidth: '720px', display: 'flex', flexDirection: 'column', height: `calc(100dvh - ${chromeOffset + 32}px)`, overflowY: 'hidden' }}>
           {/* Tabs + close */}
           <div className="flex-shrink-0 flex items-center border-b-2 border-ink px-6">
             <button
