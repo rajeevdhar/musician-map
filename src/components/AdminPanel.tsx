@@ -166,13 +166,12 @@ export default function AdminPanel({ onClose }: Props) {
   return (
     <>
       <div className="modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
-        <div className="modal-box" style={{ maxWidth: '720px' }}>
-          <div className="sticky top-0 bg-white flex items-center justify-between px-6 pt-5 pb-3 border-b border-gray-100 z-10">
-            <div className="flex items-center gap-3">
-              <div>
-                <h2 className="text-xl font-extrabold text-ink">Admin Panel</h2>
-                <p className="text-xs text-neutral-700">{dbProfiles.length} profile{dbProfiles.length !== 1 ? 's' : ''} in database</p>
-              </div>
+        <div className="modal-box" style={{ maxWidth: '720px', display: 'flex', flexDirection: 'column', maxHeight: '90vh', overflowY: 'hidden' }}>
+          {/* Header — outside the scroll container so scrollbar never overlaps buttons */}
+          <div className="flex-shrink-0 bg-white flex items-center justify-between px-6 pt-5 pb-3 border-b border-gray-100">
+            <div>
+              <h2 className="text-xl font-extrabold text-ink">Admin Panel</h2>
+              <p className="text-xs text-neutral-700">{dbProfiles.length} profile{dbProfiles.length !== 1 ? 's' : ''} in database</p>
             </div>
             <div className="flex items-center gap-2">
               {activeTab === 'profiles' && (
@@ -185,7 +184,7 @@ export default function AdminPanel({ onClose }: Props) {
           </div>
 
           {/* Tabs */}
-          <div className="flex border-b-2 border-ink px-6">
+          <div className="flex-shrink-0 flex border-b-2 border-ink px-6">
             <button
               onClick={() => setActiveTab('profiles')}
               className={`px-4 py-2.5 text-xs font-extrabold uppercase tracking-widest transition-colors border-b-2 -mb-[2px] ${activeTab === 'profiles' ? 'border-accent text-accent' : 'border-transparent text-neutral-500 hover:text-ink'}`}
@@ -205,6 +204,7 @@ export default function AdminPanel({ onClose }: Props) {
             </button>
           </div>
 
+          <div className="overflow-y-auto flex-1">
           {activeTab === 'profiles' && (
             <div className="p-6 space-y-5">
               <div className="grid grid-cols-4 gap-0 border-2 border-ink">
@@ -267,35 +267,34 @@ export default function AdminPanel({ onClose }: Props) {
 
           {activeTab === 'reports' && (
             <div className="p-6 space-y-4">
-              {reportsLoading ? (
-                <div className="text-center py-10 text-gray-400 text-sm">Loading reports…</div>
-              ) : reports.length === 0 ? (
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-neutral-500">
+                  {reportsLoading ? 'Loading…' : `${reports.filter(r => r.status === 'pending').length} pending · ${reports.length} total`}
+                </p>
+                <button onClick={loadReports} disabled={reportsLoading} className="text-xs text-accent-700 hover:bg-accent-100 disabled:opacity-50 px-2 py-1 border-2 border-ink font-bold transition-colors">
+                  ↻ Refresh
+                </button>
+              </div>
+              {reportsLoading ? null : reports.length === 0 ? (
                 <div className="text-center py-10 text-gray-400 text-sm">No reports yet.</div>
               ) : (
-                <>
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-neutral-500">{reports.filter(r => r.status === 'pending').length} pending · {reports.length} total</p>
-                    <button onClick={loadReports} disabled={reportsLoading} className="text-xs text-accent-700 hover:bg-accent-100 disabled:opacity-50 px-2 py-1 border-2 border-ink font-bold transition-colors">
-                      ↻ Refresh
-                    </button>
-                  </div>
-                  <div className="space-y-3">
-                    {reports.map(report => (
-                      <ReportRow
-                        key={report.id}
-                        report={report}
-                        dbProfiles={dbProfiles}
-                        actioning={actionState[`report-${report.id}`] ?? false}
-                        onUpdateStatus={(status) => handleReportStatus(report.id, status)}
-                        onDeleteProfile={() => handleDeleteProfile(report.reported_profile_id)}
-                        onDeleteAccount={() => handleDeleteAccount(report.reported_profile_id)}
-                      />
-                    ))}
-                  </div>
-                </>
+                <div className="space-y-3">
+                  {reports.map(report => (
+                    <ReportRow
+                      key={report.id}
+                      report={report}
+                      dbProfiles={dbProfiles}
+                      actioning={actionState[`report-${report.id}`] ?? false}
+                      onUpdateStatus={(status) => handleReportStatus(report.id, status)}
+                      onDeleteProfile={() => handleDeleteProfile(report.reported_profile_id)}
+                      onDeleteAccount={() => handleDeleteAccount(report.reported_profile_id)}
+                    />
+                  ))}
+                </div>
               )}
             </div>
           )}
+          </div>
         </div>
       </div>
 
