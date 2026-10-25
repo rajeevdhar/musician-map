@@ -112,7 +112,7 @@ export default function App() {
           activeTab === 'list' ? 'flex w-full' : 'hidden'
         } lg:flex lg:w-[380px]`}>
           {showFilterPanel && <FilterPanel />}
-          <ActiveFilters />
+          {!showFilterPanel && <ActiveFilters />}
           <MusicianList onViewProfile={(m) => {
             if (!currentUser) { setModal('auth'); return }
             openMusician(m.id); setShowMobileDetail(true)
