@@ -13,7 +13,7 @@ const LEVEL_OPTIONS: Level[] = ['Beginner', 'Intermediate', 'Advanced', 'Pro']
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const SLOTS = ['Morning', 'Afternoon', 'Evening']
 
-function jitter(n: number, r = 0.03) { return n + (Math.random() - 0.5) * 2 * r }
+function roundCoord(n: number) { return Math.round(n * 100) / 100 }
 function emptyAvail(): boolean[][] { return Array.from({ length: 7 }, () => [false, false, false]) }
 
 type Suggestion = { lat: number; lng: number; display: string }
@@ -170,7 +170,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
   const [gear, setGear] = useState<string[]>(source?.gear ?? [])
   const [gearInput, setGearInput] = useState('')
   const [availability, setAvailability] = useState<boolean[][]>(source?.availability ?? emptyAvail())
-  const [locationPrecision, setLocationPrecision] = useState<Precision>(source?.locationPrecision ?? 'exact')
+  const [locationPrecision, setLocationPrecision] = useState<Precision>(source?.locationPrecision === 'hidden' ? 'hidden' : 'area')
   const [locationQuery, setLocationQuery] = useState(source?.locationName ?? '')
   const [lat, setLat] = useState<number | null>(() => { const v = source?.lat; return v != null && !isNaN(v) ? v : null })
   const [lng, setLng] = useState<number | null>(() => { const v = source?.lng; return v != null && !isNaN(v) ? v : null })
@@ -420,11 +420,11 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
 
     let saveLat = lat ?? 0
     let saveLng = lng ?? 0
-    if (locationPrecision === 'area' && locationChanged) {
-      saveLat = jitter(saveLat)
-      saveLng = jitter(saveLng)
-    } else if (locationPrecision === 'hidden') {
+    if (locationPrecision === 'hidden') {
       saveLat = 0; saveLng = 0
+    } else {
+      saveLat = roundCoord(saveLat)
+      saveLng = roundCoord(saveLng)
     }
 
     if (isAdminMode && adminTarget) {
@@ -624,8 +624,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
       <div className="border-2 border-ink">
         {(
           [
-            { value: 'exact' as Precision, label: 'Exact pin', desc: 'Precise location on map' },
-            { value: 'area' as Precision, label: 'Approximate area', desc: 'Only neighborhood shown' },
+            { value: 'area' as Precision, label: 'City / zip area', desc: 'Shown within ~1 km of your location' },
             { value: 'hidden' as Precision, label: 'Hidden from map', desc: 'Browse without appearing' },
           ] as const
         ).map((opt, i) => (

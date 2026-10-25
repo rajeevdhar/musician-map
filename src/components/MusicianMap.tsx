@@ -156,7 +156,10 @@ export default function MusicianMap() {
   const { filteredMusicians, musicians, selectedId, setSelectedId } = useStore()
   const visible = filteredMusicians()
   const validVisible = visible.filter(m => !isNaN(m.lat) && !isNaN(m.lng))
-  const jittered = jitterPositions(validVisible)
+  // Round to 2 decimal places (~1 km) for display — protects existing 'exact' profiles
+  const r2 = (n: number) => Math.round(n * 100) / 100
+  const displayVisible = validVisible.map(m => ({ ...m, lat: r2(m.lat), lng: r2(m.lng) }))
+  const jittered = jitterPositions(displayVisible)
   const onlineCount = musicians.filter(m => isOnline(m.lastSeenAt)).length
 
   const defaultCenter: [number, number] = [39.8283, -98.5795]
@@ -177,14 +180,14 @@ export default function MusicianMap() {
         />
 
         <ClusteredMarkers
-          musicians={validVisible}
+          musicians={displayVisible}
           jittered={jittered}
           selectedId={selectedId}
           setSelectedId={setSelectedId}
         />
 
-        <FlyToUser musicians={visible} />
-        <FlyToSelected musicians={visible} />
+        <FlyToUser musicians={displayVisible} />
+        <FlyToSelected musicians={displayVisible} />
         <MapClickHandler />
       </MapContainer>
 
