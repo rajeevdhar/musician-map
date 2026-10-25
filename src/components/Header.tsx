@@ -177,7 +177,7 @@ export default function Header({ onShowAuth, onShowProfile, onShowAdmin, isAdmin
       {/* Mobile: wordmark + search + filter button */}
       <div className="lg:hidden flex items-center gap-2 h-14 px-3">
         <span className="text-white text-[15px] font-extrabold tracking-tight flex-shrink-0">MUSICIANMAPPER.</span>
-        <div className="flex-1 relative">
+        <div className="flex-1 relative" data-tour="mobile-search">
           <Search size={16} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" />
           <input
             type="text"
@@ -188,6 +188,7 @@ export default function Header({ onShowAuth, onShowProfile, onShowAdmin, isAdmin
           />
         </div>
         <button
+          data-tour="mobile-filters"
           onClick={() => setShowFilterPanel(true)}
           className="relative w-12 h-12 bg-ink flex items-center justify-center flex-shrink-0"
         >

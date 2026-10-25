@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from './store'
 import { startTour, hasSeenTour } from './lib/tour'
-import { Map, List, Heart, MessageSquare, User } from 'lucide-react'
+import { Map, List, Heart, MessageSquare, User, Shield } from 'lucide-react'
 import Header from './components/Header'
 import FilterBar from './components/FilterBar'
 import MusicianMap from './components/MusicianMap'
@@ -162,6 +162,15 @@ export default function App() {
                   <span>{currentUser ? 'Edit My Profile' : 'Sign In'}</span>
                   <span className="ml-4">→</span>
                 </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => setModal('admin')}
+                    className="flex items-center gap-2 h-[52px] border-2 border-ink hover:bg-accent-100 text-ink font-bold text-sm px-6 transition-colors"
+                  >
+                    <Shield size={16} />
+                    <span>Admin Panel</span>
+                  </button>
+                )}
               </div>
             )}
             {activeTab === 'saved' && (
@@ -246,8 +255,9 @@ export default function App() {
         {BOTTOM_TABS.map(tab => (
           <button
             key={tab.id}
+            data-tour={`nav-${tab.id}`}
             onClick={() => {
-              if (tab.id === 'me') { showProfile(); return }
+              if (tab.id === 'me') { setActiveTab('me'); return }
               setActiveTab(tab.id)
             }}
             className={`flex-1 flex flex-col items-center justify-center gap-0.5 relative transition-colors ${
