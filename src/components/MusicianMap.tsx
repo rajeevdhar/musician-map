@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet.markercluster'
@@ -38,15 +38,16 @@ function makeMusicianPin(musician: Musician, isSelected: boolean) {
   })
 }
 
-function FitBoundsOnLoad({ musicians }: { musicians: Musician[] }) {
+function FlyToUser({ musicians }: { musicians: Musician[] }) {
   const map = useMap()
-  const hasFit = useRef(false)
+  const { currentUser } = useStore()
 
   useEffect(() => {
-    if (hasFit.current || musicians.length === 0) return
-    const bounds = L.latLngBounds(musicians.map(m => [m.lat, m.lng] as [number, number]))
-    map.fitBounds(bounds, { padding: [48, 48], maxZoom: 12, animate: true, duration: 1.2 })
-    hasFit.current = true
+    if (!currentUser) return
+    const profile = musicians.find(m => m.id === currentUser.id)
+    if (profile && !isNaN(profile.lat) && !isNaN(profile.lng)) {
+      map.flyTo([profile.lat, profile.lng], 13, { duration: 1.5 })
+    }
   }, [musicians.length]) // eslint-disable-line
 
   return null
@@ -181,7 +182,7 @@ export default function MusicianMap() {
           setSelectedId={setSelectedId}
         />
 
-        <FitBoundsOnLoad musicians={validVisible} />
+        <FlyToUser musicians={visible} />
         <FlyToSelected musicians={visible} />
         <MapClickHandler />
       </MapContainer>
