@@ -167,16 +167,8 @@ export default function AdminPanel({ onClose }: Props) {
     <>
       <div className="modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
         <div className="modal-box" style={{ maxWidth: '720px', display: 'flex', flexDirection: 'column', height: 'min(90vh, calc(100dvh - 32px))', overflowY: 'hidden' }}>
-          <div className="flex-shrink-0 bg-white flex items-center justify-between px-6 pt-5 pb-3 border-b border-gray-100">
-            <div>
-              <h2 className="text-xl font-extrabold text-ink">Admin Panel</h2>
-              <p className="text-xs text-neutral-700">{dbProfiles.length} profile{dbProfiles.length !== 1 ? 's' : ''} in database</p>
-            </div>
-            <button onClick={onClose} className="text-neutral-500 hover:text-ink text-2xl leading-none flex-shrink-0">×</button>
-          </div>
-
-          {/* Tabs */}
-          <div className="flex-shrink-0 flex border-b-2 border-ink px-6">
+          {/* Tabs + close */}
+          <div className="flex-shrink-0 flex items-center border-b-2 border-ink px-6">
             <button
               onClick={() => setActiveTab('profiles')}
               className={`px-4 py-2.5 text-xs font-extrabold uppercase tracking-widest transition-colors border-b-2 -mb-[2px] ${activeTab === 'profiles' ? 'border-accent text-accent' : 'border-transparent text-neutral-500 hover:text-ink'}`}
@@ -194,6 +186,7 @@ export default function AdminPanel({ onClose }: Props) {
                 </span>
               )}
             </button>
+            <button onClick={onClose} className="ml-auto text-neutral-500 hover:text-ink text-2xl leading-none flex-shrink-0 pl-4 py-2.5">×</button>
           </div>
 
           <div className="overflow-y-auto flex-1 min-h-0">
