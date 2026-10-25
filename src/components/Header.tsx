@@ -48,7 +48,7 @@ export default function Header({ onShowAuth, onShowProfile, onShowAdmin, isAdmin
 
         {/* Center: search */}
         <div className="flex items-center px-4">
-          <div className="relative w-full max-w-[560px]">
+          <div className="relative w-full max-w-[560px]" data-tour="search">
             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" />
             <input
               type="text"
@@ -67,6 +67,7 @@ export default function Header({ onShowAuth, onShowProfile, onShowAdmin, isAdmin
             return (
               <button
                 key={tab.id}
+                data-tour={tab.id}
                 onClick={() => setActiveTab(activeTab === tab.id ? 'map' : tab.id)}
                 className={`flex items-center gap-2 h-[68px] px-5 border-l-2 border-white text-[14px] font-extrabold transition-colors ${
                   activeTab === tab.id
@@ -118,6 +119,7 @@ export default function Header({ onShowAuth, onShowProfile, onShowAdmin, isAdmin
             {currentUser ? (
               <div className="relative">
                 <button
+                  data-tour="profile-btn"
                   onClick={() => setMenuOpen(v => !v)}
                   className="flex items-center gap-2 bg-white px-3 h-9 text-sm font-bold text-ink hover:bg-accent-100"
                 >

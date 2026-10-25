@@ -162,7 +162,7 @@ export default function MusicianMap() {
   const defaultZoom = 5
 
   return (
-    <div className="absolute inset-0">
+    <div className="absolute inset-0" data-tour="map">
       <MapContainer
         center={defaultCenter}
         zoom={defaultZoom}

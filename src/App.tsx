@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from './store'
+import { startTour, hasSeenTour } from './lib/tour'
 import { Map, List, Heart, MessageSquare, User } from 'lucide-react'
 import Header from './components/Header'
 import FilterBar from './components/FilterBar'
@@ -50,11 +51,15 @@ export default function App() {
     localStorage.setItem('mm-fontsize', largeText ? 'large' : '')
   }, [largeText])
 
-  // Reset signup state on logout
+  // Reset signup state on logout; start tour on first login for returning users
   useEffect(() => {
     if (prevUserRef.current && !currentUser) {
       setSignupDismissed(false)
       setShowOnboarding(false)
+    }
+    // Returning user logs in for the first time this device — show tour
+    if (!prevUserRef.current && currentUser && !hasSeenTour()) {
+      setTimeout(() => startTour(), 800)
     }
     prevUserRef.current = currentUser
   }, [currentUser])
@@ -273,7 +278,7 @@ export default function App() {
       {/* Onboarding flow (after signup) */}
       {showOnboarding && (
         <OnboardingFlow
-          onComplete={() => setShowOnboarding(false)}
+          onComplete={() => { setShowOnboarding(false); setTimeout(() => startTour(), 800) }}
           onBack={() => { setShowOnboarding(false); setSignupDismissed(true) }}
         />
       )}
