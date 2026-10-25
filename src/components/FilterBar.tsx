@@ -35,16 +35,14 @@ export default function FilterBar() {
           <button
             key={item.label}
             onClick={() => toggle(item)}
-            className={`flex-1 h-11 pl-3 text-[13px] font-extrabold border-r-2 border-white text-left transition-all ${
-              active ? 'bg-white text-accent-700' : 'text-white hover:bg-white/10'
+            className={`flex-1 h-11 pl-3 text-[13px] font-extrabold border-r-2 border-white/30 text-left transition-all relative ${
+              active
+                ? 'bg-white text-accent-700'
+                : 'text-white/60 hover:text-white hover:bg-white/10'
             }`}
-            style={{
-              boxShadow: active
-                ? 'inset 0 3px 4px rgba(0,0,0,0.18)'
-                : 'inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -3px 0 rgba(0,0,0,0.18)',
-            }}
           >
             {item.label}
+            {active && <span className="absolute bottom-0 left-0 right-0 h-[3px] bg-ink" />}
           </button>
         )
       })}
