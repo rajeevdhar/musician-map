@@ -40,6 +40,22 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
   }
 }
 
+async function geocodeCity(query: string): Promise<{ lat: number; lng: number; display: string } | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&addressdetails=1`
+    const res = await fetch(url, { headers: { 'Accept-Language': 'en' } })
+    const results = await res.json()
+    if (!results?.length) return null
+    const r = results[0]
+    const a = r.address ?? {}
+    const city = a.city || a.town || a.village || a.county || ''
+    const display = [city, a.state, a.country_code === 'us' ? null : a.country].filter(Boolean).join(', ') || r.display_name.split(',').slice(0, 2).join(',').trim()
+    return { lat: parseFloat(r.lat), lng: parseFloat(r.lon), display }
+  } catch {
+    return null
+  }
+}
+
 function jitter(n: number, radius = 0.03) {
   return n + (Math.random() - 0.5) * 2 * radius
 }
@@ -87,13 +103,19 @@ export default function OnboardingFlow({ onComplete, onBack }: Props) {
     )
   }
 
-  const handleCitySubmit = (e: React.FormEvent) => {
+  const handleCitySubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!cityInput.trim()) return
-    // Use a rough US-center lat/lng as a placeholder; real geocoding would call Nominatim search
-    setData(d => ({ ...d, lat: 39.5, lng: -98.35, locationName: cityInput.trim() }))
-    setCityInput('')
+    setGeoLoading(true)
     setGeoError('')
+    const result = await geocodeCity(cityInput.trim())
+    setGeoLoading(false)
+    if (!result) {
+      setGeoError('City not found — try a different spelling or add the state (e.g. "Austin, TX").')
+      return
+    }
+    setData(d => ({ ...d, lat: result.lat, lng: result.lng, locationName: result.display }))
+    setCityInput('')
   }
 
   const canContinue =
