@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useStore } from './store'
 import { startTour, hasSeenTour } from './lib/tour'
 import { Map, List, Heart, MessageSquare, User, Shield, Pencil, MapPin, LogOut } from 'lucide-react'
-import { getInitials, getInstrumentCode } from './lib/musicianUtils'
+import { getInitials, getInstrumentCode, shortLocation } from './lib/musicianUtils'
 import { isOnline } from './lib/presence'
 import Header from './components/Header'
 import FilterBar from './components/FilterBar'
@@ -149,7 +149,7 @@ export default function App() {
                     {selectedMusician.displayName}
                   </p>
                   <p className="text-[13px] text-neutral-700 mt-0.5 truncate">
-                    {[selectedMusician.instruments.slice(0, 2).join(', '), selectedMusician.locationName.split(',')[0]].filter(Boolean).join(' · ')}
+                    {[selectedMusician.instruments.slice(0, 2).join(', '), shortLocation(selectedMusician.locationName)].filter(Boolean).join(' · ')}
                   </p>
                 </div>
                 {/* CTA */}

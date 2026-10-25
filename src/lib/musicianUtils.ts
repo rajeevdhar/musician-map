@@ -30,6 +30,12 @@ export function getInstrumentCode(instruments: string[]): string {
   return INSTRUMENT_CODES[instruments[0]] ?? instruments[0].slice(0, 2).toUpperCase()
 }
 
+export function shortLocation(locationName: string): string {
+  const parts = locationName.split(',').map(s => s.trim())
+  const first = parts[0] ?? ''
+  return /^\d{5}(-\d{4})?$/.test(first) ? (parts[1] ?? first) : first
+}
+
 export function haversineDistanceMiles(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 3959
   const dLat = (lat2 - lat1) * Math.PI / 180

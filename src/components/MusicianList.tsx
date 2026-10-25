@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { SlidersHorizontal, ArrowUpDown } from 'lucide-react'
 import { useStore } from '../store'
 import type { Musician } from '../types'
-import { getInstrumentCode, haversineDistanceMiles, formatDistance } from '../lib/musicianUtils'
+import { getInstrumentCode, haversineDistanceMiles, formatDistance, shortLocation } from '../lib/musicianUtils'
 import { isOnline } from '../lib/presence'
 
 type SortMode = 'nearest' | 'further' | 'az'
@@ -201,7 +201,7 @@ function MusicianRow({
         )}
         {m.lookingFor && (
           <p className="text-[12px] font-semibold text-accent-700 mt-0.5 truncate">
-            {m.lookingFor.split(',')[0]?.trim()} · {m.locationName.split(',')[0]}
+            {m.lookingFor.split(',')[0]?.trim()} · {shortLocation(m.locationName)}
           </p>
         )}
       </div>
@@ -211,7 +211,7 @@ function MusicianRow({
         {distMiles != null ? (
           <span className="text-[15px] font-extrabold text-ink whitespace-nowrap">{formatDistance(distMiles)}</span>
         ) : (
-          <span className="text-[12px] text-neutral-500 max-w-[60px] leading-tight text-right">{m.locationName.split(',')[0]}</span>
+          <span className="text-[12px] text-neutral-500 max-w-[60px] leading-tight text-right">{shortLocation(m.locationName)}</span>
         )}
       </div>
     </button>

@@ -4,6 +4,7 @@ import L from 'leaflet'
 import 'leaflet.markercluster'
 import { useStore } from '../store'
 import { isOnline } from '../lib/presence'
+import { shortLocation } from '../lib/musicianUtils'
 import type { Musician } from '../types'
 
 function esc(s: string) {
@@ -15,7 +16,7 @@ function makeMusicianPin(musician: Musician, isSelected: boolean) {
   const isTeacher = musician.offersLessons ?? false
   const online = isOnline(musician.lastSeenAt)
 
-  const city = musician.locationName.split(',')[0]
+  const city = shortLocation(musician.locationName)
   const instrumentStr = musician.instruments.slice(0, 2).join(', ')
   const meta = [instrumentStr, musician.level, city].filter(Boolean).join(' · ')
   const bio = musician.bio && musician.bio.length > 72 ? musician.bio.slice(0, 72) + '…' : musician.bio
