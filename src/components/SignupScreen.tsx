@@ -1,39 +1,31 @@
 import { useState } from 'react'
 import { useStore } from '../store'
 
-interface Props {
-  onSignedUp: () => void
+interface FormProps {
+  gap?: string
+  titleSize?: string
+  displayName: string
+  onDisplayName: (v: string) => void
+  email: string
+  onEmail: (v: string) => void
+  password: string
+  onPassword: (v: string) => void
+  error: string
+  loading: boolean
+  onSubmit: (e: React.FormEvent) => void
   onLogin: () => void
   onSkip: () => void
 }
 
-export default function SignupScreen({ onSignedUp, onLogin, onSkip }: Props) {
-  const { register } = useStore()
-  const [displayName, setDisplayName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    if (password.length < 6) { setError('Password must be at least 6 characters'); return }
-    setLoading(true)
-    const { ok, error: err } = await register(email, password, displayName.trim())
-    setLoading(false)
-    if (!ok) { setError(err ?? 'Sign-up failed'); return }
-    onSignedUp()
-  }
-
-  const Form = ({ gap = 'gap-3.5', titleSize = 'text-[40px]' }: { gap?: string; titleSize?: string }) => (
-    <form onSubmit={handleSubmit} className={`flex flex-col ${gap}`}>
+function SignupForm({ gap = 'gap-3.5', titleSize = 'text-[40px]', displayName, onDisplayName, email, onEmail, password, onPassword, error, loading, onSubmit, onLogin, onSkip }: FormProps) {
+  return (
+    <form onSubmit={onSubmit} className={`flex flex-col ${gap}`}>
       <h2 className={`${titleSize} font-extrabold text-ink leading-none`}>Create your account</h2>
       <input
         type="text"
         placeholder="Your name"
         value={displayName}
-        onChange={e => setDisplayName(e.target.value)}
+        onChange={e => onDisplayName(e.target.value)}
         required
         className="h-12 bg-white border-2 border-ink px-3 text-[15px] text-ink placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2"
       />
@@ -41,7 +33,7 @@ export default function SignupScreen({ onSignedUp, onLogin, onSkip }: Props) {
         type="email"
         placeholder="Email address"
         value={email}
-        onChange={e => setEmail(e.target.value)}
+        onChange={e => onEmail(e.target.value)}
         required
         className="h-12 bg-white border-2 border-ink px-3 text-[15px] text-ink placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2"
       />
@@ -49,7 +41,7 @@ export default function SignupScreen({ onSignedUp, onLogin, onSkip }: Props) {
         type="password"
         placeholder="Password (6+ chars)"
         value={password}
-        onChange={e => setPassword(e.target.value)}
+        onChange={e => onPassword(e.target.value)}
         required
         minLength={6}
         className="h-12 bg-white border-2 border-ink px-3 text-[15px] text-ink placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2"
@@ -82,6 +74,34 @@ export default function SignupScreen({ onSignedUp, onLogin, onSkip }: Props) {
       </button>
     </form>
   )
+}
+
+interface Props {
+  onSignedUp: () => void
+  onLogin: () => void
+  onSkip: () => void
+}
+
+export default function SignupScreen({ onSignedUp, onLogin, onSkip }: Props) {
+  const { register } = useStore()
+  const [displayName, setDisplayName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    if (password.length < 6) { setError('Password must be at least 6 characters'); return }
+    setLoading(true)
+    const { ok, error: err } = await register(email, password, displayName.trim())
+    setLoading(false)
+    if (!ok) { setError(err ?? 'Sign-up failed'); return }
+    onSignedUp()
+  }
+
+  const formProps = { displayName, onDisplayName: setDisplayName, email, onEmail: setEmail, password, onPassword: setPassword, error, loading, onSubmit: handleSubmit, onLogin, onSkip }
 
   return (
     <div className="fixed inset-0 z-[2000] bg-ground">
@@ -106,7 +126,7 @@ export default function SignupScreen({ onSignedUp, onLogin, onSkip }: Props) {
         {/* Right: form */}
         <div className="border-l-2 border-ink flex items-center justify-center p-10">
           <div className="w-full">
-            <Form />
+            <SignupForm {...formProps} />
           </div>
         </div>
       </div>
@@ -123,7 +143,7 @@ export default function SignupScreen({ onSignedUp, onLogin, onSkip }: Props) {
           </h1>
         </div>
         <div className="border-t-2 border-ink p-4 pb-8">
-          <Form gap="gap-3" titleSize="text-[28px]" />
+          <SignupForm {...formProps} gap="gap-3" titleSize="text-[28px]" />
         </div>
       </div>
     </div>
