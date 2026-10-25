@@ -175,9 +175,11 @@ export default function AdminPanel({ onClose }: Props) {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={loadAll} disabled={isLoading} className="text-xs text-accent-700 hover:bg-accent-100 disabled:opacity-50 px-2 py-1 border-2 border-ink font-bold transition-colors">
-                ↻ Refresh
-              </button>
+              {activeTab === 'profiles' && (
+                <button onClick={loadAll} disabled={isLoading} className="text-xs text-accent-700 hover:bg-accent-100 disabled:opacity-50 px-2 py-1 border-2 border-ink font-bold transition-colors">
+                  ↻ Refresh
+                </button>
+              )}
               <button onClick={onClose} className="text-neutral-500 hover:text-ink text-2xl leading-none">×</button>
             </div>
           </div>
