@@ -32,7 +32,7 @@ export function startTour(onDone?: () => void) {
       element: '[data-tour="mobile-search"]',
       popover: {
         title: 'Search',
-        description: 'Search by name, instrument, genre, or city to find exactly who you need.',
+        description: 'Search by name, instrument, or genre to filter musicians. Type a city or zip code and the map will jump to that location — the distance filter will also update relative to it.',
         side: 'bottom' as const,
         align: 'center' as const,
       },
@@ -96,7 +96,7 @@ export function startTour(onDone?: () => void) {
       element: '[data-tour="search"]',
       popover: {
         title: 'Search',
-        description: 'Search by name, instrument, genre, or city to find exactly who you need.',
+        description: 'Search by name, instrument, or genre to filter musicians. Type a city or zip code and the map will jump to that location — the distance filter will also update relative to it.',
         side: 'bottom' as const,
         align: 'center' as const,
       },

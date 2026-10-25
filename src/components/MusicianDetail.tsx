@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import type { Musician } from '../types'
 import { useStore } from '../store'
 import { ArrowLeft, X, Heart, MapPin, Pencil, MessageSquare, Globe, Instagram, Youtube, Music, Play, Pause, Tent, Video, Flag } from 'lucide-react'
-import { getInstrumentCode, getInitials } from '../lib/musicianUtils'
+import { getInstrumentCode, getInitials, shortLocation } from '../lib/musicianUtils'
 import { isOnline, presenceText } from '../lib/presence'
 import ReportModal from './ReportModal'
 
@@ -95,7 +95,7 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
           <h2 className="text-[40px] font-extrabold text-white leading-none tracking-tight">{musician.displayName}</h2>
           <p className="text-[14px] font-semibold text-white/80 mt-1.5 flex items-center gap-1">
             <MapPin size={12} />
-            {musician.locationName}
+            {shortLocation(musician.locationName)}
           </p>
         </div>
 

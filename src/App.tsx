@@ -208,13 +208,13 @@ export default function App() {
                   {/* Accent header */}
                   <div className="bg-accent border-t-2 border-ink px-4 pt-3 pb-4 flex-shrink-0">
                     <p className="text-[11px] font-extrabold uppercase tracking-widest text-white/70 mb-1">
-                      {code} · {profile.instruments[0] ?? 'Musician'}
+                      {profile.instruments.slice(0, 2).join(', ') || 'Musician'}
                     </p>
                     <h2 className="text-[32px] font-extrabold text-white leading-none tracking-tight">{profile.displayName}</h2>
                     {profile.locationName && (
                       <p className="text-[13px] font-semibold text-white/80 mt-1.5 flex items-center gap-1">
                         <MapPin size={11} />
-                        {profile.locationName}
+                        {shortLocation(profile.locationName)}
                       </p>
                     )}
                   </div>

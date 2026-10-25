@@ -2,6 +2,9 @@ import { X } from 'lucide-react'
 import { useStore } from '../store'
 import { GENRE_OPTIONS, LOOKING_FOR_OPTIONS } from '../types'
 
+const DISTANCE_OPTIONS = [1, 5, 10, 25, 50, 100, 0] as const
+const distanceLabel = (d: number) => d === 0 ? 'Worldwide' : `${d} mi`
+
 const INSTRUMENT_OPTIONS = [
   { label: 'Drums', values: ['Drums'] },
   { label: 'Bass', values: ['Bass'] },
@@ -159,6 +162,24 @@ export default function FilterPanel({ isMobile = false }: Props) {
                 }`}
               >
                 {g}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* Distance — mobile only (desktop has it in list header) */}
+        <section className="lg:hidden">
+          <p className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-700 mb-2">Distance</p>
+          <div className="flex flex-wrap gap-1.5">
+            {DISTANCE_OPTIONS.map(d => (
+              <button
+                key={d}
+                onClick={() => setFilters({ distanceMi: d })}
+                className={`h-[34px] px-3 border-2 border-ink text-[13px] font-semibold transition-colors ${
+                  filters.distanceMi === d ? 'bg-ink text-white' : 'text-ink hover:bg-accent-100'
+                }`}
+              >
+                {distanceLabel(d)}
               </button>
             ))}
           </div>

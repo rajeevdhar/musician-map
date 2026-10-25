@@ -118,11 +118,13 @@ interface AppStore {
   // ── Layout & search ───────────────────────────────────────────────────────
   selectedId: string | null
   query: string
+  searchLoc: { lat: number; lng: number } | null
   activeTab: 'map' | 'list' | 'saved' | 'messages' | 'me'
   filters: Filters
   showFilterPanel: boolean
   setSelectedId: (id: string | null) => void
   setQuery: (q: string) => void
+  setSearchLoc: (loc: { lat: number; lng: number } | null) => void
   setActiveTab: (tab: AppStore['activeTab']) => void
   setFilters: (partial: Partial<Filters>) => void
   resetFilters: () => void
@@ -410,12 +412,14 @@ export const useStore = create<AppStore>()((set, get) => ({
   // ── Layout & search ───────────────────────────────────────────────────────
   selectedId: null,
   query: '',
+  searchLoc: null,
   activeTab: 'map',
   filters: { ...DEFAULT_FILTERS },
   showFilterPanel: !localStorage.getItem('mm-filter-panel-dismissed'),
 
   setSelectedId: (id) => set({ selectedId: id }),
   setQuery: (q) => set({ query: q }),
+  setSearchLoc: (loc) => set({ searchLoc: loc }),
   setActiveTab: (tab) => set({ activeTab: tab }),
   setFilters: (partial) => set(s => ({ filters: { ...s.filters, ...partial } })),
   resetFilters: () => set({ filters: { ...DEFAULT_FILTERS } }),
@@ -437,10 +441,10 @@ export const useStore = create<AppStore>()((set, get) => ({
   },
 
   filteredMusicians: () => {
-    const { musicians, query, filters } = get()
+    const { musicians, query, filters, searchLoc } = get()
     const profile = get().currentProfile()
-    const userLat = profile?.lat
-    const userLng = profile?.lng
+    const userLat = searchLoc?.lat ?? profile?.lat
+    const userLng = searchLoc?.lng ?? profile?.lng
     const currentUserId = get().currentUser?.id
     let list = musicians.filter(m => m.locationPrecision !== 'hidden' || m.id === currentUserId)
 

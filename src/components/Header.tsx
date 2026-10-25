@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useStore } from '../store'
 import { Search, Music2, User, Pencil, Plus, LogOut, Trash2, Shield, Heart, MessageSquare, SlidersHorizontal } from 'lucide-react'
 import type { Theme } from '../App'
@@ -20,16 +20,44 @@ interface Props {
   onToggleLargeText: () => void
 }
 
+async function geocodeLocation(q: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1&addressdetails=1`
+    const res = await fetch(url, { headers: { 'Accept-Language': 'en' } })
+    const results = await res.json()
+    if (!results?.length) return null
+    const r = results[0]
+    const isPlace = r.class === 'place' || r.class === 'boundary' || r.class === 'postal_code' ||
+      ['city','town','village','suburb','county','state','postcode','neighbourhood','municipality','administrative','quarter'].includes(r.type) ||
+      ['city','town','village','suburb','county','state','postcode','neighbourhood','municipality','administrative','quarter'].includes(r.addresstype)
+    if (!isPlace) return null
+    return { lat: parseFloat(r.lat), lng: parseFloat(r.lon) }
+  } catch {
+    return null
+  }
+}
+
 const DESKTOP_TABS = [
   { id: 'saved' as const, Icon: Heart, label: 'Saved' },
   { id: 'messages' as const, Icon: MessageSquare, label: 'Messages' },
 ]
 
 export default function Header({ onShowAuth, onShowProfile, onShowAdmin, isAdmin, theme, onSetTheme, largeText, onToggleLargeText }: Props) {
-  const { currentUser, logout, deleteAccount, currentProfile, query, setQuery, activeTab, setActiveTab, setShowFilterPanel, filterCount, unreadCount } = useStore()
+  const { currentUser, logout, deleteAccount, currentProfile, query, setQuery, setSearchLoc, activeTab, setActiveTab, setShowFilterPanel, filterCount, unreadCount } = useStore()
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const profile = currentProfile()
+  const geoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (geoTimerRef.current) clearTimeout(geoTimerRef.current)
+    if (!query.trim()) { setSearchLoc(null); return }
+    geoTimerRef.current = setTimeout(async () => {
+      const loc = await geocodeLocation(query.trim())
+      setSearchLoc(loc)
+    }, 600)
+    return () => { if (geoTimerRef.current) clearTimeout(geoTimerRef.current) }
+  }, [query]) // eslint-disable-line
 
   const handleDeleteAccount = async () => {
     setMenuOpen(false)
@@ -54,7 +82,7 @@ export default function Header({ onShowAuth, onShowProfile, onShowAdmin, isAdmin
               type="text"
               value={query}
               onChange={e => setQuery(e.target.value)}
-              placeholder="Instrument, genre or name"
+              placeholder="Name, instrument, city…"
               className="w-full h-11 bg-white border-0 pl-10 pr-3 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-accent"
             />
           </div>
@@ -183,7 +211,7 @@ export default function Header({ onShowAuth, onShowProfile, onShowAdmin, isAdmin
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Search musicians…"
+            placeholder="Name, instrument, city…"
             className="w-full h-9 bg-white pl-8 pr-2 text-sm text-ink focus:outline-none"
           />
         </div>

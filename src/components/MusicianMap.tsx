@@ -120,6 +120,18 @@ function MapClickHandler() {
   return null
 }
 
+function FlyToSearch() {
+  const map = useMap()
+  const { searchLoc } = useStore()
+
+  useEffect(() => {
+    if (!searchLoc) return
+    map.flyTo([searchLoc.lat, searchLoc.lng], Math.max(map.getZoom(), 11), { duration: 1.2 })
+  }, [searchLoc]) // eslint-disable-line
+
+  return null
+}
+
 function jitterPositions(musicians: Musician[]): Map<string, [number, number]> {
   const positions = new Map<string, [number, number]>()
   const groups = new Map<string, Musician[]>()
@@ -188,6 +200,7 @@ export default function MusicianMap() {
 
         <FlyToUser musicians={displayVisible} />
         <FlyToSelected musicians={displayVisible} />
+        <FlyToSearch />
         <MapClickHandler />
       </MapContainer>
 
