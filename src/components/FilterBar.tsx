@@ -28,7 +28,7 @@ export default function FilterBar() {
   }
 
   return (
-    <div className="hidden lg:flex border-b-2 border-ink bg-accent" data-tour="filters">
+    <div className="hidden" data-tour="filters">
       {FILTER_ITEMS.map((item, i) => {
         const active = isActive(item)
         return (

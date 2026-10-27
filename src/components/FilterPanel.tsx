@@ -100,8 +100,8 @@ export default function FilterPanel({ isMobile = false }: Props) {
           </button>
         </section>
 
-        {/* Instrument — mobile only (desktop uses FilterBar) */}
-        <section className="lg:hidden">
+        {/* Instrument */}
+        <section>
           <p className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-700 mb-2">Instrument</p>
           <div className="flex flex-wrap gap-1.5">
             {INSTRUMENT_OPTIONS.map(({ label, values }) => {
