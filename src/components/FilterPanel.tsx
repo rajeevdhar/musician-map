@@ -1,3 +1,4 @@
+import type React from 'react'
 import { X } from 'lucide-react'
 import { useStore } from '../store'
 import { GENRE_OPTIONS, LOOKING_FOR_OPTIONS } from '../types'
@@ -84,20 +85,37 @@ export default function FilterPanel({ isMobile = false }: Props) {
 
       {/* Scrollable content */}
       <div className={`px-4 py-4 space-y-6 ${isMobile ? 'flex-1 overflow-y-auto' : 'overflow-y-auto max-h-[min(340px,45vh)]'}`}>
-        {/* Online only */}
+        {/* Online + Distance row */}
         <section>
-          <button
-            onClick={() => setFilters({ onlineOnly: !filters.onlineOnly })}
-            className="flex items-center gap-3 w-full text-left hover:bg-accent-100 transition-colors -mx-1 px-1 py-1 rounded"
-          >
-            <div className={`w-10 h-6 flex-shrink-0 border-2 border-ink relative transition-colors ${filters.onlineOnly ? 'bg-accent' : 'bg-white'}`}>
-              <div className={`absolute top-0.5 w-4 h-4 bg-white border-2 border-ink transition-all ${filters.onlineOnly ? 'left-[18px]' : 'left-0.5'}`} />
+          <div className="flex items-center gap-3">
+            {/* Online toggle */}
+            <button
+              onClick={() => setFilters({ onlineOnly: !filters.onlineOnly })}
+              className="flex items-center gap-2 flex-shrink-0 hover:bg-accent-100 transition-colors -mx-1 px-1 py-1"
+            >
+              <div className={`w-10 h-6 flex-shrink-0 border-2 border-ink relative transition-colors ${filters.onlineOnly ? 'bg-accent' : 'bg-white'}`}>
+                <div className={`absolute top-0.5 w-4 h-4 bg-white border-2 border-ink transition-all ${filters.onlineOnly ? 'left-[18px]' : 'left-0.5'}`} />
+              </div>
+              <span className={`text-[13px] font-extrabold whitespace-nowrap transition-colors ${filters.onlineOnly ? 'text-ink' : 'text-neutral-400'}`}>Online</span>
+            </button>
+            {/* Distance scrolling picker */}
+            <div
+              className="flex-1 overflow-x-auto flex gap-1.5 snap-x snap-mandatory"
+              style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+            >
+              {DISTANCE_OPTIONS.map(d => (
+                <button
+                  key={d}
+                  onClick={() => setFilters({ distanceMi: d })}
+                  className={`snap-center flex-shrink-0 h-7 px-2.5 border-2 border-ink text-[12px] font-semibold transition-colors ${
+                    filters.distanceMi === d ? 'bg-ink text-white' : 'text-ink hover:bg-accent-100'
+                  }`}
+                >
+                  {distanceLabel(d)}
+                </button>
+              ))}
             </div>
-            <div>
-              <span className={`text-[13px] font-extrabold transition-colors ${filters.onlineOnly ? 'text-ink' : 'text-neutral-400'}`}>Online now</span>
-              <span className="block text-[11px] text-neutral-400">Active in the last 5 minutes</span>
-            </div>
-          </button>
+          </div>
         </section>
 
         {/* Instrument */}
@@ -167,23 +185,6 @@ export default function FilterPanel({ isMobile = false }: Props) {
           </div>
         </section>
 
-        {/* Distance */}
-        <section>
-          <p className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-700 mb-2">Distance</p>
-          <div className="flex flex-wrap gap-1.5">
-            {DISTANCE_OPTIONS.map(d => (
-              <button
-                key={d}
-                onClick={() => setFilters({ distanceMi: d })}
-                className={`h-[34px] px-3 border-2 border-ink text-[13px] font-semibold transition-colors ${
-                  filters.distanceMi === d ? 'bg-ink text-white' : 'text-ink hover:bg-accent-100'
-                }`}
-              >
-                {distanceLabel(d)}
-              </button>
-            ))}
-          </div>
-        </section>
 
         {/* Looking for */}
         <section>
