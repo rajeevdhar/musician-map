@@ -225,6 +225,7 @@ export const useStore = create<AppStore>()((set, get) => ({
         if (realtimeChannel) { supabase.removeChannel(realtimeChannel); realtimeChannel = null }
         set({
           currentUser: null,
+          needsPasswordReset: false,
           saved: {},
           threads: {},
           unread: {},
@@ -415,7 +416,7 @@ export const useStore = create<AppStore>()((set, get) => ({
   searchLoc: null,
   activeTab: 'map',
   filters: { ...DEFAULT_FILTERS },
-  showFilterPanel: !localStorage.getItem('mm-filter-panel-dismissed'),
+  showFilterPanel: (() => { try { return !localStorage.getItem('mm-filter-panel-dismissed') } catch { return true } })(),
 
   setSelectedId: (id) => set({ selectedId: id }),
   setQuery: (q) => set({ query: q }),
@@ -562,11 +563,12 @@ export const useStore = create<AppStore>()((set, get) => ({
   sendMessage: async (toId, body) => {
     const user = get().currentUser
     if (!user) return
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('messages')
       .insert({ from_id: user.id, to_id: toId, body })
       .select()
       .single()
+    if (error) { get().showToast('Failed to send message'); return }
     if (data) {
       const msg: Message = {
         id: data.id,

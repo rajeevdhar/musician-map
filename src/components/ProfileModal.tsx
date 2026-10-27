@@ -407,7 +407,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
     setError('')
     if (!displayName.trim()) { setError('Display name is required'); return }
     if (instruments.length === 0) { setError('Select at least one instrument'); return }
-    if (locationPrecision !== 'hidden' && (!lat || !lng)) { setError('Please set your location'); return }
+    if (locationPrecision !== 'hidden' && (lat === null || lng === null)) { setError('Please set your location'); return }
 
     setSaving(true)
 
