@@ -98,6 +98,11 @@ a:hover { color: var(--color-accent-600); }
 .mf-pin-tooltip { display: none; position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); background: var(--color-text); color: #fff; padding: 10px 12px; width: 210px; white-space: normal; z-index: 2000; pointer-events: none; box-shadow: 0 4px 16px rgba(0,0,0,.35); }
 .mf-pin-tooltip::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 6px solid transparent; border-top-color: var(--color-text); }
 .mf-pin-wrap:hover .mf-pin-tooltip { display: block; }
+/* Touch devices: disable hover tooltip — bottom preview bar handles it */
+@media (hover: none) {
+  .mf-pin-wrap:hover .mf-pin-tooltip { display: none; }
+  .mf-pin-wrap:hover .mf-pin { transform: none; box-shadow: var(--shadow-sm); background: var(--color-accent); color: #fff; }
+}
 .mf-tip-name { font: 800 13px var(--font-heading); margin-bottom: 3px; }
 .mf-tip-meta { font-size: 11px; opacity: .7; margin-bottom: 5px; font-weight: 600; letter-spacing: .01em; }
 .mf-tip-bio { font-size: 11px; opacity: .65; line-height: 1.45; }
