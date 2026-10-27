@@ -66,7 +66,7 @@ export default function MusicianList({ onViewProfile }: Props) {
           </div>
         </div>
         {/* Col 3: Filters (boxed button) stacked above Nearest (plain text) */}
-        <div className="border-l-2 border-ink flex flex-col items-center justify-center gap-2 px-3 py-3">
+        <div className="flex flex-col items-center justify-center gap-2 px-3 py-3">
           <button
             onClick={() => setShowFilterPanel(true)}
             className="relative flex items-center justify-center gap-1.5 h-8 px-3 border-2 border-ink text-[12px] font-extrabold text-ink hover:bg-accent-100 transition-colors w-full"
