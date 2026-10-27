@@ -1,4 +1,3 @@
-import type React from 'react'
 import { X } from 'lucide-react'
 import { useStore } from '../store'
 import { GENRE_OPTIONS, LOOKING_FOR_OPTIONS } from '../types'
@@ -98,22 +97,18 @@ export default function FilterPanel({ isMobile = false }: Props) {
               </div>
               <span className={`text-[13px] font-extrabold whitespace-nowrap transition-colors ${filters.onlineOnly ? 'text-ink' : 'text-neutral-400'}`}>Online</span>
             </button>
-            {/* Distance scrolling picker */}
-            <div
-              className="flex-1 overflow-x-auto flex gap-1.5 snap-x snap-mandatory"
-              style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
-            >
-              {DISTANCE_OPTIONS.map(d => (
-                <button
-                  key={d}
-                  onClick={() => setFilters({ distanceMi: d })}
-                  className={`snap-center flex-shrink-0 h-7 px-2.5 border-2 border-ink text-[12px] font-semibold transition-colors ${
-                    filters.distanceMi === d ? 'bg-ink text-white' : 'text-ink hover:bg-accent-100'
-                  }`}
-                >
-                  {distanceLabel(d)}
-                </button>
-              ))}
+            {/* Distance select */}
+            <div className="relative">
+              <select
+                value={filters.distanceMi}
+                onChange={e => setFilters({ distanceMi: Number(e.target.value) as typeof filters.distanceMi })}
+                className="h-8 pl-2.5 pr-6 border-2 border-ink text-[13px] font-bold text-ink bg-white cursor-pointer focus:outline-none appearance-none"
+              >
+                {DISTANCE_OPTIONS.map(d => (
+                  <option key={d} value={d}>{distanceLabel(d)}</option>
+                ))}
+              </select>
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-ink pointer-events-none">▾</span>
             </div>
           </div>
         </section>
