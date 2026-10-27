@@ -132,6 +132,34 @@ function FlyToSearch() {
   return null
 }
 
+function FlyToDistance() {
+  const map = useMap()
+  const { filters, searchLoc, currentProfile } = useStore()
+
+  useEffect(() => {
+    const profile = currentProfile()
+    const lat = searchLoc?.lat ?? profile?.lat
+    const lng = searchLoc?.lng ?? profile?.lng
+    if (lat == null || lng == null) return
+
+    const dist = filters.distanceMi
+    if (dist === 0) {
+      map.flyTo([lat, lng], 3, { duration: 1.2 })
+      return
+    }
+
+    const latDelta = dist / 69
+    const lngDelta = dist / (69 * Math.cos((lat * Math.PI) / 180))
+    const bounds = L.latLngBounds(
+      [lat - latDelta, lng - lngDelta],
+      [lat + latDelta, lng + lngDelta]
+    )
+    map.flyToBounds(bounds, { duration: 1.2, padding: [20, 20] })
+  }, [filters.distanceMi]) // eslint-disable-line
+
+  return null
+}
+
 function jitterPositions(musicians: Musician[]): Map<string, [number, number]> {
   const positions = new Map<string, [number, number]>()
   const groups = new Map<string, Musician[]>()
@@ -201,6 +229,7 @@ export default function MusicianMap() {
         <FlyToUser musicians={displayVisible} />
         <FlyToSelected musicians={displayVisible} />
         <FlyToSearch />
+        <FlyToDistance />
         <MapClickHandler />
       </MapContainer>
 
