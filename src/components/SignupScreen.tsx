@@ -55,14 +55,6 @@ function SignupForm({ gap = 'gap-3.5', titleSize = 'text-[40px]', displayName, o
         <span>{loading ? 'Creating account…' : 'Create account'}</span>
         <span>→</span>
       </button>
-      <div className="grid grid-cols-2 gap-3">
-        <button type="button" className="h-[52px] border-2 border-ink text-[15px] font-extrabold flex items-center justify-between px-4 hover:bg-accent-100 transition-colors text-ink">
-          <span>Apple</span><span>→</span>
-        </button>
-        <button type="button" className="h-[52px] border-2 border-ink text-[15px] font-extrabold flex items-center justify-between px-4 hover:bg-accent-100 transition-colors text-ink">
-          <span>Google</span><span>→</span>
-        </button>
-      </div>
       <p className="text-[13px] text-neutral-700">
         Have an account?{' '}
         <button type="button" onClick={onLogin} className="font-extrabold text-ink underline underline-offset-2 hover:text-accent-700">
