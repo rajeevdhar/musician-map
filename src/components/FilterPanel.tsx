@@ -167,8 +167,8 @@ export default function FilterPanel({ isMobile = false }: Props) {
           </div>
         </section>
 
-        {/* Distance — mobile only (desktop has it in list header) */}
-        <section className="lg:hidden">
+        {/* Distance */}
+        <section>
           <p className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-700 mb-2">Distance</p>
           <div className="flex flex-wrap gap-1.5">
             {DISTANCE_OPTIONS.map(d => (
