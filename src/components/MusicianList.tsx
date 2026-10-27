@@ -43,38 +43,38 @@ export default function MusicianList({ onViewProfile }: Props) {
       <div className="grid border-b-2 border-ink flex-shrink-0" style={{ gridTemplateColumns: '52px 1fr auto' }}>
         {/* Col 1: blank spacer */}
         <div />
-        {/* Col 2: count + distance */}
-        <div className="py-3 px-3">
-          <div className="flex items-end gap-2">
-            <span className="text-[56px] font-black leading-none text-ink tracking-tight">{musicians.length}</span>
-            <span className="text-[18px] font-extrabold text-ink leading-none pb-1">musicians</span>
-          </div>
-          <div className="flex items-center gap-1 mt-1">
-            <span className="text-[11px] font-semibold text-neutral-500">within</span>
-            <div className="relative">
-              <select
-                value={filters.distanceMi}
-                onChange={e => setFilters({ distanceMi: Number(e.target.value) as typeof filters.distanceMi })}
-                className="text-[11px] font-bold text-ink bg-transparent cursor-pointer focus:outline-none appearance-none pr-3"
-              >
-                {DISTANCE_OPTIONS.map(d => (
-                  <option key={d} value={d}>{distanceLabel(d)}</option>
-                ))}
-              </select>
-              <span className="absolute right-0 top-1/2 -translate-y-1/2 text-[9px] text-ink pointer-events-none">▾</span>
+        {/* Col 2: big number, then "musicians" stacked above "within X mi" */}
+        <div className="py-3 px-3 flex items-center gap-3">
+          <span className="text-[56px] font-black leading-none text-ink tracking-tight flex-shrink-0">{musicians.length}</span>
+          <div className="flex flex-col justify-center">
+            <span className="text-[18px] font-extrabold text-ink leading-tight">musicians</span>
+            <div className="flex items-center gap-1">
+              <span className="text-[11px] font-semibold text-neutral-500">within</span>
+              <div className="relative">
+                <select
+                  value={filters.distanceMi}
+                  onChange={e => setFilters({ distanceMi: Number(e.target.value) as typeof filters.distanceMi })}
+                  className="text-[11px] font-bold text-ink bg-transparent cursor-pointer focus:outline-none appearance-none pr-3"
+                >
+                  {DISTANCE_OPTIONS.map(d => (
+                    <option key={d} value={d}>{distanceLabel(d)}</option>
+                  ))}
+                </select>
+                <span className="absolute right-0 top-1/2 -translate-y-1/2 text-[9px] text-ink pointer-events-none">▾</span>
+              </div>
             </div>
           </div>
         </div>
-        {/* Col 3: Filters (boxed) over Nearest (plain) — aligns with distance column */}
-        <div className="border-l-2 border-ink flex flex-col">
+        {/* Col 3: Filters (boxed button) stacked above Nearest (plain text) */}
+        <div className="border-l-2 border-ink flex flex-col items-center justify-center gap-2 px-3 py-3">
           <button
             onClick={() => setShowFilterPanel(true)}
-            className="relative flex-1 flex items-center justify-center gap-1.5 px-4 border-b-2 border-ink text-[12px] font-extrabold text-ink hover:bg-accent-100 transition-colors"
+            className="relative flex items-center justify-center gap-1.5 h-8 px-3 border-2 border-ink text-[12px] font-extrabold text-ink hover:bg-accent-100 transition-colors w-full"
           >
             <SlidersHorizontal size={12} />
             Filters
             {filterCount() > 0 && (
-              <span className="absolute top-1 right-1 w-4 h-4 bg-accent text-white text-[9px] font-extrabold flex items-center justify-center">
+              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-accent text-white text-[9px] font-extrabold flex items-center justify-center">
                 {filterCount()}
               </span>
             )}
@@ -82,7 +82,7 @@ export default function MusicianList({ onViewProfile }: Props) {
           <button
             onClick={toggleSort}
             title={sort === 'nearest' ? 'Sort: Nearest first' : sort === 'further' ? 'Sort: Furthest first' : 'Sort: A–Z'}
-            className="flex-1 flex items-center justify-center gap-1.5 px-4 text-[12px] font-extrabold text-ink hover:bg-accent-100 transition-colors"
+            className="flex items-center justify-center gap-1 text-[12px] font-extrabold text-ink hover:text-accent transition-colors w-full"
           >
             <ArrowUpDown size={12} />
             {sort === 'nearest' ? 'Nearest' : sort === 'further' ? 'Furthest' : 'A–Z'}
