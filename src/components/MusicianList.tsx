@@ -40,51 +40,51 @@ export default function MusicianList({ onViewProfile }: Props) {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="flex items-end justify-between px-4 pt-4 pb-3 flex-shrink-0 border-b-2 border-ink">
-        <div className="flex items-end gap-2">
+      <div className="px-4 pt-4 pb-3 flex-shrink-0 border-b-2 border-ink">
+        {/* Row 1: count + label */}
+        <div className="flex items-end gap-2 mb-2">
           <span className="text-[60px] font-black leading-none text-ink tracking-tight">{musicians.length}</span>
-          <div className="pb-0.5 flex flex-col">
-            <span className="text-[20px] font-extrabold text-ink leading-none mb-1">musicians</span>
-            <div className="flex items-center gap-1">
-              <span className="text-[11px] font-semibold text-neutral-500">within</span>
-              <div className="relative">
-                <select
-                  value={filters.distanceMi}
-                  onChange={e => setFilters({ distanceMi: Number(e.target.value) as typeof filters.distanceMi })}
-                  className="text-[11px] font-bold text-ink bg-transparent cursor-pointer focus:outline-none appearance-none pr-3"
-                >
-                  {DISTANCE_OPTIONS.map(d => (
-                    <option key={d} value={d}>{distanceLabel(d)}</option>
-                  ))}
-                </select>
-                <span className="absolute right-0 top-1/2 -translate-y-1/2 text-[9px] text-ink pointer-events-none">▾</span>
-              </div>
+          <span className="text-[20px] font-extrabold text-ink leading-none pb-1">musicians</span>
+        </div>
+        {/* Row 2: distance + sort + filters */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1">
+            <span className="text-[11px] font-semibold text-neutral-500">within</span>
+            <div className="relative">
+              <select
+                value={filters.distanceMi}
+                onChange={e => setFilters({ distanceMi: Number(e.target.value) as typeof filters.distanceMi })}
+                className="text-[11px] font-bold text-ink bg-transparent cursor-pointer focus:outline-none appearance-none pr-3"
+              >
+                {DISTANCE_OPTIONS.map(d => (
+                  <option key={d} value={d}>{distanceLabel(d)}</option>
+                ))}
+              </select>
+              <span className="absolute right-0 top-1/2 -translate-y-1/2 text-[9px] text-ink pointer-events-none">▾</span>
             </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2 pb-1">
-          <button
-            onClick={toggleSort}
-            title={sort === 'nearest' ? 'Sort: Nearest first' : sort === 'further' ? 'Sort: Furthest first' : 'Sort: A–Z'}
-            className="relative flex items-center gap-1.5 h-8 px-2.5 border-2 border-ink text-[12px] font-extrabold text-ink hover:bg-accent-100 transition-colors"
-          >
-            <ArrowUpDown size={12} />
-            <span className="hidden sm:inline">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleSort}
+              title={sort === 'nearest' ? 'Sort: Nearest first' : sort === 'further' ? 'Sort: Furthest first' : 'Sort: A–Z'}
+              className="relative flex items-center gap-1.5 h-8 px-2.5 border-2 border-ink text-[12px] font-extrabold text-ink hover:bg-accent-100 transition-colors"
+            >
+              <ArrowUpDown size={12} />
               {sort === 'nearest' ? 'Nearest' : sort === 'further' ? 'Furthest' : 'A–Z'}
-            </span>
-          </button>
-          <button
-            onClick={() => setShowFilterPanel(true)}
-            className="relative flex items-center gap-1.5 h-8 px-2.5 border-2 border-ink text-[12px] font-extrabold text-ink hover:bg-accent-100 transition-colors"
-          >
-            <SlidersHorizontal size={12} />
-            <span className="hidden sm:inline">Filters</span>
-            {filterCount() > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-accent text-white text-[9px] font-extrabold flex items-center justify-center">
-                {filterCount()}
-              </span>
-            )}
-          </button>
+            </button>
+            <button
+              onClick={() => setShowFilterPanel(true)}
+              className="relative flex items-center gap-1.5 h-8 px-2.5 border-2 border-ink text-[12px] font-extrabold text-ink hover:bg-accent-100 transition-colors"
+            >
+              <SlidersHorizontal size={12} />
+              Filters
+              {filterCount() > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-accent text-white text-[9px] font-extrabold flex items-center justify-center">
+                  {filterCount()}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
