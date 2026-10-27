@@ -39,16 +39,17 @@ export default function MusicianList({ onViewProfile }: Props) {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Header */}
-      <div className="px-4 pt-4 pb-3 flex-shrink-0 border-b-2 border-ink">
-        {/* Row 1: count + label */}
-        <div className="flex items-end gap-2 mb-2">
-          <span className="text-[60px] font-black leading-none text-ink tracking-tight">{musicians.length}</span>
-          <span className="text-[20px] font-extrabold text-ink leading-none pb-1">musicians</span>
-        </div>
-        {/* Row 2: distance + sort + filters */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1">
+      {/* Header — grid matches row columns: 52px | 1fr | auto */}
+      <div className="grid border-b-2 border-ink flex-shrink-0" style={{ gridTemplateColumns: '52px 1fr auto' }}>
+        {/* Col 1: blank spacer */}
+        <div />
+        {/* Col 2: count + distance */}
+        <div className="py-3 px-3">
+          <div className="flex items-end gap-2">
+            <span className="text-[56px] font-black leading-none text-ink tracking-tight">{musicians.length}</span>
+            <span className="text-[18px] font-extrabold text-ink leading-none pb-1">musicians</span>
+          </div>
+          <div className="flex items-center gap-1 mt-1">
             <span className="text-[11px] font-semibold text-neutral-500">within</span>
             <div className="relative">
               <select
@@ -63,28 +64,29 @@ export default function MusicianList({ onViewProfile }: Props) {
               <span className="absolute right-0 top-1/2 -translate-y-1/2 text-[9px] text-ink pointer-events-none">▾</span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={toggleSort}
-              title={sort === 'nearest' ? 'Sort: Nearest first' : sort === 'further' ? 'Sort: Furthest first' : 'Sort: A–Z'}
-              className="relative flex items-center gap-1.5 h-8 px-2.5 border-2 border-ink text-[12px] font-extrabold text-ink hover:bg-accent-100 transition-colors"
-            >
-              <ArrowUpDown size={12} />
-              {sort === 'nearest' ? 'Nearest' : sort === 'further' ? 'Furthest' : 'A–Z'}
-            </button>
-            <button
-              onClick={() => setShowFilterPanel(true)}
-              className="relative flex items-center gap-1.5 h-8 px-2.5 border-2 border-ink text-[12px] font-extrabold text-ink hover:bg-accent-100 transition-colors"
-            >
-              <SlidersHorizontal size={12} />
-              Filters
-              {filterCount() > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-accent text-white text-[9px] font-extrabold flex items-center justify-center">
-                  {filterCount()}
-                </span>
-              )}
-            </button>
-          </div>
+        </div>
+        {/* Col 3: Filters (boxed) over Nearest (plain) — aligns with distance column */}
+        <div className="border-l-2 border-ink flex flex-col">
+          <button
+            onClick={() => setShowFilterPanel(true)}
+            className="relative flex-1 flex items-center justify-center gap-1.5 px-4 border-b-2 border-ink text-[12px] font-extrabold text-ink hover:bg-accent-100 transition-colors"
+          >
+            <SlidersHorizontal size={12} />
+            Filters
+            {filterCount() > 0 && (
+              <span className="absolute top-1 right-1 w-4 h-4 bg-accent text-white text-[9px] font-extrabold flex items-center justify-center">
+                {filterCount()}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={toggleSort}
+            title={sort === 'nearest' ? 'Sort: Nearest first' : sort === 'further' ? 'Sort: Furthest first' : 'Sort: A–Z'}
+            className="flex-1 flex items-center justify-center gap-1.5 px-4 text-[12px] font-extrabold text-ink hover:bg-accent-100 transition-colors"
+          >
+            <ArrowUpDown size={12} />
+            {sort === 'nearest' ? 'Nearest' : sort === 'further' ? 'Furthest' : 'A–Z'}
+          </button>
         </div>
       </div>
 
