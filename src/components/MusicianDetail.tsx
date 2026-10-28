@@ -205,11 +205,9 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
         {musician.gear && musician.gear.length > 0 && (
           <div className="px-4 pt-4">
             <p className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-700 mb-2">Gear</p>
-            <div className="border-t-2 border-ink">
+            <div className="flex flex-wrap gap-1.5">
               {musician.gear.map((item, i) => (
-                <div key={i} className="py-2 border-b-2 border-ink">
-                  <span className="text-[14px] text-ink">{item}</span>
-                </div>
+                <span key={i} className="tag">{item}</span>
               ))}
             </div>
           </div>
