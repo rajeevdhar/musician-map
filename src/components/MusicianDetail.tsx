@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState } from 'react'
 import type { Musician } from '../types'
 import { useStore } from '../store'
 import { ArrowLeft, X, Heart, MapPin, Pencil, MessageSquare, Globe, Instagram, Youtube, Music, Play, Pause, Tent, Video, Flag } from 'lucide-react'
@@ -24,22 +24,8 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
   const outgoingStatus = contactRequests.outgoing[musician.id]
   const revealed = revealedContacts[musician.id]
   const audioRef = useRef<HTMLAudioElement>(null)
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const photoRef = useRef<HTMLDivElement>(null)
   const [playing, setPlaying] = useState(false)
   const [showReport, setShowReport] = useState(false)
-  const [photoH, setPhotoH] = useState(240)
-
-  useEffect(() => {
-    const maxH = photoRef.current?.offsetWidth ?? 240
-    setPhotoH(maxH)
-    const el = scrollRef.current
-    if (!el) return
-    el.scrollTop = 0
-    const onScroll = () => setPhotoH(Math.max(80, maxH - el.scrollTop))
-    el.addEventListener('scroll', onScroll, { passive: true })
-    return () => el.removeEventListener('scroll', onScroll)
-  }, [musician.id])
 
   const toggleAudio = () => {
     if (!audioRef.current) return
@@ -66,35 +52,34 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
       />
     )}
     <div className="flex flex-col h-full">
-      {/* Photo area — height tracks scroll position (square when fully open) */}
-      <div ref={photoRef} className="w-full bg-neutral-300 relative flex-shrink-0 overflow-hidden" style={{ height: `${photoH}px` }}>
-        {musician.avatarUrl ? (
-          <img src={musician.avatarUrl} alt={musician.displayName} className="w-full h-full object-cover grayscale" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-ink">
-            <span className="text-[72px] font-black text-white leading-none tracking-tighter select-none">{initials}</span>
-          </div>
-        )}
-        {/* Close / back */}
-        <button
-          onClick={onClose}
-          className="absolute top-3 left-3 w-10 h-10 bg-ground border-2 border-ink flex items-center justify-center hover:bg-accent-100 transition-colors"
-        >
-          {isMobile ? <ArrowLeft size={18} /> : <X size={18} />}
-        </button>
-        {/* Save (heart) */}
-        {!isOwnProfile && currentUser && (
+      {/* Scrollable content — photo scrolls with everything else */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Photo area */}
+        <div className="w-full aspect-square bg-neutral-300 relative overflow-hidden flex-shrink-0">
+          {musician.avatarUrl ? (
+            <img src={musician.avatarUrl} alt={musician.displayName} className="w-full h-full object-cover grayscale" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-ink">
+              <span className="text-[72px] font-black text-white leading-none tracking-tighter select-none">{initials}</span>
+            </div>
+          )}
+          {/* Close / back */}
           <button
-            onClick={() => toggleSaved(musician.id)}
-            className={`absolute top-3 right-3 w-10 h-10 bg-ground border-2 border-ink flex items-center justify-center hover:bg-accent-100 transition-colors ${isSaved ? 'text-accent' : 'text-ink'}`}
+            onClick={onClose}
+            className="absolute top-3 left-3 w-10 h-10 bg-ground border-2 border-ink flex items-center justify-center hover:bg-accent-100 transition-colors"
           >
-            <Heart size={18} fill={isSaved ? 'currentColor' : 'none'} />
+            {isMobile ? <ArrowLeft size={18} /> : <X size={18} />}
           </button>
-        )}
-      </div>
-
-      {/* Scrollable content */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto">
+          {/* Save (heart) */}
+          {!isOwnProfile && currentUser && (
+            <button
+              onClick={() => toggleSaved(musician.id)}
+              className={`absolute top-3 right-3 w-10 h-10 bg-ground border-2 border-ink flex items-center justify-center hover:bg-accent-100 transition-colors ${isSaved ? 'text-accent' : 'text-ink'}`}
+            >
+              <Heart size={18} fill={isSaved ? 'currentColor' : 'none'} />
+            </button>
+          )}
+        </div>
         {/* Accent header block */}
         <div className="bg-accent border-t-2 border-ink px-4 pt-3.5 pb-4">
           <p className="text-[11px] font-extrabold uppercase tracking-widest text-white/70 mb-1 flex items-center gap-1.5">
