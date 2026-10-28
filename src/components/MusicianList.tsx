@@ -44,9 +44,9 @@ export default function MusicianList({ onViewProfile }: Props) {
         <div />
         {/* Col 2: big number, then "musicians" stacked above "within X mi" */}
         <div className="py-3 px-3 flex items-center gap-3">
-          <span className="text-[56px] font-black leading-none text-ink tracking-tight flex-shrink-0">{musicians.length}</span>
-          <div className="flex flex-col justify-center">
-            <span className="text-[18px] font-extrabold text-ink leading-tight">musicians</span>
+          <span className="text-[72px] font-black leading-none text-ink tracking-tight flex-shrink-0">{musicians.length}</span>
+          <div className="flex flex-col justify-center gap-0.5">
+            <span className="text-[18px] font-extrabold text-ink leading-none">musicians</span>
             <div className="flex items-center gap-1">
               <span className="text-[11px] font-semibold text-neutral-500">within</span>
               <div className="relative">
