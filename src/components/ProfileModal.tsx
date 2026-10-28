@@ -707,18 +707,18 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
         </button>
       </div>
       {gear.length > 0 && (
-        <div className="border-t-2 border-ink">
+        <div className="flex flex-wrap gap-1.5">
           {gear.map((item, i) => (
-            <div key={i} className="flex items-center justify-between py-2 border-b-2 border-ink">
-              <span className="text-[14px] text-ink">{item}</span>
+            <span key={i} className="tag flex items-center gap-1.5">
+              {item}
               <button
                 type="button"
                 onClick={() => setGear(g => g.filter((_, j) => j !== i))}
-                className="w-6 h-6 flex items-center justify-center text-neutral-400 hover:text-accent transition-colors text-lg leading-none"
+                className="text-neutral-500 hover:text-accent transition-colors leading-none"
               >
                 ×
               </button>
-            </div>
+            </span>
           ))}
         </div>
       )}
