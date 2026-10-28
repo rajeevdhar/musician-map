@@ -49,17 +49,17 @@ export default function MusicianList({ onViewProfile }: Props) {
             <span className="text-[18px] font-extrabold text-ink leading-none">musicians</span>
             <div className="flex items-center gap-1">
               <span className="text-[11px] font-semibold text-neutral-500">within</span>
-              <div className="relative">
+              <div className="flex items-center gap-0.5">
                 <select
                   value={filters.distanceMi}
                   onChange={e => setFilters({ distanceMi: Number(e.target.value) as typeof filters.distanceMi })}
-                  className="text-[11px] font-bold text-ink bg-transparent cursor-pointer focus:outline-none appearance-none pr-3"
+                  className="text-[11px] font-bold text-ink bg-transparent cursor-pointer focus:outline-none appearance-none"
                 >
                   {DISTANCE_OPTIONS.map(d => (
                     <option key={d} value={d}>{distanceLabel(d)}</option>
                   ))}
                 </select>
-                <span className="absolute right-0 top-1/2 -translate-y-1/2 text-[9px] text-ink pointer-events-none">▾</span>
+                <span className="text-[9px] text-ink pointer-events-none leading-none">▾</span>
               </div>
             </div>
           </div>
