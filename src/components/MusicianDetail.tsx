@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import type { Musician } from '../types'
 import { useStore } from '../store'
 import { ArrowLeft, X, Heart, MapPin, Pencil, MessageSquare, Globe, Instagram, Youtube, Music, Play, Pause, Tent, Video, Flag } from 'lucide-react'
@@ -24,8 +24,19 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
   const outgoingStatus = contactRequests.outgoing[musician.id]
   const revealed = revealedContacts[musician.id]
   const audioRef = useRef<HTMLAudioElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
   const [playing, setPlaying] = useState(false)
   const [showReport, setShowReport] = useState(false)
+  const [photoH, setPhotoH] = useState(240)
+
+  useEffect(() => {
+    setPhotoH(240)
+    const el = scrollRef.current
+    if (!el) return
+    const onScroll = () => setPhotoH(Math.max(80, 240 - el.scrollTop))
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [musician.id])
 
   const toggleAudio = () => {
     if (!audioRef.current) return
@@ -52,8 +63,8 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
       />
     )}
     <div className="flex flex-col h-full">
-      {/* Photo area */}
-      <div className="w-full h-[240px] lg:aspect-square lg:h-auto bg-neutral-300 relative flex-shrink-0 overflow-hidden">
+      {/* Photo area — shrinks as user scrolls up, expands on scroll down */}
+      <div className="w-full bg-neutral-300 relative flex-shrink-0 overflow-hidden transition-[height] duration-150 ease-out" style={{ height: `${photoH}px` }}>
         {musician.avatarUrl ? (
           <img src={musician.avatarUrl} alt={musician.displayName} className="w-full h-full object-cover grayscale" />
         ) : (
@@ -80,7 +91,7 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
       </div>
 
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto">
         {/* Accent header block */}
         <div className="bg-accent border-t-2 border-ink px-4 pt-3.5 pb-4">
           <p className="text-[11px] font-extrabold uppercase tracking-widest text-white/70 mb-1 flex items-center gap-1.5">

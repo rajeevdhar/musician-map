@@ -52,9 +52,15 @@ const STATE_ABBR: Record<string, string> = {
 
 export function cityStateLocation(locationName: string): string {
   const parts = locationName.split(',').map(s => s.trim()).filter(Boolean)
-  if (parts.length <= 1) return parts[0] ?? ''
-  const state = parts[parts.length - 1]
-  return `${parts[0]}, ${STATE_ABBR[state] ?? state}`
+  const isZip = (s: string) => /^\d{5}(-\d{4})?$/.test(s)
+  const isCounty = (s: string) => /\b(County|Parish|Borough|Census Area)\b/i.test(s)
+  const city = parts.find(p => !isZip(p) && !isCounty(p) && !STATE_ABBR[p] && p !== 'United States')
+  const statePart = parts.find(p => STATE_ABBR[p])
+  const state = statePart ? STATE_ABBR[statePart] : null
+  if (city && state) return `${city}, ${state}`
+  if (city) return city
+  if (state) return state
+  return parts[0] ?? ''
 }
 
 export function haversineDistanceMiles(lat1: number, lng1: number, lat2: number, lng2: number): number {
