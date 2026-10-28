@@ -425,7 +425,7 @@ export const useStore = create<AppStore>()((set, get) => ({
   setFilters: (partial) => set(s => ({ filters: { ...s.filters, ...partial } })),
   resetFilters: () => set({ filters: { ...DEFAULT_FILTERS } }),
   setShowFilterPanel: (show) => {
-    if (!show) localStorage.setItem('mm-filter-panel-dismissed', '1')
+    try { if (!show) localStorage.setItem('mm-filter-panel-dismissed', '1') } catch { /* */ }
     set({ showFilterPanel: show })
   },
 

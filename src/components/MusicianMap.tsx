@@ -135,11 +135,11 @@ function FlyToSearch() {
 function FlyToDistance() {
   const map = useMap()
   const { filters, searchLoc, currentProfile } = useStore()
+  const profile = currentProfile()
+  const lat = searchLoc?.lat ?? profile?.lat
+  const lng = searchLoc?.lng ?? profile?.lng
 
   useEffect(() => {
-    const profile = currentProfile()
-    const lat = searchLoc?.lat ?? profile?.lat
-    const lng = searchLoc?.lng ?? profile?.lng
     if (lat == null || lng == null) return
 
     const dist = filters.distanceMi
@@ -155,7 +155,7 @@ function FlyToDistance() {
       [lat + latDelta, lng + lngDelta]
     )
     map.flyToBounds(bounds, { duration: 1.2, padding: [20, 20] })
-  }, [filters.distanceMi]) // eslint-disable-line
+  }, [filters.distanceMi, lat, lng]) // eslint-disable-line
 
   return null
 }

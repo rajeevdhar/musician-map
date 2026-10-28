@@ -4,11 +4,9 @@ import { useStore } from '../store'
 import type { Musician } from '../types'
 import { getInstrumentCode, haversineDistanceMiles, formatDistance, shortLocation } from '../lib/musicianUtils'
 import { isOnline } from '../lib/presence'
+import { DISTANCE_OPTIONS, distanceLabel } from '../types'
 
 type SortMode = 'nearest' | 'further' | 'az'
-
-const DISTANCE_OPTIONS = [1, 5, 10, 25, 50, 100, 0] as const
-const distanceLabel = (d: number) => d === 0 ? 'World' : `${d} mi`
 
 interface Props {
   onViewProfile?: (m: Musician) => void
@@ -16,6 +14,7 @@ interface Props {
 
 export default function MusicianList({ onViewProfile }: Props) {
   const { filteredMusicians, selectedId, setSelectedId, currentProfile, resetFilters, filters, setFilters, setShowFilterPanel, filterCount } = useStore()
+  const activeFilterCount = filterCount()
   const [sort, setSort] = useState<SortMode>('nearest')
   const profile = currentProfile()
   const userLat = profile?.lat
@@ -68,14 +67,15 @@ export default function MusicianList({ onViewProfile }: Props) {
         {/* Col 3: Filters (boxed button) stacked above Nearest (plain text) */}
         <div className="flex flex-col items-center justify-center gap-2 px-3 py-3">
           <button
+            data-tour="filter-btn"
             onClick={() => setShowFilterPanel(true)}
             className="relative flex items-center justify-center gap-1.5 h-8 px-3 border-2 border-ink text-[12px] font-extrabold text-ink hover:bg-accent-100 transition-colors w-full"
           >
             <SlidersHorizontal size={12} />
             Filters
-            {filterCount() > 0 && (
+            {activeFilterCount > 0 && (
               <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-accent text-white text-[9px] font-extrabold flex items-center justify-center">
-                {filterCount()}
+                {activeFilterCount}
               </span>
             )}
           </button>
@@ -106,14 +106,14 @@ export default function MusicianList({ onViewProfile }: Props) {
               <div className="relative py-6 flex flex-col items-center">
                 <span className="text-[80px] font-black text-accent leading-none select-none">0</span>
                 <span className="text-[11px] font-extrabold uppercase tracking-widest text-ink mt-0.5">
-                  {filterCount() > 0 ? 'matches found' : filters.distanceMi === 0 ? 'musicians yet' : 'in this area'}
+                  {activeFilterCount > 0 ? 'matches found' : filters.distanceMi === 0 ? 'musicians yet' : 'in this area'}
                 </span>
               </div>
             </div>
 
             <div>
               <p className="text-[13px] text-neutral-600 leading-relaxed max-w-[210px] mx-auto">
-                {filterCount() > 0
+                {activeFilterCount > 0
                   ? 'Your filters are too narrow — try removing some.'
                   : filters.distanceMi === 0
                   ? 'No one has joined yet. Invite a musician near you.'
@@ -121,7 +121,7 @@ export default function MusicianList({ onViewProfile }: Props) {
               </p>
             </div>
 
-            {filterCount() > 0 ? (
+            {activeFilterCount > 0 ? (
               <button
                 onClick={resetFilters}
                 className="h-10 px-6 bg-accent text-white text-[13px] font-extrabold hover:bg-accent-600 transition-colors"

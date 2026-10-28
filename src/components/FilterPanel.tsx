@@ -1,9 +1,6 @@
 import { X } from 'lucide-react'
 import { useStore } from '../store'
-import { GENRE_OPTIONS, LOOKING_FOR_OPTIONS } from '../types'
-
-const DISTANCE_OPTIONS = [1, 5, 10, 25, 50, 100, 0] as const
-const distanceLabel = (d: number) => d === 0 ? 'Worldwide' : `${d} mi`
+import { GENRE_OPTIONS, LOOKING_FOR_OPTIONS, DISTANCE_OPTIONS, distanceLabel } from '../types'
 
 const INSTRUMENT_OPTIONS = [
   { label: 'Drums', values: ['Drums'] },

@@ -66,3 +66,6 @@ export const LOOKING_FOR_OPTIONS = [
   'Band Members', 'Jam Partner', 'Session Work', 'Lessons',
   'Recording Collaborator', 'Live Gigs', 'Students', 'Just Meeting Other Musicians',
 ]
+
+export const DISTANCE_OPTIONS = [1, 5, 10, 25, 50, 100, 0] as const
+export const distanceLabel = (d: number) => d === 0 ? 'Worldwide' : `${d} mi`

@@ -84,10 +84,10 @@ export function startTour(onDone?: () => void) {
       },
     },
     {
-      element: '[data-tour="filters"]',
+      element: '[data-tour="filter-btn"]',
       popover: {
-        title: 'Filter by instrument',
-        description: 'Click an instrument to show only those musicians. You can combine multiple filters.',
+        title: 'Filter musicians',
+        description: 'Click Filters to narrow by instrument, genre, skill level, and more. You can combine multiple filters.',
         side: 'bottom' as const,
         align: 'start' as const,
       },

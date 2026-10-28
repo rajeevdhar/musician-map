@@ -102,6 +102,7 @@ a:hover { color: var(--color-accent-600); }
 @media (hover: none) {
   .mf-pin-wrap:hover .mf-pin-tooltip { display: none; }
   .mf-pin-wrap:hover .mf-pin { transform: none; box-shadow: var(--shadow-sm); background: var(--color-accent); color: #fff; }
+  .mf-pin-wrap:hover .mf-pin.is-teacher { background: #b45309; }
 }
 .mf-tip-name { font: 800 13px var(--font-heading); margin-bottom: 3px; }
 .mf-tip-meta { font-size: 11px; opacity: .7; margin-bottom: 5px; font-weight: 600; letter-spacing: .01em; }
