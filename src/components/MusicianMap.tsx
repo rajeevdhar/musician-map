@@ -240,7 +240,7 @@ export default function MusicianMap() {
           <span>Musician</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="inline-block w-5 h-3 flex-shrink-0" style={{ background: '#b45309' }} />
+          <span className="inline-block w-5 h-3 flex-shrink-0" style={{ background: '#1d4ed8' }} />
           <span>Offers lessons</span>
         </div>
         {onlineCount > 0 && (

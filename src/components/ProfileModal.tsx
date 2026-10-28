@@ -982,9 +982,9 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
                     className="flex items-start gap-2 text-left"
                   >
                     <div className={`w-5 h-5 flex-shrink-0 border-2 flex items-center justify-center mt-0.5 transition-colors ${
-                      opt === 'Students' && lookingFor.includes(opt) ? 'border-[#b45309]' :
+                      opt === 'Students' && lookingFor.includes(opt) ? 'border-[#1d4ed8]' :
                       lookingFor.includes(opt) ? 'bg-accent border-accent' : 'border-ink'
-                    }`} style={opt === 'Students' && lookingFor.includes(opt) ? { background: '#b45309' } : undefined}>
+                    }`} style={opt === 'Students' && lookingFor.includes(opt) ? { background: '#1d4ed8' } : undefined}>
                       {lookingFor.includes(opt) && <span className="text-white text-[10px] font-extrabold leading-none">✓</span>}
                     </div>
                     <div>
@@ -1119,9 +1119,9 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
                     className="flex items-start gap-2 text-left"
                   >
                     <div className={`w-5 h-5 flex-shrink-0 border-2 flex items-center justify-center mt-0.5 transition-colors ${
-                      opt === 'Students' && lookingFor.includes(opt) ? 'border-[#b45309]' :
+                      opt === 'Students' && lookingFor.includes(opt) ? 'border-[#1d4ed8]' :
                       lookingFor.includes(opt) ? 'bg-accent border-accent' : 'border-ink'
-                    }`} style={opt === 'Students' && lookingFor.includes(opt) ? { background: '#b45309' } : undefined}>
+                    }`} style={opt === 'Students' && lookingFor.includes(opt) ? { background: '#1d4ed8' } : undefined}>
                       {lookingFor.includes(opt) && <span className="text-white text-[10px] font-extrabold leading-none">✓</span>}
                     </div>
                     <div>

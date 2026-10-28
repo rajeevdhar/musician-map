@@ -86,7 +86,7 @@ a:hover { color: var(--color-accent-600); }
 .mf-online-dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; flex-shrink: 0; box-shadow: 0 0 0 1.5px rgba(0,0,0,.25); }
 .mf-tip-online { font-size: 10px; font-weight: 700; color: #22c55e; letter-spacing: .02em; }
 .mf-pin.is-selected { background: var(--color-text); }
-.mf-pin.is-teacher { background: #b45309; }
+.mf-pin.is-teacher { background: #1d4ed8; }
 .mf-pin.is-teacher.is-selected { background: var(--color-text); }
 [data-theme="navy"] .mf-pin,
 [data-theme="slate"] .mf-pin { background: var(--color-gold); color: var(--color-text); }
@@ -102,12 +102,12 @@ a:hover { color: var(--color-accent-600); }
 @media (hover: none) and (max-width: 1023px) {
   .mf-pin-wrap:hover .mf-pin-tooltip { display: none; }
   .mf-pin-wrap:hover .mf-pin { transform: none; box-shadow: var(--shadow-sm); background: var(--color-accent); color: #fff; }
-  .mf-pin-wrap:hover .mf-pin.is-teacher { background: #b45309; }
+  .mf-pin-wrap:hover .mf-pin.is-teacher { background: #1d4ed8; }
 }
 .mf-tip-name { font: 800 13px var(--font-heading); margin-bottom: 3px; }
 .mf-tip-meta { font-size: 11px; opacity: .7; margin-bottom: 5px; font-weight: 600; letter-spacing: .01em; }
 .mf-tip-bio { font-size: 11px; opacity: .65; line-height: 1.45; }
-.mf-tip-teacher { display: inline-block; margin-top: 5px; font: 800 9px var(--font-heading); letter-spacing: .08em; background: #b45309; color: #fff; padding: 1px 5px; }
+.mf-tip-teacher { display: inline-block; margin-top: 5px; font: 800 9px var(--font-heading); letter-spacing: .08em; background: #1d4ed8; color: #fff; padding: 1px 5px; }
 
 /* Marker cluster overrides */
 .mf-cluster { display: flex; align-items: center; justify-content: center; background: var(--color-accent); color: #fff; font: 900 13px var(--font-heading); box-shadow: var(--shadow-sm); cursor: pointer; transition: transform .15s ease, box-shadow .15s ease; white-space: nowrap; padding: 0 10px; height: 30px; }
