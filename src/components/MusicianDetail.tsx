@@ -197,6 +197,52 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
           </div>
         )}
 
+        {/* Gear */}
+        {musician.gear && musician.gear.length > 0 && (
+          <div className="px-4 pt-4">
+            <p className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-700 mb-2">Gear</p>
+            <div className="border-t-2 border-ink">
+              {musician.gear.map((item, i) => (
+                <div key={i} className="py-2 border-b-2 border-ink">
+                  <span className="text-[14px] text-ink">{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Availability */}
+        {musician.availability && musician.availability.some(d => d.some(Boolean)) && (
+          <div className="px-4 pt-4">
+            <p className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-700 mb-2">Availability</p>
+            <div className="border-2 border-ink overflow-x-auto">
+              <div className="min-w-[280px]">
+                <div className="grid border-b-2 border-ink" style={{ gridTemplateColumns: '68px repeat(7, 1fr)' }}>
+                  <div className="h-7 border-r-2 border-ink" />
+                  {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => (
+                    <div key={d} className="h-7 text-[10px] font-extrabold text-center flex items-center justify-center border-l-2 border-ink">
+                      {d}
+                    </div>
+                  ))}
+                </div>
+                {['Morning','Afternoon','Evening'].map((slot, si) => (
+                  <div key={slot} className={`grid ${si > 0 ? 'border-t-2 border-ink' : ''}`} style={{ gridTemplateColumns: '68px repeat(7, 1fr)' }}>
+                    <div className="h-8 text-[10px] font-extrabold flex items-center px-1.5 border-r-2 border-ink leading-tight">
+                      {slot}
+                    </div>
+                    {[0,1,2,3,4,5,6].map(di => (
+                      <div
+                        key={di}
+                        className={`h-8 border-l-2 border-ink ${musician.availability![di]?.[si] ? 'bg-accent' : ''}`}
+                      />
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Report link — logged-in users only, not own profile, not seed profiles */}
         {currentUser && !isOwnProfile && !isSeed && (
           <div className="px-4 pt-6 pb-2">
