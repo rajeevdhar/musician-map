@@ -25,15 +25,18 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
   const revealed = revealedContacts[musician.id]
   const audioRef = useRef<HTMLAudioElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const photoRef = useRef<HTMLDivElement>(null)
   const [playing, setPlaying] = useState(false)
   const [showReport, setShowReport] = useState(false)
   const [photoH, setPhotoH] = useState(240)
 
   useEffect(() => {
-    setPhotoH(240)
+    const maxH = photoRef.current?.offsetWidth ?? 240
+    setPhotoH(maxH)
     const el = scrollRef.current
     if (!el) return
-    const onScroll = () => setPhotoH(Math.max(80, 240 - el.scrollTop))
+    el.scrollTop = 0
+    const onScroll = () => setPhotoH(Math.max(80, maxH - el.scrollTop))
     el.addEventListener('scroll', onScroll, { passive: true })
     return () => el.removeEventListener('scroll', onScroll)
   }, [musician.id])
@@ -63,8 +66,8 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
       />
     )}
     <div className="flex flex-col h-full">
-      {/* Photo area — shrinks as user scrolls up, expands on scroll down */}
-      <div className="w-full bg-neutral-300 relative flex-shrink-0 overflow-hidden transition-[height] duration-150 ease-out" style={{ height: `${photoH}px` }}>
+      {/* Photo area — height tracks scroll position (square when fully open) */}
+      <div ref={photoRef} className="w-full bg-neutral-300 relative flex-shrink-0 overflow-hidden" style={{ height: `${photoH}px` }}>
         {musician.avatarUrl ? (
           <img src={musician.avatarUrl} alt={musician.displayName} className="w-full h-full object-cover grayscale" />
         ) : (
