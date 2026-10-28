@@ -36,6 +36,12 @@ export function shortLocation(locationName: string): string {
   return /^\d{5}(-\d{4})?$/.test(first) ? (parts[1] ?? first) : first
 }
 
+export function cityStateLocation(locationName: string): string {
+  const parts = locationName.split(',').map(s => s.trim()).filter(Boolean)
+  if (parts.length <= 1) return parts[0] ?? ''
+  return `${parts[0]}, ${parts[parts.length - 1]}`
+}
+
 export function haversineDistanceMiles(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 3959
   const dLat = (lat2 - lat1) * Math.PI / 180
