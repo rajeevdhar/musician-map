@@ -582,7 +582,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
                   onKeyDown={e => { if (e.key === 'Escape') setShowSuggestions(false) }}
                   onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                   className="w-full h-12 bg-white border-2 border-ink px-3 text-[15px] focus:outline-none"
-                  placeholder="City, neighborhood, address…"
+                  placeholder="City, zip code, or address…"
                 />
                 {showSuggestions && (
                   <div className="absolute left-0 right-0 bg-white border-2 border-ink border-t-0 z-10 shadow-md">
@@ -617,6 +617,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
   const locationSection = (
     <div>
       <Label>Location</Label>
+      <p className="text-[12px] text-neutral-500 mb-2">Enter a city, zip code, or address. Pick from the suggestions, or drag the pin to adjust.</p>
       <div className="relative flex gap-2 mb-1">
         <div className="relative flex-1">
           <input
@@ -626,7 +627,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
             onKeyDown={e => { if (e.key === 'Escape') setShowSuggestions(false) }}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
             className="w-full h-10 bg-white border-2 border-ink px-2 text-[14px] text-ink focus:outline-none"
-            placeholder="City, neighborhood, address…"
+            placeholder="City, zip code, or address…"
           />
           {showSuggestions && (
             <div className="absolute left-0 right-0 bg-white border-2 border-ink border-t-0 z-10 shadow-md">
