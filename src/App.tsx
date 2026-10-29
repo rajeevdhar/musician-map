@@ -245,8 +245,8 @@ export default function App() {
                       </button>
                     )}
                   </div>
-                  {/* Sign out */}
-                  <div className="px-4 pt-6 pb-4">
+                  {/* Sign out + Feedback */}
+                  <div className="px-4 pt-6 pb-4 flex items-center justify-between">
                     <button
                       onClick={logout}
                       className="flex items-center gap-1.5 text-[12px] font-semibold text-neutral-400 hover:text-accent-700 transition-colors"
@@ -254,6 +254,12 @@ export default function App() {
                       <LogOut size={12} />
                       Sign out
                     </button>
+                    <a
+                      href="mailto:rajeev.dhar@gmail.com?subject=MusicianMapper%20Feedback"
+                      className="text-[12px] font-semibold text-neutral-400 hover:text-accent-700 transition-colors underline underline-offset-2"
+                    >
+                      Send feedback
+                    </a>
                   </div>
                 </div>
               )

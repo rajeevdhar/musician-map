@@ -142,6 +142,14 @@ export default function Header({ onShowAuth, onShowProfile, onShowAdmin, isAdmin
             ))}
           </div>
 
+          {/* Feedback */}
+          <a
+            href="mailto:rajeev.dhar@gmail.com?subject=MusicianMapper%20Feedback"
+            className="flex items-center border-l-2 border-white h-[68px] px-4 text-[13px] font-extrabold text-white hover:bg-white/10 transition-colors"
+          >
+            Feedback
+          </a>
+
           {/* User menu / Sign In */}
           <div className="flex items-center border-l-2 border-white px-3">
             {currentUser ? (
