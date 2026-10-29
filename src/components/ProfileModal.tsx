@@ -1002,7 +1002,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
                     <div>
                       <span className="text-[13px] text-ink leading-tight">{opt}</span>
                       {opt === 'Students' && (
-                        <span className="block text-[11px] text-neutral-500 mt-0.5">Your pin will appear amber on the map</span>
+                        <span className="block text-[11px] text-neutral-500 mt-0.5">Your pin will appear blue on the map</span>
                       )}
                     </div>
                   </button>
@@ -1139,7 +1139,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
                     <div>
                       <span className="text-[13px] text-ink leading-tight">{opt}</span>
                       {opt === 'Students' && (
-                        <span className="block text-[11px] text-neutral-500 mt-0.5">Your pin will appear amber on the map</span>
+                        <span className="block text-[11px] text-neutral-500 mt-0.5">Your pin will appear blue on the map</span>
                       )}
                     </div>
                   </button>
