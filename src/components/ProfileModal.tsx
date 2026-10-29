@@ -553,7 +553,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
                 {showSuggestions && (
                   <div className="absolute left-0 right-0 bg-white border-2 border-ink border-t-0 z-10 shadow-md">
                     {suggestions.map((s, i) => (
-                      <button key={i} type="button" onMouseDown={() => pickSuggestion(s)}
+                      <button key={i} type="button" onPointerDown={e => { e.preventDefault(); pickSuggestion(s) }}
                         className="w-full text-left px-3 py-2.5 text-[13px] border-t border-neutral-200 first:border-t-0 hover:bg-accent-100 text-ink truncate">
                         {s.display}
                       </button>
@@ -597,7 +597,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
           {showSuggestions && (
             <div className="absolute left-0 right-0 bg-white border-2 border-ink border-t-0 z-10 shadow-md">
               {suggestions.map((s, i) => (
-                <button key={i} type="button" onMouseDown={() => pickSuggestion(s)}
+                <button key={i} type="button" onPointerDown={e => { e.preventDefault(); pickSuggestion(s) }}
                   className="w-full text-left px-3 py-2 text-[13px] border-t border-neutral-200 first:border-t-0 hover:bg-accent-100 text-ink truncate">
                   {s.display}
                 </button>

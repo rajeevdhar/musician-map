@@ -33,7 +33,9 @@ export function getInstrumentCode(instruments: string[]): string {
 export function shortLocation(locationName: string): string {
   const parts = locationName.split(',').map(s => s.trim())
   const first = parts[0] ?? ''
-  return /^\d{5}(-\d{4})?$/.test(first) ? (parts[1] ?? first) : first
+  // Skip house numbers (short numeric) and zip codes
+  if (/^\d{1,5}[a-zA-Z]?$/.test(first)) return parts[1] ?? first
+  return first
 }
 
 const STATE_ABBR: Record<string, string> = {
@@ -53,8 +55,10 @@ const STATE_ABBR: Record<string, string> = {
 export function cityStateLocation(locationName: string): string {
   const parts = locationName.split(',').map(s => s.trim()).filter(Boolean)
   const isZip = (s: string) => /^\d{5}(-\d{4})?$/.test(s)
+  const isHouseNumber = (s: string) => /^\d{1,5}[a-zA-Z]?$/.test(s)
+  const isStreetName = (s: string) => /\b(Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd|Way|Court|Ct|Place|Pl|Terrace|Ter|Highway|Hwy|Parkway|Pkwy)\b/i.test(s)
   const isCounty = (s: string) => /\b(County|Parish|Borough|Census Area)\b/i.test(s)
-  const city = parts.find(p => !isZip(p) && !isCounty(p) && !STATE_ABBR[p] && p !== 'United States')
+  const city = parts.find(p => !isZip(p) && !isHouseNumber(p) && !isStreetName(p) && !isCounty(p) && !STATE_ABBR[p] && p !== 'United States')
   const statePart = parts.find(p => STATE_ABBR[p])
   const state = statePart ? STATE_ABBR[statePart] : null
   if (city && state) return `${city}, ${state}`
