@@ -617,7 +617,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
   const locationSection = (
     <div>
       <Label>Location</Label>
-      <p className="text-[12px] text-neutral-500 mb-2">Enter a city, zip code, or address. Pick from the suggestions, or drag the pin to adjust.</p>
+      <p className="text-[12px] text-neutral-500 mb-2">Enter a city, zip code, or address. Pick from the suggestions, or drag the pin to adjust. Your exact address is never shown to other users — only an approximate location.</p>
       <div className="relative flex gap-2 mb-1">
         <div className="relative flex-1">
           <input
