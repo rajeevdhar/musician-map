@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { SlidersHorizontal, ArrowUpDown } from 'lucide-react'
 import { useStore } from '../store'
 import type { Musician } from '../types'
@@ -35,6 +35,14 @@ export default function MusicianList({ onViewProfile }: Props) {
   })()
 
   const toggleSort = () => setSort(s => s === 'nearest' ? 'further' : s === 'further' ? 'az' : 'nearest')
+
+  const [copied, setCopied] = useState(false)
+  const copyLink = useCallback(() => {
+    navigator.clipboard.writeText(window.location.origin).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }, [])
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -131,14 +139,24 @@ export default function MusicianList({ onViewProfile }: Props) {
               >
                 Reset all filters
               </button>
-            ) : filters.distanceMi !== 0 ? (
-              <button
-                onClick={() => setFilters({ distanceMi: 0 })}
-                className="h-10 px-6 border-2 border-ink text-[13px] font-extrabold text-ink hover:bg-accent-100 transition-colors"
-              >
-                Show worldwide
-              </button>
-            ) : null}
+            ) : (
+              <div className="flex flex-col items-center gap-2 w-full">
+                {filters.distanceMi !== 0 && (
+                  <button
+                    onClick={() => setFilters({ distanceMi: 0 })}
+                    className="h-10 px-6 border-2 border-ink text-[13px] font-extrabold text-ink hover:bg-accent-100 transition-colors"
+                  >
+                    Show worldwide
+                  </button>
+                )}
+                <button
+                  onClick={copyLink}
+                  className="h-10 px-6 bg-accent text-white text-[13px] font-extrabold hover:bg-accent-600 transition-colors"
+                >
+                  {copied ? '✓ Link copied!' : 'Copy invite link'}
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           musicians.map(m => (
