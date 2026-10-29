@@ -38,7 +38,7 @@ export function shortLocation(locationName: string): string {
   return first
 }
 
-const STATE_ABBR: Record<string, string> = {
+export const STATE_ABBR: Record<string, string> = {
   'Alabama':'AL','Alaska':'AK','Arizona':'AZ','Arkansas':'AR','California':'CA',
   'Colorado':'CO','Connecticut':'CT','Delaware':'DE','Florida':'FL','Georgia':'GA',
   'Hawaii':'HI','Idaho':'ID','Illinois':'IL','Indiana':'IN','Iowa':'IA',
@@ -52,15 +52,20 @@ const STATE_ABBR: Record<string, string> = {
   'District of Columbia':'DC',
 }
 
+const STATE_ABBR_SET = new Set(Object.values(STATE_ABBR))
+
 export function cityStateLocation(locationName: string): string {
   const parts = locationName.split(',').map(s => s.trim()).filter(Boolean)
   const isZip = (s: string) => /^\d{5}(-\d{4})?$/.test(s)
   const isHouseNumber = (s: string) => /^\d{1,5}[a-zA-Z]?$/.test(s)
   const isStreetName = (s: string) => /\b(Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd|Way|Court|Ct|Place|Pl|Terrace|Ter|Highway|Hwy|Parkway|Pkwy)\b/i.test(s)
   const isCounty = (s: string) => /\b(County|Parish|Borough|Census Area)\b/i.test(s)
-  const city = parts.find(p => !isZip(p) && !isHouseNumber(p) && !isStreetName(p) && !isCounty(p) && !STATE_ABBR[p] && p !== 'United States')
+  const isStateAbbr = (s: string) => STATE_ABBR_SET.has(s)
+  const city = parts.find(p => !isZip(p) && !isHouseNumber(p) && !isStreetName(p) && !isCounty(p) && !STATE_ABBR[p] && !isStateAbbr(p) && p !== 'United States')
+  // Support both full state name ("New Jersey") and abbreviation ("NJ") already stored
   const statePart = parts.find(p => STATE_ABBR[p])
-  const state = statePart ? STATE_ABBR[statePart] : null
+  const stateAbbrPart = parts.find(p => isStateAbbr(p))
+  const state = statePart ? STATE_ABBR[statePart] : (stateAbbrPart ?? null)
   if (city && state) return `${city}, ${state}`
   if (city) return city
   if (state) return state

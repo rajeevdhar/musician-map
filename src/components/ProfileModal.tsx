@@ -4,6 +4,7 @@ import { useStore } from '../store'
 import { INSTRUMENT_OPTIONS, GENRE_OPTIONS, LOOKING_FOR_OPTIONS } from '../types'
 import type { Musician, Level } from '../types'
 import { supabase } from '../lib/supabase'
+import { STATE_ABBR } from '../lib/musicianUtils'
 import L from 'leaflet'
 
 type Precision = 'exact' | 'area' | 'hidden'
@@ -16,18 +17,27 @@ const SLOTS = ['Morning', 'Afternoon', 'Evening']
 function roundCoord(n: number) { return Math.round(n * 100) / 100 }
 function emptyAvail(): boolean[][] { return Array.from({ length: 7 }, () => [false, false, false]) }
 
-type Suggestion = { lat: number; lng: number; display: string }
+// Extract "City, ST" from a Nominatim address object
+function nominatimCityState(addr: Record<string, string>): string {
+  const city = addr.city ?? addr.town ?? addr.village ?? addr.hamlet ?? addr.suburb ?? ''
+  const state = addr.state ? (STATE_ABBR[addr.state] ?? addr.state) : ''
+  if (city && state) return `${city}, ${state}`
+  return city || state || ''
+}
+
+type Suggestion = { lat: number; lng: number; display: string; locationName: string }
 
 async function fetchSuggestions(query: string): Promise<Suggestion[]> {
   if (query.length < 3) return []
   try {
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5`
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`
     const res = await fetch(url, { headers: { 'User-Agent': 'MusicianMap/1.0' } })
-    const data = await res.json()
-    return (data as { lat: string; lon: string; display_name: string }[]).map(r => ({
+    const data = await res.json() as Array<{ lat: string; lon: string; display_name: string; address?: Record<string, string> }>
+    return data.map(r => ({
       lat: parseFloat(r.lat),
       lng: parseFloat(r.lon),
-      display: r.display_name.split(',').slice(0, 3).join(', '),
+      display: r.display_name.split(',').slice(0, 4).join(', '),
+      locationName: r.address ? nominatimCityState(r.address) : r.display_name.split(',').slice(0, 2).join(', '),
     }))
   } catch { return [] }
 }
@@ -62,7 +72,7 @@ function LocationPinMap({ lat, lng, onChange }: { lat: number; lng: number; onCh
     mapRef.current.setView([lat, lng], 14, { animate: true, duration: 0.6 })
   }, [lat, lng])
 
-  return <div ref={containerRef} style={{ height: '180px' }} className="border-2 border-ink mt-2" />
+  return <div ref={containerRef} style={{ height: '260px' }} className="border-2 border-ink mt-2" />
 }
 
 async function resizeImage(file: File): Promise<Blob> {
@@ -233,12 +243,13 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
       async pos => {
         const { latitude, longitude } = pos.coords
         try {
-          const url = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+          const url = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`
           const res = await fetch(url, { headers: { 'User-Agent': 'MusicianMap/1.0' } })
           const data = await res.json()
-          const display = data.display_name?.split(',').slice(0, 3).join(', ') ?? 'Your location'
+          const cityState = data.address ? nominatimCityState(data.address as Record<string, string>) : ''
+          const display = data.display_name?.split(',').slice(0, 4).join(', ') ?? 'Your location'
           setLat(latitude); setLng(longitude)
-          setLocationName(display); setLocationQuery(display)
+          setLocationName(cityState || display); setLocationQuery(display)
           setLocationChanged(true); setGeoStatus('found')
         } catch {
           setLat(latitude); setLng(longitude)
@@ -268,7 +279,8 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
 
   const pickSuggestion = (s: Suggestion) => {
     setLat(s.lat); setLng(s.lng)
-    setLocationName(s.display); setLocationQuery(s.display)
+    // Store city/state only; show full address in the input so user knows what was picked
+    setLocationName(s.locationName || s.display); setLocationQuery(s.display)
     setLocationChanged(true); setGeoStatus('found')
     setShowSuggestions(false); setSuggestions([])
   }
