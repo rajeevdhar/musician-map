@@ -4,9 +4,9 @@ import { Search, Music2, User, Pencil, Plus, LogOut, Trash2, Shield, Heart, Mess
 import type { Theme } from '../App'
 
 const THEMES: { id: Theme; color: string; label: string }[] = [
-  { id: 'default', color: '#ec3013', label: 'Red' },
-  { id: 'navy',    color: '#1a2744', label: 'Navy & Gold' },
-  { id: 'slate',   color: '#2a2d35', label: 'Slate & Teal' },
+  { id: 'default', color: '#ec3013', label: 'Red'           },
+  { id: 'navy',    color: '#1d4ed8', label: 'Blue & Amber'  },
+  { id: 'slate',   color: '#16a34a', label: 'Forest & Gold' },
 ]
 
 interface Props {
