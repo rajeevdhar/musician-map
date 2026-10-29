@@ -20,7 +20,7 @@ interface FormProps {
 function SignupForm({ gap = 'gap-3.5', titleSize = 'text-[40px]', displayName, onDisplayName, email, onEmail, password, onPassword, error, loading, onSubmit, onLogin, onSkip }: FormProps) {
   return (
     <form onSubmit={onSubmit} className={`flex flex-col ${gap}`}>
-      <h2 className={`${titleSize} font-extrabold text-ink leading-none`}>Create your account</h2>
+      <h2 className={`${titleSize} font-extrabold text-ink leading-none`}>Join the map</h2>
       <input
         type="text"
         placeholder="Your name"
@@ -110,7 +110,7 @@ export default function SignupScreen({ onSignedUp, onLogin, onSkip }: Props) {
               Band together!
             </h1>
             <p className="text-white/80 text-[18px] font-semibold leading-[1.4] max-w-[440px] mt-6">
-              Put yourself on the map. Find a drummer, a band or a jam three blocks away.
+              Drop a pin, browse musicians near you, and find your next bandmate or collaborator.
             </p>
           </div>
         </div>
