@@ -42,10 +42,16 @@ async function fetchSuggestions(query: string): Promise<Suggestion[]> {
   } catch { return [] }
 }
 
-function LocationPinMap({ lat, lng, onChange }: { lat: number; lng: number; onChange: (lat: number, lng: number) => void }) {
+function LocationPinMap({ lat, lng, onChange, onAddress }: {
+  lat: number; lng: number
+  onChange: (lat: number, lng: number) => void
+  onAddress?: (display: string, locationName: string) => void
+}) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
   const markerRef = useRef<L.Marker | null>(null)
+  const onAddressRef = useRef(onAddress)
+  useEffect(() => { onAddressRef.current = onAddress })
   useEffect(() => {
     if (!containerRef.current || isNaN(lat) || isNaN(lng)) return
     const map = L.map(containerRef.current, { zoomControl: true }).setView([lat, lng], 14)
@@ -60,9 +66,19 @@ function LocationPinMap({ lat, lng, onChange }: { lat: number; lng: number; onCh
       iconAnchor: [7, 7],
     })
     const marker = L.marker([lat, lng], { draggable: true, icon }).addTo(map)
-    marker.on('dragend', () => {
+    marker.on('dragend', async () => {
       const pos = marker.getLatLng()
       onChange(pos.lat, pos.lng)
+      if (onAddressRef.current) {
+        try {
+          const url = `https://nominatim.openstreetmap.org/reverse?lat=${pos.lat}&lon=${pos.lng}&format=json&addressdetails=1`
+          const res = await fetch(url, { headers: { 'User-Agent': 'MusicianMap/1.0' } })
+          const data = await res.json()
+          const cityState = data.address ? nominatimCityState(data.address as Record<string, string>) : ''
+          const display = data.display_name?.split(',').slice(0, 4).join(', ') ?? ''
+          onAddressRef.current(display, cityState || display)
+        } catch { /* keep existing address on error */ }
+      }
     })
     mapRef.current = map
     markerRef.current = marker
@@ -581,7 +597,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
               </div>
               {geoStatus === 'error' && <p className="text-[12px] text-accent-700 mt-1">Location not found.</p>}
               {lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng) && (
-                <LocationPinMap lat={lat} lng={lng} onChange={(newLat, newLng) => { setLat(newLat); setLng(newLng); setLocationChanged(true) }} />
+                <LocationPinMap lat={lat} lng={lng} onChange={(newLat, newLng) => { setLat(newLat); setLng(newLng); setLocationChanged(true) }} onAddress={(display, locName) => { setLocationQuery(display); setLocationName(locName) }} />
               )}
             </div>
             {error && <p className="text-[13px] text-accent-700 bg-accent-100 border-2 border-accent px-3 py-2">{error}</p>}
@@ -631,7 +647,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
       {geoStatus === 'searching' && <p className="text-[12px] text-neutral-500">Detecting…</p>}
       {geoStatus === 'error' && <p className="text-[12px] text-accent-700">Not found. Try a more specific address.</p>}
       {lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng) && (
-        <LocationPinMap lat={lat} lng={lng} onChange={(newLat, newLng) => { setLat(newLat); setLng(newLng); setLocationChanged(true) }} />
+        <LocationPinMap lat={lat} lng={lng} onChange={(newLat, newLng) => { setLat(newLat); setLng(newLng); setLocationChanged(true) }} onAddress={(display, locName) => { setLocationQuery(display); setLocationName(locName) }} />
       )}
     </div>
   )
