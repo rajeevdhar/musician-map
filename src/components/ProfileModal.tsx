@@ -53,7 +53,13 @@ function LocationPinMap({ lat, lng, onChange }: { lat: number; lng: number; onCh
       attribution: '© OpenStreetMap',
       maxZoom: 19,
     }).addTo(map)
-    const marker = L.marker([lat, lng], { draggable: true }).addTo(map)
+    const icon = new L.DivIcon({
+      className: '',
+      html: '<div style="width:14px;height:14px;background:var(--color-accent);border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.4);"></div>',
+      iconSize: [14, 14],
+      iconAnchor: [7, 7],
+    })
+    const marker = L.marker([lat, lng], { draggable: true, icon }).addTo(map)
     marker.on('dragend', () => {
       const pos = marker.getLatLng()
       onChange(pos.lat, pos.lng)
