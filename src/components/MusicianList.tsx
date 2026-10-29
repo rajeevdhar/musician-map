@@ -109,7 +109,7 @@ export default function MusicianList({ onViewProfile }: Props) {
               <div className="relative py-6 flex flex-col items-center">
                 <span className="text-[80px] font-black text-accent leading-none select-none">0</span>
                 <span className="text-[11px] font-extrabold uppercase tracking-widest text-ink mt-0.5">
-                  {activeFilterCount > 0 ? 'matches found' : filters.distanceMi === 0 ? 'musicians yet' : 'in this area'}
+                  {activeFilterCount > 0 ? 'matches found' : filters.distanceMi === 0 ? 'on the map yet' : 'in this area'}
                 </span>
               </div>
             </div>
@@ -117,10 +117,10 @@ export default function MusicianList({ onViewProfile }: Props) {
             <div>
               <p className="text-[13px] text-neutral-600 leading-relaxed max-w-[210px] mx-auto">
                 {activeFilterCount > 0
-                  ? 'Your filters are too narrow — try removing some.'
+                  ? 'No matches — try removing a filter or two.'
                   : filters.distanceMi === 0
-                  ? 'No one has joined yet. Invite a musician near you.'
-                  : 'Try expanding the search distance.'}
+                  ? "You might be one of the first. Share the link and invite a musician near you."
+                  : "You might be one of the first here. Try a wider distance, or share the link with local musicians."}
               </p>
             </div>
 
