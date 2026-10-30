@@ -19,12 +19,21 @@ const SLOTS = ['Morning', 'Afternoon', 'Evening']
 function roundCoord(n: number) { return Math.round(n * 100) / 100 }
 function emptyAvail(): boolean[][] { return Array.from({ length: 7 }, () => [false, false, false]) }
 
-// Extract "City, ST" from a Nominatim address object
+// Extract "City, ST" (US) or "City, Country" (non-US) from a Nominatim address object
 function nominatimCityState(addr: Record<string, string>): string {
   const city = addr.city ?? addr.town ?? addr.village ?? addr.hamlet ?? addr.suburb ?? ''
   const state = addr.state ? (STATE_ABBR[addr.state] ?? addr.state) : ''
   if (city && state) return `${city}, ${state}`
   return city || state || ''
+}
+
+function nominatimDisplay(addr: Record<string, string>, fallback: string): string {
+  const city = addr.city ?? addr.town ?? addr.village ?? addr.hamlet ?? addr.suburb ?? ''
+  const isUS = addr.country_code === 'us'
+  const state = isUS && addr.state ? (STATE_ABBR[addr.state] ?? addr.state) : ''
+  const country = !isUS ? (addr.country ?? '') : ''
+  const parts = [city, state || country].filter(Boolean)
+  return parts.length ? parts.join(', ') : fallback.split(',').slice(0, 2).join(', ')
 }
 
 type Suggestion = { lat: number; lng: number; display: string; locationName: string }
@@ -38,7 +47,7 @@ async function fetchSuggestions(query: string): Promise<Suggestion[]> {
     return data.map(r => ({
       lat: parseFloat(r.lat),
       lng: parseFloat(r.lon),
-      display: r.display_name.split(',').slice(0, 4).join(', '),
+      display: r.address ? nominatimDisplay(r.address, r.display_name) : r.display_name.split(',').slice(0, 2).join(', '),
       locationName: r.address ? nominatimCityState(r.address) : r.display_name.split(',').slice(0, 2).join(', '),
     }))
   } catch { return [] }
