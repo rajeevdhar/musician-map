@@ -51,6 +51,39 @@ const allowedOrigins = [
 app.use(cors({ origin: isProd ? allowedOrigins : true }))
 app.use(express.json())
 
+// ── Content moderation (text) — uses OpenAI Moderation API (free) ────────────
+// Returns { flagged: boolean, categories: string[] }
+async function moderateText(text) {
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) return { flagged: false, categories: [] }
+  const res = await fetch('https://api.openai.com/v1/moderations', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ input: text }),
+  })
+  if (!res.ok) return { flagged: false, categories: [] }
+  const data = await res.json()
+  const result = data.results?.[0]
+  if (!result?.flagged) return { flagged: false, categories: [] }
+  const categories = Object.entries(result.categories ?? {})
+    .filter(([, v]) => v)
+    .map(([k]) => k)
+  return { flagged: true, categories }
+}
+
+app.post('/api/moderate', async (req, res) => {
+  const { texts } = req.body
+  if (!Array.isArray(texts) || texts.length === 0) return res.json({ ok: true })
+  const combined = texts.filter(Boolean).join('\n\n')
+  if (!combined.trim()) return res.json({ ok: true })
+  try {
+    const result = await moderateText(combined)
+    res.json(result)
+  } catch {
+    res.json({ flagged: false, categories: [] })
+  }
+})
+
 // ── Self-delete: user deletes their own account ───────────────────────────────
 app.delete('/api/self-delete', async (req, res) => {
   const user = await verifyJwt(req)

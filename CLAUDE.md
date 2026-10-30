@@ -24,6 +24,7 @@ Set in Railway dashboard and locally in `.env.local` (gitignored):
 - `VITE_ADMIN_EMAIL` — email address that gets admin access (rajeev.dhar@gmail.com)
 - `SUPABASE_SERVICE_ROLE_KEY` — service role key used by Express server for admin operations
 - `ADMIN_EMAIL` — same admin email, read server-side
+- `OPENAI_API_KEY` — used only for the free Moderation API (text screening of bio/name on profile save). Leave unset to skip text moderation. Get a key at https://platform.openai.com/api-keys
 
 **Important**: VITE_* vars are baked in at build time. Changing them in Railway requires a fresh redeploy (not just a restart).
 
@@ -68,6 +69,7 @@ All admin endpoints require `Authorization: Bearer <jwt>` where the JWT belongs 
 | DELETE | `/api/admin/profile/:id` | Delete a profile row (admin only) |
 | DELETE | `/api/admin/user/:id` | Delete an auth user + their profile (admin only) |
 | DELETE | `/api/self-delete` | User deletes their own account |
+| POST | `/api/moderate` | Screen text for hate/sexual/violence via OpenAI Moderation API (no auth required) |
 
 ## Running locally
 ```bash

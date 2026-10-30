@@ -5,6 +5,7 @@ import { INSTRUMENT_OPTIONS, GENRE_OPTIONS, LOOKING_FOR_OPTIONS } from '../types
 import type { Musician, Level } from '../types'
 import { supabase } from '../lib/supabase'
 import { STATE_ABBR } from '../lib/musicianUtils'
+import { moderateImage, blobToImg } from '../lib/moderateImage'
 import L from 'leaflet'
 
 type Precision = 'exact' | 'area' | 'hidden'
@@ -421,6 +422,16 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
       setUploadingAvatar(false)
       return
     }
+    // Screen image for explicit content before uploading
+    try {
+      const img = await blobToImg(blob)
+      const { flagged, reason } = await moderateImage(img)
+      if (flagged) {
+        setError(`This image was rejected: ${reason ?? 'inappropriate content'}. Please use a different photo.`)
+        setUploadingAvatar(false)
+        return
+      }
+    } catch { /* if model fails to load, allow upload */ }
     const userId = currentUser!.id
     const path = `${userId}/avatar.jpg`
     const { error: uploadErr } = await supabase.storage
@@ -442,6 +453,22 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
     if (!displayName.trim()) { setError('Display name is required'); return }
     if (instruments.length === 0) { setError('Select at least one instrument'); return }
     if (locationPrecision !== 'hidden' && (lat === null || lng === null)) { setError('Please set your location'); return }
+
+    // Moderate text fields before saving
+    try {
+      const modRes = await fetch('/api/moderate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texts: [displayName.trim(), bio.trim(), gear.join(' ')] }),
+      })
+      if (modRes.ok) {
+        const mod = await modRes.json()
+        if (mod.flagged) {
+          setError('Your profile contains content that violates our community guidelines. Please revise and try again.')
+          return
+        }
+      }
+    } catch { /* if moderation service is down, allow save */ }
 
     setSaving(true)
 
