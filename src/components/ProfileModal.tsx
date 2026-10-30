@@ -793,7 +793,8 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
       <Label>Audio clip</Label>
       {audioUrl ? (
         <div className="border-2 border-ink p-3 space-y-2">
-          <audio controls src={audioUrl} className="w-full h-8" style={{ colorScheme: 'light' }} />
+          <audio controls controlsList="nodownload" src={audioUrl} className="w-full h-8" style={{ colorScheme: 'light' }} />
+          <p className="text-[11px] text-neutral-500">Max 20 MB · MP3, WAV, M4A</p>
           <div className="flex gap-2">
             <button
               type="button"
