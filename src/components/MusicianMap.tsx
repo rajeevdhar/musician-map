@@ -62,7 +62,7 @@ function FlyToSelected({ musicians }: { musicians: Musician[] }) {
     if (!selectedId) return
     const m = musicians.find(m => m.id === selectedId)
     if (m && !isNaN(m.lat) && !isNaN(m.lng)) {
-      map.flyTo([m.lat, m.lng], Math.max(map.getZoom(), 11), { duration: 1.2 })
+      map.flyTo([m.lat, m.lng], 14, { duration: 1.2 })
     }
   }, [selectedId]) // eslint-disable-line
 
