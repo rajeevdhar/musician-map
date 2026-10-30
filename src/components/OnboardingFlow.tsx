@@ -75,6 +75,7 @@ export default function OnboardingFlow({ onComplete, onBack }: Props) {
   const [geoError, setGeoError] = useState('')
   const [cityInput, setCityInput] = useState('')
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const cityRef = useRef<HTMLInputElement>(null)
 
   const toggle = (field: 'instruments' | 'genres' | 'lookingFor', val: string) =>
@@ -125,13 +126,14 @@ export default function OnboardingFlow({ onComplete, onBack }: Props) {
   const handleComplete = async () => {
     if (!currentUser) return
     setSaving(true)
+    setSaveError('')
     let lat = data.lat ?? 0
     let lng = data.lng ?? 0
     if (data.locationPrecision !== 'hidden' && data.lat !== null) {
       lat = roundCoord(lat)
       lng = roundCoord(lng)
     }
-    await saveProfile({
+    const result = await saveProfile({
       displayName: currentUser.displayName,
       bio: '',
       instruments: data.instruments,
@@ -145,6 +147,7 @@ export default function OnboardingFlow({ onComplete, onBack }: Props) {
       level: data.level || undefined,
     })
     setSaving(false)
+    if (!result.ok) { setSaveError("Couldn't save your profile — please try again."); return }
     onComplete()
   }
 
@@ -341,6 +344,10 @@ export default function OnboardingFlow({ onComplete, onBack }: Props) {
           </>
         )}
       </div>
+
+      {saveError && (
+        <p className="flex-shrink-0 mx-4 mb-3 text-sm text-accent-700 bg-accent-100 border-2 border-accent px-3 py-2">{saveError}</p>
+      )}
 
       {/* Footer */}
       <div className="flex-shrink-0 flex border-t-2 border-ink">

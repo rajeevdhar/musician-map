@@ -4,6 +4,7 @@ import type { Musician, ActiveModal, Level, Message, ContactRequestStatus } from
 import { haversineDistanceMiles } from './lib/musicianUtils'
 import { isOnline } from './lib/presence'
 import { PUBLIC_PROFILE_COLUMNS } from './lib/profileColumns'
+import { removeOwnFiles } from './lib/storageCleanup'
 
 export interface Filters {
   instruments: string[]
@@ -27,7 +28,7 @@ const DEFAULT_FILTERS: Filters = {
 let realtimeChannel: ReturnType<typeof supabase.channel> | null = null
 
 // ── Presence heartbeat ─────────────────────────────────────────────────────
-// Writes profiles.last_seen_at every 60s while signed in, and mirrors the
+// Writes profiles.last_seen_at every 240s while signed in, and mirrors the
 // timestamp into local state so the user's own dot turns green immediately
 // instead of waiting for (or being overwritten by) a stale profiles fetch.
 let heartbeatTimer: ReturnType<typeof setInterval> | null = null
@@ -104,10 +105,10 @@ interface AppStore {
   musicians: Musician[]
   isLoadingMusicians: boolean
   fetchMusicians: () => Promise<void>
-  saveProfile: (profile: Omit<Musician, 'id' | 'email' | 'createdAt'>) => Promise<void>
+  saveProfile: (profile: Omit<Musician, 'id' | 'email' | 'createdAt'>) => Promise<{ ok: boolean; error?: string }>
   currentProfile: () => Musician | undefined
   removeProfile: () => Promise<void>
-  deleteAccount: () => Promise<void>
+  deleteAccount: () => Promise<boolean>
 
   // ── UI ────────────────────────────────────────────────────────────────────
   activeModal: ActiveModal
@@ -130,6 +131,7 @@ interface AppStore {
   resetFilters: () => void
   setShowFilterPanel: (show: boolean) => void
   filterCount: () => number
+  searchOrigin: () => { lat: number; lng: number } | null
   filteredMusicians: () => Musician[]
 
   // ── Saved ─────────────────────────────────────────────────────────────────
@@ -276,8 +278,9 @@ export const useStore = create<AppStore>()((set, get) => ({
         bio: row.bio ?? '',
         instruments: row.instruments ?? [],
         genres: row.genres ?? [],
-        lat: row.lat,
-        lng: row.lng,
+        // Hidden profiles are stored at 0,0 — treat them as having no location
+        lat: row.location_precision === 'hidden' ? NaN : row.lat,
+        lng: row.location_precision === 'hidden' ? NaN : row.lng,
         locationName: row.location_name ?? '',
         lookingFor: row.looking_for ?? '',
         avatarUrl: row.avatar_url ?? undefined,
@@ -326,7 +329,7 @@ export const useStore = create<AppStore>()((set, get) => ({
 
   saveProfile: async (profile) => {
     const user = get().currentUser
-    if (!user) return
+    if (!user) return { ok: false, error: 'Not signed in' }
     const { error } = await supabase.from('profiles').upsert({
       id: user.id,
       display_name: profile.displayName,
@@ -364,12 +367,14 @@ export const useStore = create<AppStore>()((set, get) => ({
     }
     if (profile.phone !== undefined) contactRow.phone = profile.phone
     const { error: contactErr } = await supabase.from('profile_contacts').upsert(contactRow)
-    if (!error && !contactErr) {
-      await get().fetchMusicians()
-      get().showToast('Profile saved')
-    } else {
-      console.warn('Profile save failed:', error?.message ?? contactErr?.message)
+    if (error || contactErr) {
+      const message = error?.message ?? contactErr?.message
+      console.warn('Profile save failed:', message)
+      return { ok: false, error: message }
     }
+    await get().fetchMusicians()
+    get().showToast('Profile saved')
+    return { ok: true }
   },
 
   currentProfile: () => {
@@ -383,20 +388,26 @@ export const useStore = create<AppStore>()((set, get) => ({
     // RLS policy allows the owner to delete their own row
     await supabase.from('profiles').delete().eq('id', user.id)
     await supabase.from('profile_contacts').delete().eq('id', user.id)
+    removeOwnFiles(user.id)
     await get().fetchMusicians()
   },
 
   deleteAccount: async () => {
     const user = get().currentUser
-    if (!user) return
-    // Server endpoint uses service role key to delete the auth user.
+    if (!user) return false
+    // Server endpoint uses service role key to delete the auth user (and their uploaded files).
     // The profiles row cascades automatically via ON DELETE CASCADE.
     const { data: { session } } = await supabase.auth.getSession()
-    await fetch('/api/self-delete', {
+    const res = await fetch('/api/self-delete', {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${session?.access_token}` },
-    })
+    }).catch(() => null)
+    if (!res?.ok) {
+      get().showToast('Could not delete account — please try again')
+      return false
+    }
     await supabase.auth.signOut()
+    return true
   },
 
   // ── UI ────────────────────────────────────────────────────────────────────
@@ -441,11 +452,18 @@ export const useStore = create<AppStore>()((set, get) => ({
     return count
   },
 
-  filteredMusicians: () => {
-    const { musicians, query, filters, searchLoc } = get()
+  // Where distances are measured from: the searched place, else the user's own pin
+  searchOrigin: () => {
+    const { searchLoc } = get()
+    if (searchLoc) return searchLoc
     const profile = get().currentProfile()
-    const userLat = searchLoc?.lat ?? profile?.lat
-    const userLng = searchLoc?.lng ?? profile?.lng
+    if (profile && !isNaN(profile.lat) && !isNaN(profile.lng)) return { lat: profile.lat, lng: profile.lng }
+    return null
+  },
+
+  filteredMusicians: () => {
+    const { musicians, query, filters } = get()
+    const origin = get().searchOrigin()
     const currentUserId = get().currentUser?.id
     let list = musicians.filter(m => m.locationPrecision !== 'hidden' || m.id === currentUserId)
 
@@ -465,17 +483,17 @@ export const useStore = create<AppStore>()((set, get) => ({
         return m.lookingFor.includes(lf)
       }))
     }
-    if (filters.distanceMi !== 0 && userLat != null && userLng != null && !isNaN(userLat) && !isNaN(userLng)) {
+    if (filters.distanceMi !== 0 && origin) {
       list = list.filter(m => {
         if (isNaN(m.lat) || isNaN(m.lng)) return true
-        return haversineDistanceMiles(userLat, userLng, m.lat, m.lng) <= filters.distanceMi
+        return haversineDistanceMiles(origin.lat, origin.lng, m.lat, m.lng) <= filters.distanceMi
       })
     }
     if (filters.onlineOnly) {
       list = list.filter(m => isOnline(m.lastSeenAt))
     }
     if (query.trim()) {
-      const q = query.toLowerCase()
+      const q = query.trim().toLowerCase()
       list = list.filter(m =>
         m.displayName.toLowerCase().includes(q) ||
         m.instruments.some(i => i.toLowerCase().includes(q)) ||
@@ -692,14 +710,18 @@ export const useStore = create<AppStore>()((set, get) => ({
           const row = payload.new as { id: string; from_id: string; to_id: string; body: string; created_at: string }
           const msg: Message = { id: row.id, fromId: row.from_id, toId: row.to_id, body: row.body, createdAt: row.created_at }
           const otherId = row.from_id
-          const isViewing = get().activeThreadId === otherId
+          // activeThreadId survives leaving the Messages tab, so check the tab too
+          const isViewing = get().activeTab === 'messages' && get().activeThreadId === otherId
+          if (isViewing) {
+            supabase.from('messages').update({ read_at: new Date().toISOString() }).eq('id', row.id).then()
+          }
           set(s => ({
             threads: { ...s.threads, [otherId]: [...(s.threads[otherId] ?? []), msg] },
             unread: isViewing ? s.unread : { ...s.unread, [otherId]: true },
           }))
           if (!isViewing) {
             const musician = get().musicians.find(m => m.id === otherId)
-            if (musician) get().showToast(`New message from ${musician.displayName.split(' ')[0]}`)
+            get().showToast(musician ? `New message from ${musician.displayName.split(' ')[0]}` : 'New message')
           }
         }
       )

@@ -10,6 +10,8 @@ interface FormProps {
   onEmail: (v: string) => void
   password: string
   onPassword: (v: string) => void
+  ageConfirmed: boolean
+  onToggleAge: () => void
   error: string
   loading: boolean
   onSubmit: (e: React.FormEvent) => void
@@ -17,7 +19,7 @@ interface FormProps {
   onSkip: () => void
 }
 
-function SignupForm({ gap = 'gap-3.5', titleSize = 'text-[40px]', displayName, onDisplayName, email, onEmail, password, onPassword, error, loading, onSubmit, onLogin, onSkip }: FormProps) {
+function SignupForm({ gap = 'gap-3.5', titleSize = 'text-[40px]', displayName, onDisplayName, email, onEmail, password, onPassword, ageConfirmed, onToggleAge, error, loading, onSubmit, onLogin, onSkip }: FormProps) {
   return (
     <form onSubmit={onSubmit} className={`flex flex-col ${gap}`}>
       <h2 className={`${titleSize} font-extrabold text-ink leading-none`}>Join the map</h2>
@@ -46,6 +48,18 @@ function SignupForm({ gap = 'gap-3.5', titleSize = 'text-[40px]', displayName, o
         minLength={6}
         className="h-12 bg-white border-2 border-ink px-3 text-[15px] text-ink placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2"
       />
+      <button type="button" role="checkbox" aria-checked={ageConfirmed} onClick={onToggleAge} className="flex items-start gap-3 text-left">
+        <span className={`mt-0.5 w-5 h-5 flex-shrink-0 border-2 border-ink flex items-center justify-center transition-colors ${ageConfirmed ? 'bg-ink' : 'hover:bg-accent-100'}`}>
+          {ageConfirmed && (
+            <svg width="11" height="9" viewBox="0 0 11 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1 4L4 7.5L10 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          )}
+        </span>
+        <span className="text-[13px] text-neutral-700 leading-snug">
+          I confirm that I am <strong className="text-ink">16 years of age or older</strong>
+        </span>
+      </button>
       {error && <p className="text-sm text-accent-700 font-semibold">{error}</p>}
       <button
         type="submit"
@@ -79,12 +93,14 @@ export default function SignupScreen({ onSignedUp, onLogin, onSkip }: Props) {
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [ageConfirmed, setAgeConfirmed] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    if (!ageConfirmed) { setError('You must confirm you are 16 or older to register'); return }
     if (password.length < 6) { setError('Password must be at least 6 characters'); return }
     setLoading(true)
     const { ok, error: err } = await register(email, password, displayName.trim())
@@ -93,7 +109,7 @@ export default function SignupScreen({ onSignedUp, onLogin, onSkip }: Props) {
     onSignedUp()
   }
 
-  const formProps = { displayName, onDisplayName: setDisplayName, email, onEmail: setEmail, password, onPassword: setPassword, error, loading, onSubmit: handleSubmit, onLogin, onSkip }
+  const formProps = { displayName, onDisplayName: setDisplayName, email, onEmail: setEmail, password, onPassword: setPassword, ageConfirmed, onToggleAge: () => setAgeConfirmed(v => !v), error, loading, onSubmit: handleSubmit, onLogin, onSkip }
 
   return (
     <div className="fixed inset-0 z-[2000] bg-ground">

@@ -49,7 +49,7 @@ supabase/schema.sql    — full DB schema + RLS policies
 ```
 
 ## Key design decisions
-- **Private contact details** (`contact_email`, `phone`) live in `profile_contacts`, NOT in the public `profiles` table (which anyone can read). RLS: owner only, or the other party of an *accepted* `contact_requests` row. The account email lives only in Supabase Auth. **Never `select('*')` on `profiles`; use `PUBLIC_PROFILE_COLUMNS` from `src/lib/profileColumns.ts`, and never add private fields to `profiles`.**
+- **Private contact details** (`contact_email`, `phone`) live in `profile_contacts`, NOT in the public `profiles` table (which anyone can read). RLS: owner only, or the other party of an *accepted* `contact_requests` row. `contact_requests` can only be inserted as `pending`, and recipients may only update `status` (migration `2026-10-30_lock_requests_and_messages.sql`) — otherwise anyone could self-accept and read contacts. The account email lives only in Supabase Auth. **Never `select('*')` on `profiles`; use `PUBLIC_PROFILE_COLUMNS` from `src/lib/profileColumns.ts`, and never add private fields to `profiles`.**
 - **Test profiles** are seeded into the DB by `scripts/seed-test-profiles.js` (flagged `is_test`).
 - **Admin access** is checked client-side (`currentUser.email === VITE_ADMIN_EMAIL`) and server-side (`requireAdmin` middleware verifies JWT + ADMIN_EMAIL env var).
 - **Online status**: a heartbeat in `store.ts` updates `profiles.last_seen_at` every 240s while a user is logged in. "Online" = active within last 5 minutes. Shown in both AdminPanel and MusicianDetail.
@@ -67,9 +67,12 @@ All admin endpoints require `Authorization: Bearer <jwt>` where the JWT belongs 
 | GET | `/api/admin/contacts` | Account emails (Auth) + private contact details, for the admin panel |
 | PATCH | `/api/admin/profile/:id` | Update any profile (admin only) |
 | DELETE | `/api/admin/profile/:id` | Delete a profile row (admin only) |
-| DELETE | `/api/admin/user/:id` | Delete an auth user + their profile (admin only) |
-| DELETE | `/api/self-delete` | User deletes their own account |
-| POST | `/api/moderate` | Screen text for hate/sexual/violence via OpenAI Moderation API (no auth required) |
+| DELETE | `/api/admin/user/:id` | Delete an auth user + their profile and uploaded files (admin only) |
+| GET | `/api/admin/reports` | List profile reports (admin only) |
+| PATCH | `/api/admin/reports/:id` | Set a report's status (admin only) |
+| DELETE | `/api/self-delete` | User deletes their own account and uploaded files |
+| POST | `/api/report/:profileId` | Signed-in user reports a profile |
+| POST | `/api/moderate` | Screen text for hate/sexual/violence via OpenAI Moderation API (signed-in users) |
 
 ## Running locally
 ```bash

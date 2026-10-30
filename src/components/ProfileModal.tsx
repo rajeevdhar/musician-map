@@ -6,6 +6,7 @@ import type { Musician, Level } from '../types'
 import { supabase } from '../lib/supabase'
 import { STATE_ABBR } from '../lib/musicianUtils'
 import { moderateImage, blobToImg } from '../lib/moderateImage'
+import { removeOwnFiles } from '../lib/storageCleanup'
 import L from 'leaflet'
 
 type Precision = 'exact' | 'area' | 'hidden'
@@ -208,7 +209,6 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
   const [lat, setLat] = useState<number | null>(() => { const v = source?.lat; return v != null && !isNaN(v) ? v : null })
   const [lng, setLng] = useState<number | null>(() => { const v = source?.lng; return v != null && !isNaN(v) ? v : null })
   const [locationName, setLocationName] = useState(source?.locationName ?? '')
-  const [locationChanged, setLocationChanged] = useState(false)
   const [geoStatus, setGeoStatus] = useState<GeoStatus>('idle')
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -273,11 +273,11 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
           const display = data.display_name?.split(',').slice(0, 4).join(', ') ?? 'Your location'
           setLat(latitude); setLng(longitude)
           setLocationName(cityState || display); setLocationQuery(display)
-          setLocationChanged(true); setGeoStatus('found')
+          setGeoStatus('found')
         } catch {
           setLat(latitude); setLng(longitude)
           setLocationName('Detected location'); setLocationQuery('Detected location')
-          setLocationChanged(true); setGeoStatus('found')
+          setGeoStatus('found')
         }
       },
       () => setGeoStatus('error')
@@ -304,7 +304,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
     setLat(s.lat); setLng(s.lng)
     // Store city/state only; show full address in the input so user knows what was picked
     setLocationName(s.locationName || s.display); setLocationQuery(s.display)
-    setLocationChanged(true); setGeoStatus('found')
+    setGeoStatus('found')
     setShowSuggestions(false); setSuggestions([])
   }
 
@@ -320,13 +320,14 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
     setUploadingAudio(true)
     setError('')
     const ext = file.name.split('.').pop() ?? 'mp3'
-    const path = `${currentUser!.id}/clip.${ext}`
+    // Unique name per upload: the saved clip stays untouched until the profile is saved
+    const path = `${currentUser!.id}/clip-${Date.now()}.${ext}`
     const { error: uploadErr } = await supabase.storage
       .from('musician-audio')
-      .upload(path, file, { upsert: true, contentType: file.type })
+      .upload(path, file, { contentType: file.type })
     if (uploadErr) { setError('Audio upload failed: ' + uploadErr.message); setUploadingAudio(false); return }
     const { data } = supabase.storage.from('musician-audio').getPublicUrl(path)
-    setAudioUrl(`${data.publicUrl}?t=${Date.now()}`)
+    setAudioUrl(data.publicUrl)
     setUploadingAudio(false)
     if (audioFileRef.current) audioFileRef.current.value = ''
   }
@@ -400,11 +401,11 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
     return new Promise(resolve => {
       canvas.toBlob(async blob => {
         if (!blob) { resolve(avatarUrl); return }
-        const path = `${currentUser!.id}/avatar.jpg`
-        const { error } = await supabase.storage.from('avatars').upload(path, blob, { upsert: true, contentType: 'image/jpeg' })
+        const path = `${currentUser!.id}/avatar-${Date.now()}.jpg`
+        const { error } = await supabase.storage.from('avatars').upload(path, blob, { contentType: 'image/jpeg' })
         if (error) { resolve(avatarUrl); return }
         const { data } = supabase.storage.from('avatars').getPublicUrl(path)
-        resolve(`${data.publicUrl}?t=${Date.now()}`)
+        resolve(data.publicUrl)
       }, 'image/jpeg', 0.92)
     })
   }
@@ -433,13 +434,14 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
       }
     } catch { /* if model fails to load, allow upload */ }
     const userId = currentUser!.id
-    const path = `${userId}/avatar.jpg`
+    // Unique name per upload: the saved photo stays untouched until the profile is saved
+    const path = `${userId}/avatar-${Date.now()}.jpg`
     const { error: uploadErr } = await supabase.storage
       .from('avatars')
-      .upload(path, blob, { upsert: true, contentType: 'image/jpeg' })
+      .upload(path, blob, { contentType: 'image/jpeg' })
     if (uploadErr) { setError('Upload failed: ' + uploadErr.message); setUploadingAvatar(false); return }
     const { data } = supabase.storage.from('avatars').getPublicUrl(path)
-    setAvatarUrl(`${data.publicUrl}?t=${Date.now()}`)
+    setAvatarUrl(data.publicUrl)
     setCropMode(true)
     setCropOffset({ x: 0, y: 0 })
     setRenderedImgSize({ w: 0, h: 0 })
@@ -456,9 +458,10 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
 
     // Moderate text fields before saving
     try {
+      const { data: { session } } = await supabase.auth.getSession()
       const modRes = await fetch('/api/moderate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
         body: JSON.stringify({ texts: [displayName.trim(), bio.trim(), gear.join(' ')] }),
       })
       if (modRes.ok) {
@@ -510,7 +513,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
       await fetchMusicians()
       onAdminSaved?.()
     } else {
-      await saveProfile({
+      const result = await saveProfile({
         displayName: displayName.trim(),
         bio: bio.trim(),
         instruments,
@@ -536,14 +539,27 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
         discordUrl: normalizeDiscord(discordUrl) || undefined,
         audioUrl: audioUrl || undefined,
       })
+      if (!result.ok) {
+        setError(`Couldn't save your profile${result.error ? `: ${result.error}` : ''}. Please try again.`)
+        setSaving(false)
+        return
+      }
+      // Drop replaced or abandoned uploads now that the new URLs are saved
+      removeOwnFiles(currentUser!.id, [finalAvatarUrl, audioUrl])
     }
 
     setSaving(false)
     onClose()
   }
 
+  // Uploads happen on file pick; on cancel, delete anything the saved profile doesn't use
+  const handleCancel = () => {
+    if (currentUser) removeOwnFiles(currentUser.id, [source?.avatarUrl, source?.audioUrl])
+    onClose()
+  }
+
   const handleRemove = async () => { await removeProfile(); onClose() }
-  const handleDeleteAccount = async () => { await deleteAccount(); onClose() }
+  const handleDeleteAccount = async () => { if (await deleteAccount()) onClose() }
   const handleChangePassword = async () => {
     setPasswordError('')
     if (newPassword.length < 6) { setPasswordError('Password must be at least 6 characters.'); return }
@@ -624,7 +640,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
               </div>
               {geoStatus === 'error' && <p className="text-[12px] text-accent-700 mt-1">Location not found.</p>}
               {lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng) && (
-                <LocationPinMap lat={lat} lng={lng} onChange={(newLat, newLng) => { setLat(newLat); setLng(newLng); setLocationChanged(true) }} onAddress={(display, locName) => { setLocationQuery(display); setLocationName(locName) }} />
+                <LocationPinMap lat={lat} lng={lng} onChange={(newLat, newLng) => { setLat(newLat); setLng(newLng) }} onAddress={(display, locName) => { setLocationQuery(display); setLocationName(locName) }} />
               )}
             </div>
             {error && <p className="text-[13px] text-accent-700 bg-accent-100 border-2 border-accent px-3 py-2">{error}</p>}
@@ -675,7 +691,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
       {geoStatus === 'searching' && <p className="text-[12px] text-neutral-500">Detecting…</p>}
       {geoStatus === 'error' && <p className="text-[12px] text-accent-700">Not found. Try a more specific address.</p>}
       {lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng) && (
-        <LocationPinMap lat={lat} lng={lng} onChange={(newLat, newLng) => { setLat(newLat); setLng(newLng); setLocationChanged(true) }} onAddress={(display, locName) => { setLocationQuery(display); setLocationName(locName) }} />
+        <LocationPinMap lat={lat} lng={lng} onChange={(newLat, newLng) => { setLat(newLat); setLng(newLng) }} onAddress={(display, locName) => { setLocationQuery(display); setLocationName(locName) }} />
       )}
     </div>
   )
@@ -882,7 +898,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
         <div className="flex items-center gap-2 ml-auto flex-shrink-0">
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleCancel}
             className="h-[44px] px-4 border-2 border-ink text-[13px] font-extrabold text-ink hover:bg-accent-100 transition-colors"
           >
             Cancel

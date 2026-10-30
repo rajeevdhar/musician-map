@@ -1,3 +1,11 @@
+import type { Musician } from '../types'
+
+// Stand-in for accounts that message or request contact before creating a profile
+export const NO_PROFILE: Pick<Musician, 'displayName' | 'avatarUrl' | 'instruments'> = {
+  displayName: 'New member',
+  instruments: [],
+}
+
 export const INSTRUMENT_CODES: Record<string, string> = {
   'Guitar': 'GT',
   'Bass': 'BA',

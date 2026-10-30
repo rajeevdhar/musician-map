@@ -12,7 +12,7 @@ const INSTRUMENT_OPTIONS = [
   { label: 'Trumpet', values: ['Trumpet'] },
   { label: 'Violin', values: ['Violin', 'Cello'] },
   { label: 'DJ', values: ['DJ / Producer'] },
-  { label: 'Other', values: ['Other'] },
+  { label: 'Other', values: ['Other', 'Flute', 'Banjo', 'Ukulele', 'Mandolin', 'Harmonica'] },
 ]
 
 import type { Level } from '../types'

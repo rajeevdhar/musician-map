@@ -13,12 +13,13 @@ interface Props {
 }
 
 export default function MusicianList({ onViewProfile }: Props) {
-  const { filteredMusicians, selectedId, setSelectedId, currentProfile, resetFilters, filters, setFilters, setShowFilterPanel, filterCount } = useStore()
+  const { filteredMusicians, selectedId, setSelectedId, searchOrigin, resetFilters, filters, setFilters, setShowFilterPanel, filterCount } = useStore()
   const activeFilterCount = filterCount()
   const [sort, setSort] = useState<SortMode>('nearest')
-  const profile = currentProfile()
-  const userLat = profile?.lat
-  const userLng = profile?.lng
+  // Same origin the distance filter uses, so shown distances match what's filtered
+  const origin = searchOrigin()
+  const userLat = origin?.lat
+  const userLng = origin?.lng
 
   const musicians = (() => {
     const list = [...filteredMusicians()]

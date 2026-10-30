@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useStore } from '../store'
-import { getInitials } from '../lib/musicianUtils'
+import { getInitials, NO_PROFILE } from '../lib/musicianUtils'
 import ThreadView from './ThreadView'
 
 interface Props {
@@ -27,8 +27,8 @@ export default function InboxTab({ onViewProfile }: Props) {
   const threadIds = Object.keys(threads)
 
   const inboxMusicians = threadIds
-    .map(id => ({ id, musician: musicians.find(m => m.id === id), msgs: threads[id] }))
-    .filter(x => x.musician)
+    // Keep threads from people without a profile, or their unread dot can never be cleared
+    .map(id => ({ id, musician: musicians.find(m => m.id === id) ?? NO_PROFILE, msgs: threads[id] }))
     .sort((a, b) => {
       const aLast = a.msgs[a.msgs.length - 1]?.createdAt ?? ''
       const bLast = b.msgs[b.msgs.length - 1]?.createdAt ?? ''
@@ -70,7 +70,6 @@ export default function InboxTab({ onViewProfile }: Props) {
                 <p className="px-4 py-8 text-sm text-neutral-500 text-center">No conversations yet.</p>
               )}
               {inboxMusicians.map(({ id, musician, msgs }) => {
-                if (!musician) return null
                 const last = msgs[msgs.length - 1]
                 const isMine = last?.fromId === currentUser?.id
                 const hasUnread = unread[id]
@@ -118,8 +117,7 @@ export default function InboxTab({ onViewProfile }: Props) {
                 <p className="px-4 py-8 text-sm text-neutral-500 text-center">No pending requests.</p>
               )}
               {incomingIds.map(fromId => {
-                const musician = musicians.find(m => m.id === fromId)
-                if (!musician) return null
+                const musician = musicians.find(m => m.id === fromId) ?? NO_PROFILE
                 const initials = getInitials(musician.displayName)
                 return (
                   <div key={fromId} className="border-t-2 border-ink mx-3 mt-3 border-2 border-accent bg-accent-100 p-3">
@@ -160,8 +158,7 @@ export default function InboxTab({ onViewProfile }: Props) {
 
               {/* Revealed contacts */}
               {Object.entries(revealedContacts).map(([id, contact]) => {
-                const musician = musicians.find(m => m.id === id)
-                if (!musician) return null
+                const musician = musicians.find(m => m.id === id) ?? NO_PROFILE
                 return (
                   <div key={id} className="border-t-2 border-ink px-4 py-3">
                     <p className="text-[11px] font-extrabold uppercase tracking-widest text-accent-700 mb-1">

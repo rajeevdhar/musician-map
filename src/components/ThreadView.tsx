@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, ArrowUp } from 'lucide-react'
 import { useStore } from '../store'
-import { getInitials } from '../lib/musicianUtils'
+import { getInitials, NO_PROFILE } from '../lib/musicianUtils'
 
 interface Props {
   musicianId: string
@@ -20,7 +20,10 @@ function formatTime(iso: string) {
 
 export default function ThreadView({ musicianId, onBack, onViewProfile }: Props) {
   const { musicians, threads, currentUser, sendMessage, markThreadRead } = useStore()
-  const musician = musicians.find(m => m.id === musicianId)
+  const profile = musicians.find(m => m.id === musicianId)
+  const musician = profile ?? NO_PROFILE
+  // Senders without a profile have nothing to open
+  const viewProfile = profile ? () => onViewProfile(musicianId) : undefined
   const messages = threads[musicianId] ?? []
   const [body, setBody] = useState('')
   const [sending, setSending] = useState(false)
@@ -45,16 +48,8 @@ export default function ThreadView({ musicianId, onBack, onViewProfile }: Props)
     inputRef.current?.focus()
   }
 
-  const initials = musician ? getInitials(musician.displayName) : '??'
-  const firstName = musician?.displayName.split(' ')[0] ?? 'them'
-
-  if (!musician) {
-    return (
-      <div className="flex-1 flex items-center justify-center text-neutral-500 text-sm">
-        Musician not found.
-      </div>
-    )
-  }
+  const initials = getInitials(musician.displayName)
+  const firstName = profile ? musician.displayName.split(' ')[0] : 'them'
 
   return (
     <div className="flex flex-col h-full">
@@ -70,25 +65,27 @@ export default function ThreadView({ musicianId, onBack, onViewProfile }: Props)
           <img
             src={musician.avatarUrl}
             alt={musician.displayName}
-            onClick={() => onViewProfile(musicianId)}
+            onClick={viewProfile}
             className="w-9 h-9 object-cover flex-shrink-0 cursor-pointer grayscale hover:grayscale-0 transition-all"
           />
         ) : (
           <div
             className="w-9 h-9 bg-ink flex items-center justify-center text-white text-[13px] font-extrabold flex-shrink-0 cursor-pointer hover:bg-neutral-700 transition-colors select-none"
-            onClick={() => onViewProfile(musicianId)}
+            onClick={viewProfile}
           >
             {initials}
           </div>
         )}
         <div className="flex-1 min-w-0">
           <p className="text-[15px] font-extrabold text-ink leading-tight truncate">{musician.displayName}</p>
-          <button
-            onClick={() => onViewProfile(musicianId)}
-            className="text-[12px] text-accent-700 underline underline-offset-2 hover:text-accent-600"
-          >
-            View profile
-          </button>
+          {viewProfile && (
+            <button
+              onClick={viewProfile}
+              className="text-[12px] text-accent-700 underline underline-offset-2 hover:text-accent-600"
+            >
+              View profile
+            </button>
+          )}
         </div>
       </div>
 

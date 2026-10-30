@@ -72,6 +72,8 @@ async function moderateText(text) {
 }
 
 app.post('/api/moderate', async (req, res) => {
+  // Signed-in users only, so the OpenAI key can't be used as an open proxy
+  if (!(await verifyJwt(req))) return res.status(401).json({ error: 'Unauthorized' })
   const { texts } = req.body
   if (!Array.isArray(texts) || texts.length === 0) return res.json({ ok: true })
   const combined = texts.filter(Boolean).join('\n\n')
@@ -84,11 +86,23 @@ app.post('/api/moderate', async (req, res) => {
   }
 })
 
+// Public storage buckets keep files after the auth user is gone; remove them explicitly
+const USER_BUCKETS = ['avatars', 'musician-audio']
+async function removeUserFiles(userId) {
+  for (const bucket of USER_BUCKETS) {
+    const { data: files } = await supabaseAdmin.storage.from(bucket).list(userId)
+    if (files?.length) {
+      await supabaseAdmin.storage.from(bucket).remove(files.map(f => `${userId}/${f.name}`))
+    }
+  }
+}
+
 // ── Self-delete: user deletes their own account ───────────────────────────────
 app.delete('/api/self-delete', async (req, res) => {
   const user = await verifyJwt(req)
   if (!user) return res.status(401).json({ error: 'Unauthorized' })
   if (!supabaseAdmin) return res.status(503).json({ error: 'Admin client not configured' })
+  await removeUserFiles(user.id)
   const { error } = await supabaseAdmin.auth.admin.deleteUser(user.id)
   if (error) return res.status(500).json({ error: error.message })
   res.json({ ok: true })
@@ -167,6 +181,7 @@ app.delete('/api/admin/profile/:id', requireAdmin, async (req, res) => {
 // Delete a user account entirely (profile row cascades via ON DELETE CASCADE)
 app.delete('/api/admin/user/:id', requireAdmin, async (req, res) => {
   if (!supabaseAdmin) return res.status(503).json({ error: 'Admin client not configured' })
+  await removeUserFiles(req.params.id)
   const { error } = await supabaseAdmin.auth.admin.deleteUser(req.params.id)
   if (error) return res.status(500).json({ error: error.message })
   res.json({ ok: true })

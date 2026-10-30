@@ -40,6 +40,9 @@ export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [signupDismissed, setSignupDismissed] = useState(false)
   const prevUserRef = useRef(currentUser)
+  // Read inside the delayed tour start: signup sets currentUser before onboarding opens
+  const onboardingRef = useRef(showOnboarding)
+  onboardingRef.current = showOnboarding
 
   useEffect(() => { initAuth() }, []) // eslint-disable-line
 
@@ -61,7 +64,7 @@ export default function App() {
     }
     // Returning user logs in for the first time this device — show tour
     if (!prevUserRef.current && currentUser && !hasSeenTour()) {
-      setTimeout(() => startTour(), 800)
+      setTimeout(() => { if (!onboardingRef.current && !hasSeenTour()) startTour() }, 800)
     }
     prevUserRef.current = currentUser
   }, [currentUser])
@@ -379,7 +382,7 @@ export default function App() {
       {/* Onboarding flow (after signup) */}
       {showOnboarding && (
         <OnboardingFlow
-          onComplete={() => { setShowOnboarding(false); setTimeout(() => startTour(), 800) }}
+          onComplete={() => { setShowOnboarding(false); setTimeout(() => { if (!hasSeenTour()) startTour() }, 800) }}
           onBack={() => { setShowOnboarding(false); setSignupDismissed(true) }}
         />
       )}

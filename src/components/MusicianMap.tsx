@@ -39,21 +39,6 @@ function makeMusicianPin(musician: Musician, isSelected: boolean) {
   })
 }
 
-function FlyToUser({ musicians }: { musicians: Musician[] }) {
-  const map = useMap()
-  const { currentUser } = useStore()
-
-  useEffect(() => {
-    if (!currentUser) return
-    const profile = musicians.find(m => m.id === currentUser.id)
-    if (profile && !isNaN(profile.lat) && !isNaN(profile.lng)) {
-      map.flyTo([profile.lat, profile.lng], 13, { duration: 1.5 })
-    }
-  }, [musicians.length]) // eslint-disable-line
-
-  return null
-}
-
 function FlyToSelected({ musicians }: { musicians: Musician[] }) {
   const map = useMap()
   const { selectedId } = useStore()
@@ -134,10 +119,11 @@ function FlyToSearch() {
 
 function FlyToDistance() {
   const map = useMap()
-  const { filters, searchLoc, currentProfile } = useStore()
-  const profile = currentProfile()
-  const lat = searchLoc?.lat ?? profile?.lat
-  const lng = searchLoc?.lng ?? profile?.lng
+  // Also handles the initial fly-to-user once the signed-in user's profile loads
+  const { filters, searchOrigin } = useStore()
+  const origin = searchOrigin()
+  const lat = origin?.lat
+  const lng = origin?.lng
 
   useEffect(() => {
     if (lat == null || lng == null) return
@@ -226,7 +212,6 @@ export default function MusicianMap() {
           setSelectedId={setSelectedId}
         />
 
-        <FlyToUser musicians={displayVisible} />
         <FlyToSelected musicians={displayVisible} />
         <FlyToSearch />
         <FlyToDistance />

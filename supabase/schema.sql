@@ -3,12 +3,10 @@
 
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  email TEXT NOT NULL,
   display_name TEXT NOT NULL,
   bio TEXT DEFAULT '',
   instruments TEXT[] DEFAULT '{}',
   genres TEXT[] DEFAULT '{}',
-  contact_email TEXT DEFAULT '',
   lat DOUBLE PRECISION NOT NULL,
   lng DOUBLE PRECISION NOT NULL,
   location_name TEXT DEFAULT '',
@@ -18,23 +16,26 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Presence: updated every 60s by the client heartbeat; "online" = within 5 minutes
+-- Presence: updated every 240s by the client heartbeat; "online" = within 5 minutes
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ DEFAULT NOW();
 
 -- Row Level Security
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 -- Anyone can read profiles (public musician map)
+DROP POLICY IF EXISTS "profiles_select_public" ON public.profiles;
 CREATE POLICY "profiles_select_public"
   ON public.profiles FOR SELECT
   USING (true);
 
 -- Only the authenticated owner can insert their own profile
+DROP POLICY IF EXISTS "profiles_insert_own" ON public.profiles;
 CREATE POLICY "profiles_insert_own"
   ON public.profiles FOR INSERT
   WITH CHECK (auth.uid() = id);
 
 -- Only the authenticated owner can update their own profile
+DROP POLICY IF EXISTS "profiles_update_own" ON public.profiles;
 CREATE POLICY "profiles_update_own"
   ON public.profiles FOR UPDATE
   USING (auth.uid() = id)
@@ -42,6 +43,7 @@ CREATE POLICY "profiles_update_own"
 
 -- Only the authenticated owner can delete their own profile
 -- (Admin deletes go through the server.js service-role client, bypassing RLS)
+DROP POLICY IF EXISTS "profiles_delete_own" ON public.profiles;
 CREATE POLICY "profiles_delete_own"
   ON public.profiles FOR DELETE
   USING (auth.uid() = id);
@@ -55,6 +57,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS profiles_updated_at ON public.profiles;
 CREATE TRIGGER profiles_updated_at
   BEFORE UPDATE ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
@@ -75,7 +78,8 @@ CREATE TABLE IF NOT EXISTS public.saved_musicians (
   UNIQUE(user_id, musician_id)
 );
 ALTER TABLE public.saved_musicians ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "saved_own" ON public.saved_musicians
+DROP POLICY IF EXISTS "saved_own" ON public.saved_musicians;
+CREATE POLICY "saved_own" ON public.saved_musicians
   FOR ALL USING (auth.uid() = user_id);
 
 CREATE TABLE IF NOT EXISTS public.messages (
@@ -87,12 +91,18 @@ CREATE TABLE IF NOT EXISTS public.messages (
   read_at TIMESTAMPTZ
 );
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "messages_select" ON public.messages
+DROP POLICY IF EXISTS "messages_select" ON public.messages;
+CREATE POLICY "messages_select" ON public.messages
   FOR SELECT USING (auth.uid() = from_id OR auth.uid() = to_id);
-CREATE POLICY IF NOT EXISTS "messages_insert" ON public.messages
+DROP POLICY IF EXISTS "messages_insert" ON public.messages;
+CREATE POLICY "messages_insert" ON public.messages
   FOR INSERT WITH CHECK (auth.uid() = from_id);
-CREATE POLICY IF NOT EXISTS "messages_update" ON public.messages
-  FOR UPDATE USING (auth.uid() = to_id);
+DROP POLICY IF EXISTS "messages_update" ON public.messages;
+CREATE POLICY "messages_update" ON public.messages
+  FOR UPDATE USING (auth.uid() = to_id) WITH CHECK (auth.uid() = to_id);
+-- Recipients may only mark messages read
+REVOKE UPDATE ON public.messages FROM anon, authenticated;
+GRANT UPDATE (read_at) ON public.messages TO authenticated;
 
 CREATE TABLE IF NOT EXISTS public.contact_requests (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -103,19 +113,26 @@ CREATE TABLE IF NOT EXISTS public.contact_requests (
   UNIQUE(from_id, to_id)
 );
 ALTER TABLE public.contact_requests ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "requests_select" ON public.contact_requests
+DROP POLICY IF EXISTS "requests_select" ON public.contact_requests;
+CREATE POLICY "requests_select" ON public.contact_requests
   FOR SELECT USING (auth.uid() = from_id OR auth.uid() = to_id);
-CREATE POLICY IF NOT EXISTS "requests_insert" ON public.contact_requests
-  FOR INSERT WITH CHECK (auth.uid() = from_id);
-CREATE POLICY IF NOT EXISTS "requests_update" ON public.contact_requests
-  FOR UPDATE USING (auth.uid() = to_id);
+-- New requests must start 'pending' (see migrations/2026-10-30_lock_requests_and_messages.sql)
+DROP POLICY IF EXISTS "requests_insert" ON public.contact_requests;
+CREATE POLICY "requests_insert" ON public.contact_requests
+  FOR INSERT WITH CHECK (auth.uid() = from_id AND status = 'pending' AND from_id <> to_id);
+DROP POLICY IF EXISTS "requests_update" ON public.contact_requests;
+CREATE POLICY "requests_update" ON public.contact_requests
+  FOR UPDATE USING (auth.uid() = to_id) WITH CHECK (auth.uid() = to_id);
+-- Recipients may only change status
+REVOKE UPDATE ON public.contact_requests FROM anon, authenticated;
+GRANT UPDATE (status) ON public.contact_requests TO authenticated;
 
--- Section 6: Profile enhancements (gear, availability, phone, primary instrument)
+-- Section 6: Profile enhancements (gear, availability, primary instrument)
+-- (phone lives in profile_contacts — never add private fields to profiles)
 ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS primary_instrument TEXT,
   ADD COLUMN IF NOT EXISTS gear TEXT[] DEFAULT '{}',
   ADD COLUMN IF NOT EXISTS availability JSONB DEFAULT NULL,
-  ADD COLUMN IF NOT EXISTS phone TEXT,
   ADD COLUMN IF NOT EXISTS years_playing INTEGER;
 
 -- Test profiles flag (set by seed script, shown in AdminPanel)
