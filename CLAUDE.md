@@ -25,27 +25,43 @@ Set in Railway dashboard and locally in `.env.local` (gitignored):
 - `SUPABASE_SERVICE_ROLE_KEY` — service role key used by Express server for admin operations
 - `ADMIN_EMAIL` — same admin email, read server-side
 - `OPENAI_API_KEY` — used only for the free Moderation API (text screening of bio/name on profile save). Leave unset to skip text moderation. Get a key at https://platform.openai.com/api-keys
+- `FRONTEND_URL` — optional extra CORS origin in production (the app itself is same-origin, so normally unset)
 
 **Important**: VITE_* vars are baked in at build time. Changing them in Railway requires a fresh redeploy (not just a restart).
 
 ## Architecture
 ```
 src/
-  App.tsx              — root, modal routing via local `modal` state + store `needsPasswordReset`
-  store.ts             — Zustand store: auth, musicians, UI state
-  types.ts             — shared TypeScript types (Musician, ActiveModal, etc.)
-  lib/supabase.ts      — Supabase client (uses VITE_ env vars)
+  App.tsx              — root: layout, mobile bottom tabs, modal routing via local `modal` state + store `needsPasswordReset`
+  store.ts             — Zustand store: auth, musicians, filters/search, saved, messages, contact requests, toast
+  types.ts             — shared types (Musician, Message) and option lists (instruments, genres, distances)
+  lib/
+    supabase.ts        — Supabase client (uses VITE_ env vars)
+    profileColumns.ts  — PUBLIC_PROFILE_COLUMNS (use instead of select('*'))
+    musicianUtils.ts   — initials, instrument codes, distance, NO_PROFILE placeholder
+    presence.ts        — isOnline() from last_seen_at
+    storageCleanup.ts  — removeOwnFiles(): deletes the user's unreferenced avatar/audio uploads
+    moderateImage.ts   — client-side NSFW image check (nsfwjs)
+    tour.ts            — first-run guided tour (driver.js)
   components/
-    Header.tsx         — top bar with Sign In / profile / admin buttons
-    MusicianMap.tsx    — Leaflet map with musician pins
-    MusicianDetail.tsx — profile popup when clicking a pin (shows online status)
+    Header.tsx         — top bar: search, desktop tabs, Sign In / profile / admin
+    MusicianMap.tsx    — Leaflet map with clustered musician pins
+    MusicianList.tsx   — list panel with distance select and sorting
+    FilterPanel.tsx / ActiveFilters.tsx — filter controls and active filter chips
+    MusicianDetail.tsx — profile view for a selected musician (shows online status)
     ProfileModal.tsx   — edit own profile; admin mode via `adminTarget` prop
+    SignupScreen.tsx / OnboardingFlow.tsx — signed-out landing and first profile setup
+    SavedTab.tsx       — saved musicians with notes
+    InboxTab.tsx / ThreadView.tsx — message threads and contact requests
+    ReportModal.tsx    — report a profile
     AuthModal.tsx      — sign in / register / forgot password tabs
     ResetPasswordModal.tsx — shown after clicking a password reset email link
-    AdminPanel.tsx     — admin-only panel: all profiles, online status, edit/delete
+    AdminPanel.tsx     — admin-only panel: all profiles, online status, reports, edit/delete
 
-server.js              — Express API server (served at /api/*)
-supabase/schema.sql    — full DB schema + RLS policies
+server.js              — Express API server (served at /api/*) + built frontend in production
+supabase/schema.sql    — full DB schema + RLS policies (fresh installs)
+supabase/migrations/   — one-off SQL for the live DB; run each in the Supabase SQL editor
+scripts/               — seed-test-profiles.js, update-avatars.js (read .env.local, use service role key)
 ```
 
 ## Key design decisions
@@ -55,6 +71,7 @@ supabase/schema.sql    — full DB schema + RLS policies
 - **Online status**: a heartbeat in `store.ts` updates `profiles.last_seen_at` every 240s while a user is logged in. "Online" = active within last 5 minutes. Shown in both AdminPanel and MusicianDetail.
 - **Password recovery**: Supabase fires `PASSWORD_RECOVERY` auth event (not `SIGNED_IN`) when a user clicks a reset link. The store handles this by setting `needsPasswordReset: true` and showing `ResetPasswordModal`, which calls `supabase.auth.updateUser({ password })`.
 - **Admin profile editing**: `ProfileModal` accepts an `adminTarget?: Musician` prop. In admin mode it saves via `PATCH /api/admin/profile/:id` with the admin's JWT, bypassing RLS via the service role key.
+- **Hidden profiles** (`location_precision = 'hidden'`) store no location: a DB trigger (`profiles_strip_hidden_location`, migration `2026-10-30_hidden_profiles_no_location.sql`) blanks `location_name`/`neighborhood` and sets lat/lng to 0, and the client maps them to NaN so they never get a pin.
 
 - **No Craigslist data** (removed Oct 2026): the app previously pulled posts from Craigslist's musicians RSS feed. Removed because Craigslist's terms prohibit scraping and it has sued apps for republishing listings (Craigslist v. 3Taps/PadMapper). Don't reintroduce scraping; listings should come from users of this app.
 
@@ -73,6 +90,9 @@ All admin endpoints require `Authorization: Bearer <jwt>` where the JWT belongs 
 | DELETE | `/api/self-delete` | User deletes their own account and uploaded files |
 | POST | `/api/report/:profileId` | Signed-in user reports a profile |
 | POST | `/api/moderate` | Screen text for hate/sexual/violence via OpenAI Moderation API (signed-in users) |
+| GET | `/api/health` | Railway healthcheck (`railway.json`) |
+
+Unknown `/api/*` paths return a JSON 404.
 
 ## Running locally
 ```bash

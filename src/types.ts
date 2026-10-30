@@ -33,11 +33,8 @@ export interface Musician {
   soundcloudUrl?: string
   bandcampUrl?: string
   tiktokUrl?: string
-  discordUrl?: string
   audioUrl?: string
 }
-
-export type ActiveModal = 'auth' | 'profile' | 'musician-detail' | 'reset-password' | null
 
 export interface Message {
   id: string

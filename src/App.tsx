@@ -5,7 +5,6 @@ import { Map, List, Heart, MessageSquare, User, Shield, Pencil, MapPin, LogOut }
 import { getInitials, getInstrumentCode, shortLocation } from './lib/musicianUtils'
 import { isOnline } from './lib/presence'
 import Header from './components/Header'
-import FilterBar from './components/FilterBar'
 import MusicianMap from './components/MusicianMap'
 import MusicianList from './components/MusicianList'
 import MusicianDetail from './components/MusicianDetail'
@@ -106,9 +105,6 @@ export default function App() {
         onToggleLargeText={() => setLargeText(v => !v)}
       />
 
-      {/* Desktop-only filter bar */}
-      <FilterBar />
-
       {/* Main content area */}
       <div className="flex-1 flex min-h-0 overflow-hidden relative">
 
@@ -195,7 +191,6 @@ export default function App() {
                 )
               }
               const initials = getInitials(profile.displayName)
-              const code = getInstrumentCode(profile.instruments)
               return (
                 <div className="flex-1 flex flex-col overflow-y-auto">
                   {/* Avatar */}

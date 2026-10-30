@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { supabase } from './lib/supabase'
-import type { Musician, ActiveModal, Level, Message, ContactRequestStatus } from './types'
+import type { Musician, Level, Message, ContactRequestStatus } from './types'
 import { haversineDistanceMiles } from './lib/musicianUtils'
 import { isOnline } from './lib/presence'
 import { PUBLIC_PROFILE_COLUMNS } from './lib/profileColumns'
@@ -103,18 +103,11 @@ interface AppStore {
 
   // ── Musician profiles ─────────────────────────────────────────────────────
   musicians: Musician[]
-  isLoadingMusicians: boolean
   fetchMusicians: () => Promise<void>
   saveProfile: (profile: Omit<Musician, 'id' | 'email' | 'createdAt'>) => Promise<{ ok: boolean; error?: string }>
   currentProfile: () => Musician | undefined
   removeProfile: () => Promise<void>
   deleteAccount: () => Promise<boolean>
-
-  // ── UI ────────────────────────────────────────────────────────────────────
-  activeModal: ActiveModal
-  selectedMusician: Musician | null
-  openModal: (modal: ActiveModal, payload?: Musician) => void
-  closeModal: () => void
 
   // ── Layout & search ───────────────────────────────────────────────────────
   selectedId: string | null
@@ -262,10 +255,8 @@ export const useStore = create<AppStore>()((set, get) => ({
 
   // ── Musicians ─────────────────────────────────────────────────────────────
   musicians: [],
-  isLoadingMusicians: false,
 
   fetchMusicians: async () => {
-    set({ isLoadingMusicians: true })
     const { data, error } = await supabase
       .from('profiles')
       .select(PUBLIC_PROFILE_COLUMNS)
@@ -304,7 +295,6 @@ export const useStore = create<AppStore>()((set, get) => ({
         soundcloudUrl: row.soundcloud_url ?? undefined,
         bandcampUrl: row.bandcamp_url ?? undefined,
         tiktokUrl: row.tiktok_url ?? undefined,
-        discordUrl: row.discord_url ?? undefined,
         audioUrl: row.audio_url ?? undefined,
       }))
       // Merge the signed-in user's OWN private contact details (RLS: owner-only row)
@@ -324,7 +314,6 @@ export const useStore = create<AppStore>()((set, get) => ({
       }
       set({ musicians: dbMusicians })
     }
-    set({ isLoadingMusicians: false })
   },
 
   saveProfile: async (profile) => {
@@ -359,7 +348,7 @@ export const useStore = create<AppStore>()((set, get) => ({
       soundcloud_url: profile.soundcloudUrl ?? null,
       bandcamp_url: profile.bandcampUrl ?? null,
       tiktok_url: profile.tiktokUrl ?? null,
-      discord_url: profile.discordUrl ?? null,
+      discord_url: null, // Discord field was removed from profiles; clears old links on save
       audio_url: profile.audioUrl ?? null,
     })
     // Private contact details go to the owner-only table, never to public profiles
@@ -412,17 +401,6 @@ export const useStore = create<AppStore>()((set, get) => ({
     await supabase.auth.signOut()
     return true
   },
-
-  // ── UI ────────────────────────────────────────────────────────────────────
-  activeModal: null,
-  selectedMusician: null,
-
-  openModal: (modal, payload) => {
-    if (modal === 'musician-detail') set({ activeModal: modal, selectedMusician: payload as Musician })
-    else set({ activeModal: modal })
-  },
-
-  closeModal: () => set({ activeModal: null, selectedMusician: null }),
 
   // ── Layout & search ───────────────────────────────────────────────────────
   selectedId: null,

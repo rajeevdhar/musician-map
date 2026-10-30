@@ -150,7 +150,7 @@ app.get('/api/admin/contacts', requireAdmin, async (req, res) => {
 // Admin: update any profile (bypasses RLS via service role)
 app.patch('/api/admin/profile/:id', requireAdmin, async (req, res) => {
   if (!supabaseAdmin) return res.status(503).json({ error: 'Admin client not configured' })
-  const allowed = ['display_name','bio','instruments','genres','lat','lng','location_name','looking_for','website_url','instagram_url','youtube_url','soundcloud_url','bandcamp_url','tiktok_url','discord_url']
+  const allowed = ['display_name','bio','instruments','genres','lat','lng','location_name','looking_for','website_url','instagram_url','youtube_url','soundcloud_url','bandcamp_url','tiktok_url']
   const update = {}
   for (const key of allowed) {
     if (req.body[key] !== undefined) update[key] = req.body[key]
@@ -233,6 +233,12 @@ app.patch('/api/admin/reports/:id', requireAdmin, async (req, res) => {
   if (error) return res.status(500).json({ error: error.message })
   res.json({ ok: true })
 })
+
+// Railway healthcheck (railway.json)
+app.get('/api/health', (_req, res) => res.json({ ok: true }))
+
+// Unknown API paths get a JSON 404, not the SPA's index.html
+app.use('/api', (_req, res) => res.status(404).json({ error: 'Not found' }))
 
 // Serve built frontend in production (Railway single-service deployment)
 if (isProd) {

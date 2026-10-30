@@ -7,5 +7,5 @@ export const PUBLIC_PROFILE_COLUMNS = [
   'location_precision', 'neighborhood', 'level', 'primary_instrument', 'gear',
   'availability', 'years_playing', 'is_test', 'offers_lessons',
   'website_url', 'instagram_url', 'youtube_url', 'soundcloud_url',
-  'bandcamp_url', 'tiktok_url', 'discord_url', 'audio_url',
+  'bandcamp_url', 'tiktok_url', 'audio_url',
 ].join(', ')
