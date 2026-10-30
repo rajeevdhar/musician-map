@@ -54,20 +54,20 @@ export default function MusicianList({ onViewProfile }: Props) {
         <div className="py-3 px-3 flex items-center gap-3">
           <span className="text-[72px] font-black leading-none text-ink tracking-tight flex-shrink-0">{musicians.length}</span>
           <div className="flex flex-col justify-center gap-0.5">
-            <span className="text-[18px] font-extrabold text-ink leading-none">musicians</span>
+            <span className="text-[22px] font-extrabold text-ink leading-none">musicians</span>
             <div className="flex items-center gap-1">
               <span className="text-[11px] font-semibold text-neutral-500">within</span>
               <label className="inline-grid cursor-pointer items-center">
                 <select
                   value={filters.distanceMi}
                   onChange={e => setFilters({ distanceMi: Number(e.target.value) as typeof filters.distanceMi })}
-                  className="col-start-1 row-start-1 p-0 bg-transparent text-[11px] font-bold text-ink focus:outline-none cursor-pointer w-full"
+                  className="col-start-1 row-start-1 p-0 bg-transparent text-[18px] font-extrabold text-ink focus:outline-none cursor-pointer w-full"
                 >
                   {DISTANCE_OPTIONS.map(d => (
                     <option key={d} value={d}>{distanceLabel(d)}</option>
                   ))}
                 </select>
-                <span className="col-start-1 row-start-1 invisible text-[11px] font-bold pointer-events-none" aria-hidden>
+                <span className="col-start-1 row-start-1 invisible text-[18px] font-extrabold pointer-events-none" aria-hidden>
                   {distanceLabel(filters.distanceMi)}
                 </span>
               </label>
