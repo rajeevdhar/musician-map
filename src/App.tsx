@@ -115,7 +115,7 @@ export default function App() {
         {/* List panel: always on desktop; only on 'list' tab on mobile */}
         <div className={`flex-col border-r-2 border-ink overflow-hidden flex-shrink-0 large-text-zoom ${
           activeTab === 'list' ? 'flex w-full' : 'hidden'
-        } lg:flex lg:w-[380px]`}>
+        } lg:flex lg:w-[428px]`}>
           {showFilterPanel && <FilterPanel />}
           <ActiveFilters />
           <MusicianList onViewProfile={(m) => {
