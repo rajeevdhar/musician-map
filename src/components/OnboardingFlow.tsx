@@ -164,7 +164,7 @@ export default function OnboardingFlow({ onComplete, onBack }: Props) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4 pt-5 pb-4 max-w-[620px] mx-auto w-full">
+      <div className="flex-1 overflow-y-auto px-4 pt-5 pb-8 max-w-[620px] mx-auto w-full">
         <p className="text-[11px] font-extrabold uppercase tracking-widest text-accent-700 mb-2">
           Step {step} of 4 · {STEP_LABELS[step - 1]}
         </p>
@@ -343,28 +343,28 @@ export default function OnboardingFlow({ onComplete, onBack }: Props) {
             </div>
           </>
         )}
-      </div>
 
-      {saveError && (
-        <p className="flex-shrink-0 mx-4 mb-3 text-sm text-accent-700 bg-accent-100 border-2 border-accent px-3 py-2">{saveError}</p>
-      )}
+        {saveError && (
+          <p className="mt-4 text-sm text-accent-700 bg-accent-100 border-2 border-accent px-3 py-2">{saveError}</p>
+        )}
 
-      {/* Footer */}
-      <div className="flex-shrink-0 flex border-t-2 border-ink">
-        <button
-          onClick={goBack}
-          className="h-14 px-6 border-r-2 border-ink text-[14px] font-extrabold text-ink hover:bg-accent-100 transition-colors whitespace-nowrap"
-        >
-          ← Back
-        </button>
-        <button
-          onClick={goNext}
-          disabled={!canContinue || saving}
-          className="flex-1 h-14 bg-accent hover:bg-accent-600 disabled:opacity-40 text-white font-extrabold text-[15px] flex items-center justify-between px-4 transition-colors"
-        >
-          <span>{step === 4 ? (saving ? 'Saving…' : 'Go to the map') : 'Continue'}</span>
-          <span>→</span>
-        </button>
+        {/* Navigation */}
+        <div className="flex border-2 border-ink mt-6">
+          <button
+            onClick={goBack}
+            className="h-14 px-6 border-r-2 border-ink text-[14px] font-extrabold text-ink hover:bg-accent-100 transition-colors whitespace-nowrap"
+          >
+            ← Back
+          </button>
+          <button
+            onClick={goNext}
+            disabled={!canContinue || saving}
+            className="flex-1 h-14 bg-accent hover:bg-accent-600 disabled:opacity-40 text-white font-extrabold text-[15px] flex items-center justify-between px-4 transition-colors"
+          >
+            <span>{step === 4 ? (saving ? 'Saving…' : 'Go to the map') : 'Continue'}</span>
+            <span>→</span>
+          </button>
+        </div>
       </div>
     </div>
   )
