@@ -1061,11 +1061,11 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
               </div>
             </div>
             {audioSection}
+            {gearSection}
           </div>
 
-          {/* Col 3: Gear, availability, location, precision, account email */}
+          {/* Col 3: availability, location, precision, account email */}
           <div className="p-6 space-y-5 border-l-2 border-ink">
-            {gearSection}
             {availabilitySection}
             {locationSection}
             {precisionSection}
@@ -1198,10 +1198,10 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
               </div>
             </div>
             {audioSection}
+            {gearSection}
           </div>
 
           <div className="p-4 space-y-4 border-t-2 border-ink">
-            {gearSection}
             {availabilitySection}
             {locationSection}
             {precisionSection}
