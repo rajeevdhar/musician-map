@@ -48,10 +48,8 @@ export default function MusicianList({ onViewProfile }: Props) {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header — grid matches row columns: 52px | 1fr | auto */}
-      <div className="grid border-b-2 border-ink flex-shrink-0" style={{ gridTemplateColumns: '52px 1fr auto' }}>
-        {/* Col 1: blank spacer */}
-        <div />
-        {/* Col 2: big number, then "musicians" stacked above "within X mi" */}
+      <div className="grid border-b-2 border-ink flex-shrink-0" style={{ gridTemplateColumns: '1fr auto' }}>
+        {/* Col 1: big number, then "musicians" stacked above "within X mi" */}
         <div className="py-3 px-3 flex items-center gap-3">
           <span className="text-[72px] font-black leading-none text-ink tracking-tight flex-shrink-0">{musicians.length}</span>
           <div className="flex flex-col justify-center gap-0.5">
@@ -224,7 +222,7 @@ function MusicianRow({
         )}
         {m.lookingFor && (
           <p className="text-[12px] font-semibold text-accent-700 mt-0.5 truncate">
-            {m.lookingFor.split(',')[0]?.trim()} · {shortLocation(m.locationName)}
+            {[m.lookingFor.split(',')[0]?.trim(), shortLocation(m.locationName)].filter(Boolean).join(' · ')}
           </p>
         )}
       </div>
