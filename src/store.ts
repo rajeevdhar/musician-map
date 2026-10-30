@@ -330,18 +330,21 @@ export const useStore = create<AppStore>()((set, get) => ({
   saveProfile: async (profile) => {
     const user = get().currentUser
     if (!user) return { ok: false, error: 'Not signed in' }
+    // profiles is public: a hidden profile must not publish where it is
+    // (the profiles_strip_hidden_location trigger enforces this server-side too)
+    const hidden = profile.locationPrecision === 'hidden'
     const { error } = await supabase.from('profiles').upsert({
       id: user.id,
       display_name: profile.displayName,
       bio: profile.bio,
       instruments: profile.instruments,
       genres: profile.genres,
-      lat: profile.lat,
-      lng: profile.lng,
-      location_name: profile.locationName,
+      lat: hidden ? 0 : profile.lat,
+      lng: hidden ? 0 : profile.lng,
+      location_name: hidden ? '' : profile.locationName,
       looking_for: profile.lookingFor,
       location_precision: profile.locationPrecision ?? 'exact',
-      neighborhood: profile.neighborhood ?? null,
+      neighborhood: hidden ? null : profile.neighborhood ?? null,
       level: profile.level ?? null,
       last_seen_at: new Date().toISOString(),
       primary_instrument: profile.primaryInstrument ?? null,

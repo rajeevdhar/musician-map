@@ -227,3 +227,22 @@ CREATE POLICY "contacts_accepted_read" ON public.profile_contacts
           OR (r.to_id   = auth.uid() AND r.from_id = profile_contacts.id))
     )
   );
+
+-- Section 9: Hidden profiles publish no location (see migrations/2026-10-30_hidden_profiles_no_location.sql)
+-- profiles is publicly readable, so a hidden row must not keep its town name or coordinates.
+CREATE OR REPLACE FUNCTION public.strip_hidden_location()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.location_precision = 'hidden' THEN
+    NEW.location_name := '';
+    NEW.neighborhood := NULL;
+    NEW.lat := 0;
+    NEW.lng := 0;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS profiles_strip_hidden_location ON public.profiles;
+CREATE TRIGGER profiles_strip_hidden_location
+  BEFORE INSERT OR UPDATE ON public.profiles
+  FOR EACH ROW EXECUTE FUNCTION public.strip_hidden_location();
