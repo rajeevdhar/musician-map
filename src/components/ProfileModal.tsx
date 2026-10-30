@@ -18,6 +18,7 @@ const SLOTS = ['Morning', 'Afternoon', 'Evening']
 
 function roundCoord(n: number) { return Math.round(n * 100) / 100 }
 function emptyAvail(): boolean[][] { return Array.from({ length: 7 }, () => [false, false, false]) }
+function titleCase(s: string): string { return s.replace(/\b\w/g, c => c.toUpperCase()) }
 
 // Extract "City, ST" (US) or "City, Country" (non-US) from a Nominatim address object
 function nominatimCityState(addr: Record<string, string>): string {
@@ -496,7 +497,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
         method: 'PATCH',
         headers: { Authorization: `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          display_name: displayName.trim(),
+          display_name: titleCase(displayName.trim()),
           bio: bio.trim(),
           instruments,
           genres,
@@ -513,7 +514,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
       onAdminSaved?.()
     } else {
       const result = await saveProfile({
-        displayName: displayName.trim(),
+        displayName: titleCase(displayName.trim()),
         bio: bio.trim(),
         instruments,
         genres,
