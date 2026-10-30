@@ -230,36 +230,7 @@ export default function OnboardingFlow({ onComplete, onBack }: Props) {
             <h2 className="text-[36px] font-extrabold text-ink mb-4 leading-tight">How should others see where you are?</h2>
 
             {/* Location getter */}
-            {!data.lat ? (
-              <div className="mb-5">
-                <button
-                  onClick={requestGeo}
-                  disabled={geoLoading}
-                  className="w-full h-[52px] border-2 border-ink text-[15px] font-extrabold flex items-center gap-3 px-4 hover:bg-accent-100 transition-colors disabled:opacity-60"
-                >
-                  {geoLoading ? <Loader2 size={16} className="animate-spin" /> : <MapPin size={16} />}
-                  {geoLoading ? 'Getting location…' : 'Use my location'}
-                </button>
-                {geoError && (
-                  <>
-                    <p className="text-sm text-accent-700 mt-2 mb-2">{geoError}</p>
-                    <form onSubmit={handleCitySubmit} className="flex gap-2">
-                      <input
-                        ref={cityRef}
-                        type="text"
-                        value={cityInput}
-                        onChange={e => setCityInput(e.target.value)}
-                        placeholder="City, State"
-                        className="flex-1 h-12 bg-white border-2 border-ink px-3 text-[15px] text-ink focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2"
-                      />
-                      <button type="submit" className="h-12 px-4 bg-ink text-white font-extrabold text-sm hover:bg-neutral-800 transition-colors">
-                        Set
-                      </button>
-                    </form>
-                  </>
-                )}
-              </div>
-            ) : (
+            {data.lat ? (
               <p className="text-[14px] font-semibold text-ink mb-4 flex items-center gap-2">
                 <MapPin size={14} className="text-accent flex-shrink-0" />
                 {data.locationName}
@@ -270,6 +241,31 @@ export default function OnboardingFlow({ onComplete, onBack }: Props) {
                   Change
                 </button>
               </p>
+            ) : (
+              <div className="mb-5 flex flex-col gap-2">
+                <form onSubmit={handleCitySubmit} className="flex gap-2">
+                  <input
+                    ref={cityRef}
+                    type="text"
+                    value={cityInput}
+                    onChange={e => setCityInput(e.target.value)}
+                    placeholder="City, zip code, or address…"
+                    className="flex-1 h-12 bg-white border-2 border-ink px-3 text-[15px] text-ink focus:outline-none"
+                  />
+                  <button type="submit" disabled={geoLoading} className="h-12 px-4 bg-ink text-white font-extrabold text-sm hover:bg-neutral-800 transition-colors disabled:opacity-60">
+                    Set
+                  </button>
+                </form>
+                {geoError && <p className="text-sm text-accent-700">{geoError}</p>}
+                <button
+                  onClick={requestGeo}
+                  disabled={geoLoading}
+                  className="w-full h-10 border-2 border-ink text-[13px] font-extrabold flex items-center gap-2 px-3 hover:bg-accent-100 transition-colors disabled:opacity-60 text-neutral-600"
+                >
+                  {geoLoading ? <Loader2 size={14} className="animate-spin" /> : <MapPin size={14} />}
+                  {geoLoading ? 'Getting location…' : 'Use my current location instead'}
+                </button>
+              </div>
             )}
 
             {/* Map preview */}
