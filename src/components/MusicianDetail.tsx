@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import type { Musician } from '../types'
 import { useStore } from '../store'
-import { ArrowLeft, X, Heart, MapPin, Pencil, MessageSquare, Globe, Instagram, Youtube, Music, Play, Pause, Tent, Video, Flag, MessageCircle } from 'lucide-react'
+import { ArrowLeft, X, Heart, MapPin, Pencil, MessageSquare, Globe, Instagram, Youtube, Music, Play, Pause, Tent, Video, Flag } from 'lucide-react'
 import { getInitials, cityStateLocation } from '../lib/musicianUtils'
 import { isOnline, presenceText } from '../lib/presence'
 import ReportModal from './ReportModal'
@@ -40,11 +40,7 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
     { url: musician.soundcloudUrl, Icon: Music, label: 'SoundCloud' },
     { url: musician.bandcampUrl, Icon: Tent, label: 'Bandcamp' },
     { url: musician.tiktokUrl, Icon: Video, label: 'TikTok' },
-    { url: musician.discordUrl, Icon: MessageCircle, label: 'Discord' },
-  // Only real web links: profiles are writable straight through the API, so a
-  // javascript: URL here would run on click. Bare Discord usernames show as text.
   ].filter(l => l.url && /^https?:\/\//i.test(l.url))
-  const discordHandle = musician.discordUrl && !/^https?:\/\//i.test(musician.discordUrl) ? musician.discordUrl : null
 
   return (
     <>
@@ -100,10 +96,12 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
               Offers Lessons
             </span>
           )}
-          <p className="text-[14px] font-semibold text-white/80 mt-1.5 flex items-center gap-1">
-            <MapPin size={12} />
-            {cityStateLocation(musician.locationName)}
-          </p>
+          {musician.locationName && (
+            <p className="text-[14px] font-semibold text-white/80 mt-1.5 flex items-center gap-1">
+              <MapPin size={12} />
+              {cityStateLocation(musician.locationName)}
+            </p>
+          )}
         </div>
 
         {/* Genres + Looking for */}
@@ -184,7 +182,7 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
         )}
 
         {/* Social links */}
-        {(socialLinks.length > 0 || discordHandle) && (
+        {socialLinks.length > 0 && (
           <div className="px-4 pt-4">
             <p className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-700 mb-2">Links</p>
             <div className="flex flex-wrap gap-2">
@@ -200,12 +198,6 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
                   {label}
                 </a>
               ))}
-              {discordHandle && (
-                <span className="flex items-center gap-1.5 h-8 px-3 border-2 border-ink text-[12px] font-extrabold text-ink">
-                  <MessageCircle size={13} />
-                  {discordHandle}
-                </span>
-              )}
             </div>
           </div>
         )}
