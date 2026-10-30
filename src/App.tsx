@@ -391,7 +391,7 @@ export default function App() {
 
       {/* Overlay modals — rendered after SignupScreen/OnboardingFlow to win z-index */}
       {modal === 'auth' && (
-        <AuthModal onClose={() => setModal(null)} />
+        <AuthModal onClose={() => setModal(null)} onSignedUp={() => { setModal(null); setSignupDismissed(false); setShowOnboarding(true) }} />
       )}
       {modal === 'profile' && currentUser && (
         <ProfileModal onClose={() => setModal(null)} />

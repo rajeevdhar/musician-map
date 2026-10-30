@@ -4,9 +4,10 @@ import { supabase } from '../lib/supabase'
 
 interface Props {
   onClose: () => void
+  onSignedUp?: () => void
 }
 
-export default function AuthModal({ onClose }: Props) {
+export default function AuthModal({ onClose, onSignedUp }: Props) {
   const [tab, setTab] = useState<'login' | 'register' | 'forgot'>('login')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -26,7 +27,7 @@ export default function AuthModal({ onClose }: Props) {
       if (!ageConfirmed) { setError('You must confirm you are 16 or older to register'); setLoading(false); return }
       if (password.length < 6) { setError('Password must be at least 6 characters'); setLoading(false); return }
       const result = await register(email, password, name.trim())
-      if (result.ok) onClose()
+      if (result.ok) { onSignedUp ? onSignedUp() : onClose() }
       else setError(result.error ?? 'Sign-up failed')
     } else if (tab === 'login') {
       const result = await login(email, password)
