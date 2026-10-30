@@ -61,7 +61,7 @@ export default function MusicianList({ onViewProfile }: Props) {
                 <select
                   value={filters.distanceMi}
                   onChange={e => setFilters({ distanceMi: Number(e.target.value) as typeof filters.distanceMi })}
-                  className="col-start-1 row-start-1 appearance-none p-0 bg-transparent text-[11px] font-bold text-ink focus:outline-none cursor-pointer w-full"
+                  className="col-start-1 row-start-1 p-0 bg-transparent text-[11px] font-bold text-ink focus:outline-none cursor-pointer w-full"
                 >
                   {DISTANCE_OPTIONS.map(d => (
                     <option key={d} value={d}>{distanceLabel(d)}</option>
@@ -71,7 +71,6 @@ export default function MusicianList({ onViewProfile }: Props) {
                   {distanceLabel(filters.distanceMi)}
                 </span>
               </label>
-              <span className="text-[13px] text-ink pointer-events-none leading-none ml-0.5">▾</span>
             </div>
           </div>
         </div>
