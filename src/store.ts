@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { User } from '@supabase/supabase-js'
-import { supabase } from './lib/supabase'
+import { supabase, landedFromSignupLink } from './lib/supabase'
 import type { Musician, Level, Message, ContactRequestStatus } from './types'
 import { haversineDistanceMiles } from './lib/musicianUtils'
 import { isOnline } from './lib/presence'
@@ -104,20 +104,24 @@ function toAppUser(u: User): AppUser {
 }
 
 // Set before redirecting to Google or signing up by email, so when the user lands back
-// signed in (from Google or the confirmation link) the app knows this may be a
-// brand-new account that still needs onboarding.
+// signed in the app knows this may be a brand-new account that still needs onboarding.
+// The confirmation link often opens in a different browser (mail app, phone), where this
+// flag doesn't exist, so landing from that link counts too.
 const ONBOARD_PENDING_KEY = 'mm-onboard-pending'
+let signupLinkPending = landedFromSignupLink
 
 function markOnboardPending() {
   try { localStorage.setItem(ONBOARD_PENDING_KEY, '1') } catch { /* onboarding just won't auto-open */ }
 }
 
 export function consumeOnboardPending(): boolean {
+  const fromLink = signupLinkPending
+  signupLinkPending = false
   try {
     const pending = localStorage.getItem(ONBOARD_PENDING_KEY) !== null
     localStorage.removeItem(ONBOARD_PENDING_KEY)
-    return pending
-  } catch { return false }
+    return pending || fromLink
+  } catch { return fromLink }
 }
 
 interface AppStore {
