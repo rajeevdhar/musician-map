@@ -53,6 +53,8 @@ export default function AdminPanel({ onClose }: Props) {
   const { musicians, fetchMusicians } = useStore()
   const [dbProfiles, setDbProfiles] = useState<Musician[]>([])
   const [userStats, setUserStats] = useState<Record<string, UserStat>>({})
+  // How many people have blocked each user (counts only — who blocked whom stays private)
+  const [blockCounts, setBlockCounts] = useState<Record<string, number>>({})
   const [isLoading, setIsLoading] = useState(true)
   const [actionState, setActionState] = useState<Record<ActionKey, boolean>>({})
   const [search, setSearch] = useState('')
@@ -107,11 +109,13 @@ export default function AdminPanel({ onClose }: Props) {
 
   const loadAll = async () => {
     setIsLoading(true)
-    const [profilesResult, statsResult, contactsResult] = await Promise.all([
+    const [profilesResult, statsResult, contactsResult, blockCountsResult] = await Promise.all([
       adminFetch('/api/admin/profiles', 'GET'),
       adminFetch('/api/admin/user-stats', 'GET'),
       adminFetch('/api/admin/contacts', 'GET'),
+      adminFetch('/api/admin/block-counts', 'GET'),
     ])
+    setBlockCounts(blockCountsResult.counts ?? {})
 
     // Private details come from admin-only server endpoint (service role), not the public table
     const contactById: Record<string, { email?: string; contactEmail?: string; phone?: string | null }> = {}
@@ -247,6 +251,7 @@ export default function AdminPanel({ onClose }: Props) {
                       key={m.id}
                       musician={m}
                       lastSignInAt={userStats[m.id]?.lastSignInAt ?? null}
+                      blockedByCount={blockCounts[m.id] ?? 0}
                       removingProfile={actionState[m.id] ?? false}
                       deletingAccount={actionState[`del-${m.id}`] ?? false}
                       onEdit={() => setEditTarget(m)}
@@ -385,10 +390,11 @@ function ReportRow({
 }
 
 function ProfileRow({
-  musician, lastSignInAt, removingProfile, deletingAccount, onEdit, onDeleteProfile, onDeleteAccount,
+  musician, lastSignInAt, blockedByCount, removingProfile, deletingAccount, onEdit, onDeleteProfile, onDeleteAccount,
 }: {
   musician: Musician
   lastSignInAt: string | null
+  blockedByCount: number
   removingProfile: boolean
   deletingAccount: boolean
   onEdit: () => void
@@ -410,6 +416,11 @@ function ProfileRow({
             <span className="font-extrabold text-sm text-ink">{musician.displayName}</span>
             {musician.isTest && (
               <span className="text-[9px] font-extrabold uppercase tracking-widest bg-neutral-200 text-neutral-500 px-1.5 py-0.5">TEST</span>
+            )}
+            {blockedByCount > 0 && (
+              <span className="text-[9px] font-extrabold uppercase tracking-widest bg-accent-100 text-accent-700 border border-accent px-1.5 py-0.5">
+                Blocked by {blockedByCount} {blockedByCount === 1 ? 'person' : 'people'}
+              </span>
             )}
             <span className="text-xs text-neutral-500">{musician.email}</span>
           </div>

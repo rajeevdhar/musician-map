@@ -127,6 +127,25 @@ app.get('/api/admin/user-stats', requireAdmin, async (req, res) => {
   })
 })
 
+// Admin: how many people have blocked each user — counts only, never who blocked whom
+app.get('/api/admin/block-counts', requireAdmin, async (req, res) => {
+  if (!supabaseAdmin) return res.status(503).json({ error: 'Admin client not configured' })
+  const counts = {}
+  // Page through: the API returns at most 1000 rows per request
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabaseAdmin
+      .from('blocks')
+      .select('blocked_id')
+      .order('blocked_id')
+      .order('blocker_id') // unique (primary key) order so pages don't overlap
+      .range(from, from + 999)
+    if (error) return res.status(500).json({ error: error.message })
+    for (const { blocked_id } of data) counts[blocked_id] = (counts[blocked_id] ?? 0) + 1
+    if (data.length < 1000) break
+  }
+  res.json({ counts })
+})
+
 // Admin: account emails (from Supabase Auth) + private contact details, keyed by user id
 app.get('/api/admin/contacts', requireAdmin, async (req, res) => {
   if (!supabaseAdmin) return res.status(503).json({ error: 'Admin client not configured' })
