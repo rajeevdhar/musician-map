@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useStore } from '../store'
+import GoogleButton, { OrDivider } from './GoogleButton'
 
 interface FormProps {
   gap?: string
@@ -15,11 +16,12 @@ interface FormProps {
   error: string
   loading: boolean
   onSubmit: (e: React.FormEvent) => void
+  onGoogle: () => void
   onLogin: () => void
   onSkip: () => void
 }
 
-function SignupForm({ gap = 'gap-3.5', titleSize = 'text-[40px]', displayName, onDisplayName, email, onEmail, password, onPassword, ageConfirmed, onToggleAge, error, loading, onSubmit, onLogin, onSkip }: FormProps) {
+function SignupForm({ gap = 'gap-3.5', titleSize = 'text-[40px]', displayName, onDisplayName, email, onEmail, password, onPassword, ageConfirmed, onToggleAge, error, loading, onSubmit, onGoogle, onLogin, onSkip }: FormProps) {
   return (
     <form onSubmit={onSubmit} className={`flex flex-col ${gap}`}>
       <h2 className={`${titleSize} font-extrabold text-ink leading-none`}>Join the map</h2>
@@ -69,6 +71,8 @@ function SignupForm({ gap = 'gap-3.5', titleSize = 'text-[40px]', displayName, o
         <span>{loading ? 'Creating account…' : 'Create account'}</span>
         <span>→</span>
       </button>
+      <OrDivider />
+      <GoogleButton onClick={onGoogle} disabled={loading} />
       <p className="text-[13px] text-neutral-700">
         Have an account?{' '}
         <button type="button" onClick={onLogin} className="font-extrabold text-ink underline underline-offset-2 hover:text-accent-700">
@@ -78,6 +82,9 @@ function SignupForm({ gap = 'gap-3.5', titleSize = 'text-[40px]', displayName, o
       <button type="button" onClick={onSkip} className="text-[13px] text-neutral-500 hover:text-neutral-700 underline underline-offset-2 text-left">
         Browse map without signing up →
       </button>
+      <a href="/privacy.html" target="_blank" rel="noopener" className="text-[13px] text-neutral-500 hover:text-neutral-700 underline underline-offset-2">
+        Privacy policy
+      </a>
     </form>
   )
 }
@@ -89,7 +96,7 @@ interface Props {
 }
 
 export default function SignupScreen({ onSignedUp, onLogin, onSkip }: Props) {
-  const { register } = useStore()
+  const { register, loginWithGoogle } = useStore()
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -109,7 +116,15 @@ export default function SignupScreen({ onSignedUp, onLogin, onSkip }: Props) {
     onSignedUp()
   }
 
-  const formProps = { displayName, onDisplayName: setDisplayName, email, onEmail: setEmail, password, onPassword: setPassword, ageConfirmed, onToggleAge: () => setAgeConfirmed(v => !v), error, loading, onSubmit: handleSubmit, onLogin, onSkip }
+  const handleGoogle = async () => {
+    setError('')
+    if (!ageConfirmed) { setError('You must confirm you are 16 or older to register'); return }
+    setLoading(true)
+    const { ok, error: err } = await loginWithGoogle()
+    if (!ok) { setLoading(false); setError(err ?? 'Google sign-in failed') }
+  }
+
+  const formProps = { displayName, onDisplayName: setDisplayName, email, onEmail: setEmail, password, onPassword: setPassword, ageConfirmed, onToggleAge: () => setAgeConfirmed(v => !v), error, loading, onSubmit: handleSubmit, onGoogle: handleGoogle, onLogin, onSkip }
 
   return (
     <div className="fixed inset-0 z-[2000] bg-ground">

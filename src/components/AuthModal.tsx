@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../store'
 import { supabase } from '../lib/supabase'
+import GoogleButton, { OrDivider } from './GoogleButton'
 
 interface Props {
   onClose: () => void
@@ -16,7 +17,7 @@ export default function AuthModal({ onClose, onSignedUp }: Props) {
   const [loading, setLoading] = useState(false)
   const [resetSent, setResetSent] = useState(false)
   const [ageConfirmed, setAgeConfirmed] = useState(false)
-  const { login, register } = useStore()
+  const { login, register, loginWithGoogle } = useStore()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -42,6 +43,14 @@ export default function AuthModal({ onClose, onSignedUp }: Props) {
     }
 
     setLoading(false)
+  }
+
+  const handleGoogle = async () => {
+    setError('')
+    if (tab === 'register' && !ageConfirmed) { setError('You must confirm you are 16 or older to register'); return }
+    setLoading(true)
+    const result = await loginWithGoogle()
+    if (!result.ok) { setLoading(false); setError(result.error ?? 'Google sign-in failed') }
   }
 
   return (
@@ -153,6 +162,18 @@ export default function AuthModal({ onClose, onSignedUp }: Props) {
                 <span>→</span>
               </button>
 
+              {tab !== 'forgot' && (
+                <>
+                  <OrDivider />
+                  <GoogleButton onClick={handleGoogle} disabled={loading} />
+                  {tab === 'login' && (
+                    <p className="text-xs text-center text-neutral-500">
+                      New to MusicianMapper? Continuing with Google creates an account and confirms you are 16 or older.
+                    </p>
+                  )}
+                </>
+              )}
+
               {tab === 'login' && (
                 <p className="text-sm text-center text-neutral-500">
                   No account?{' '}
@@ -190,6 +211,10 @@ export default function AuthModal({ onClose, onSignedUp }: Props) {
               )}
             </>
           )}
+
+          <p className="text-xs text-center">
+            <a href="/privacy.html" target="_blank" rel="noopener" className="text-neutral-500 hover:text-ink underline underline-offset-2">Privacy policy</a>
+          </p>
         </form>
       </div>
     </div>

@@ -287,6 +287,11 @@ if (isProd) {
       }
     },
   }))
+  // Static privacy policy (public/privacy.html); linked from Google's consent screen
+  app.get('/privacy', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+    res.sendFile(join(__dirname, 'dist', 'privacy.html'))
+  })
   app.get('*', (_req, res) => {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
     res.sendFile(join(__dirname, 'dist', 'index.html'))

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { useStore } from './store'
+import { useStore, consumeOAuthPending } from './store'
+import { supabase } from './lib/supabase'
 import { startTour, hasSeenTour } from './lib/tour'
 import { Map, List, Heart, MessageSquare, User, Shield, Pencil, MapPin, LogOut } from 'lucide-react'
 import { getInitials, getInstrumentCode, shortLocation } from './lib/musicianUtils'
@@ -60,6 +61,13 @@ export default function App() {
     if (prevUserRef.current && !currentUser) {
       setSignupDismissed(false)
       setShowOnboarding(false)
+    }
+    // Back from Google sign-in: a brand-new account has no profile yet, so onboard it
+    if (!prevUserRef.current && currentUser && consumeOAuthPending()) {
+      const uid = currentUser.id
+      supabase.from('profiles').select('id').eq('id', uid).maybeSingle().then(({ data, error }) => {
+        if (!error && !data) setShowOnboarding(true)
+      })
     }
     // Returning user logs in for the first time this device — show tour
     if (!prevUserRef.current && currentUser && !hasSeenTour()) {

@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import type { User } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import type { Musician, Level, Message, ContactRequestStatus } from './types'
 import { haversineDistanceMiles } from './lib/musicianUtils'
@@ -91,6 +92,29 @@ export interface AppUser {
   displayName: string
 }
 
+// Email sign-up stores `displayName`; Google sends `full_name` / `name`. The last
+// fallback avoids publishing the full email address as someone's display name.
+function toAppUser(u: User): AppUser {
+  const meta = u.user_metadata ?? {}
+  return {
+    id: u.id,
+    email: u.email!,
+    displayName: meta.displayName ?? meta.full_name ?? meta.name ?? u.email!.split('@')[0],
+  }
+}
+
+// Set before redirecting to Google, so on return the app knows this sign-in may be
+// a brand-new account that still needs onboarding.
+const OAUTH_PENDING_KEY = 'mm-oauth-pending'
+
+export function consumeOAuthPending(): boolean {
+  try {
+    const pending = localStorage.getItem(OAUTH_PENDING_KEY) !== null
+    localStorage.removeItem(OAUTH_PENDING_KEY)
+    return pending
+  } catch { return false }
+}
+
 interface AppStore {
   // ── Auth ──────────────────────────────────────────────────────────────────
   currentUser: AppUser | null
@@ -99,6 +123,7 @@ interface AppStore {
   initAuth: () => void
   register: (email: string, password: string, displayName: string) => Promise<{ ok: boolean; error?: string }>
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>
+  loginWithGoogle: () => Promise<{ ok: boolean; error?: string }>
   logout: () => Promise<void>
 
   // ── Musician profiles ─────────────────────────────────────────────────────
@@ -180,11 +205,7 @@ export const useStore = create<AppStore>()((set, get) => ({
       if (session?.user) {
         const u = session.user
         set({
-          currentUser: {
-            id: u.id,
-            email: u.email!,
-            displayName: u.user_metadata?.displayName ?? u.email!,
-          },
+          currentUser: toAppUser(u),
           isAuthReady: true,
         })
         // Fetch after the first heartbeat lands so we don't read a stale last_seen_at
@@ -204,21 +225,13 @@ export const useStore = create<AppStore>()((set, get) => ({
         const u = session.user
         set({
           needsPasswordReset: true,
-          currentUser: {
-            id: u.id,
-            email: u.email!,
-            displayName: u.user_metadata?.displayName ?? u.email!,
-          },
+          currentUser: toAppUser(u),
         })
         startHeartbeat(u.id).finally(() => get().fetchMusicians())
       } else if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session?.user) {
         const u = session.user
         set({
-          currentUser: {
-            id: u.id,
-            email: u.email!,
-            displayName: u.user_metadata?.displayName ?? u.email!,
-          },
+          currentUser: toAppUser(u),
         })
         startHeartbeat(u.id).finally(() => {
           get().fetchMusicians()
@@ -256,6 +269,17 @@ export const useStore = create<AppStore>()((set, get) => ({
 
   login: async (email, password) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) return { ok: false, error: error.message }
+    return { ok: true }
+  },
+
+  // Redirects away to Google; the session is picked up from the URL on return
+  loginWithGoogle: async () => {
+    try { localStorage.setItem(OAUTH_PENDING_KEY, '1') } catch { /* onboarding just won't auto-open */ }
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    })
     if (error) return { ok: false, error: error.message }
     return { ok: true }
   },
