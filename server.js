@@ -280,7 +280,8 @@ const notificationsConfigured = () =>
   !!(supabaseAdmin && process.env.NOTIFY_SECRET && process.env.RESEND_API_KEY && process.env.NOTIFY_FROM_EMAIL)
 
 function secretsMatch(given, expected) {
-  const a = Buffer.from(String(given ?? '')), b = Buffer.from(String(expected ?? ''))
+  // Trimmed: a pasted secret easily picks up a trailing space or newline
+  const a = Buffer.from(String(given ?? '').trim()), b = Buffer.from(String(expected ?? '').trim())
   return a.length === b.length && timingSafeEqual(a, b)
 }
 
@@ -361,10 +362,12 @@ async function deliverNotification({ kind, recipientId, otherId, stillRelevant, 
 }
 
 app.post('/api/notify', (req, res) => {
-  if (!process.env.NOTIFY_SECRET || !secretsMatch(req.headers['x-webhook-secret'], process.env.NOTIFY_SECRET)) {
+  // Checked first so a 401 always means a wrong secret, never a missing variable
+  if (!notificationsConfigured()) return res.status(503).json({ error: 'Email notifications not configured' })
+  if (!secretsMatch(req.headers['x-webhook-secret'], process.env.NOTIFY_SECRET)) {
+    console.warn(`Notify rejected: ${req.headers['x-webhook-secret'] ? 'wrong' : 'missing'} x-webhook-secret header`)
     return res.status(401).json({ error: 'Unauthorized' })
   }
-  if (!notificationsConfigured()) return res.status(503).json({ error: 'Email notifications not configured' })
   const { type, table, record, old_record } = req.body ?? {}
   if (!record || !UUID_RE.test(record.id) || !UUID_RE.test(record.from_id) || !UUID_RE.test(record.to_id)) {
     return res.json({ ok: true, queued: false })
