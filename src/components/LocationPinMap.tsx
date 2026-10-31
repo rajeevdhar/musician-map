@@ -72,8 +72,12 @@ export default function LocationPinMap({ lat, lng, onChange, onAddress, areaRadi
           const url = `https://nominatim.openstreetmap.org/reverse?lat=${pos.lat}&lon=${pos.lng}&format=json&addressdetails=1`
           const res = await fetch(url, { headers: { 'User-Agent': 'MusicianMap/1.0' } })
           const data = await res.json()
-          const cityState = data.address ? nominatimCityState(data.address as Record<string, string>) : ''
-          const display = data.display_name?.split(',').slice(0, 4).join(', ') ?? ''
+          const addr = (data.address ?? {}) as Record<string, string>
+          const cityState = nominatimCityState(addr)
+          // "12 Grove St, Jersey City, NJ": readable reference for the search field
+          const street = [addr.house_number, addr.road].filter(Boolean).join(' ') || addr.neighbourhood || addr.suburb || ''
+          const display = [street, cityState].filter(Boolean).join(', ')
+            || (data.display_name ?? '').split(',').map((s: string) => s.trim()).slice(0, 3).join(', ')
           onAddressRef.current(display, cityState || display)
         } catch { /* keep existing address on error */ }
       }

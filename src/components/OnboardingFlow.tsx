@@ -293,7 +293,7 @@ export default function OnboardingFlow({ onComplete, onBack }: Props) {
                   lat={data.lat}
                   lng={data.lng}
                   onChange={(lat, lng) => setData(d => ({ ...d, lat, lng }))}
-                  onAddress={(_, locationName) => setData(d => ({ ...d, locationName }))}
+                  onAddress={(display, locationName) => { setCityInput(display); setData(d => ({ ...d, locationName })) }}
                   areaRadius={1000}
                 />
                 <p className="text-[12px] text-neutral-500 mt-1.5">Drag the pin to adjust. Others only see the shaded area, never your exact spot.</p>
