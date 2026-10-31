@@ -19,12 +19,13 @@ function formatTime(iso: string) {
 export default function InboxTab({ onViewProfile }: Props) {
   const {
     musicians, threads, unread, contactRequests, revealedContacts,
-    respondToContactRequest, activeThreadId, setActiveThreadId, currentUser,
+    respondToContactRequest, activeThreadId, setActiveThreadId, currentUser, blocked,
   } = useStore()
   const [tab, setTab] = useState<'chats' | 'requests'>('chats')
 
-  const incomingIds = Object.keys(contactRequests.incoming)
-  const threadIds = Object.keys(threads)
+  // Old threads and requests from blocked users stay in the DB (evidence for reports) but aren't shown
+  const incomingIds = Object.keys(contactRequests.incoming).filter(id => !blocked[id])
+  const threadIds = Object.keys(threads).filter(id => !blocked[id])
 
   const inboxMusicians = threadIds
     // Keep threads from people without a profile, or their unread dot can never be cleared

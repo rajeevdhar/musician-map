@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, ArrowUp } from 'lucide-react'
+import { ArrowLeft, ArrowUp, Ban } from 'lucide-react'
 import { useStore } from '../store'
 import { getInitials, NO_PROFILE } from '../lib/musicianUtils'
+import BlockConfirm from './BlockConfirm'
+import ReportModal from './ReportModal'
 
 interface Props {
   musicianId: string
@@ -19,7 +21,7 @@ function formatTime(iso: string) {
 }
 
 export default function ThreadView({ musicianId, onBack, onViewProfile }: Props) {
-  const { musicians, threads, currentUser, sendMessage, markThreadRead } = useStore()
+  const { musicians, threads, currentUser, sendMessage, markThreadRead, blockUser } = useStore()
   const profile = musicians.find(m => m.id === musicianId)
   const musician = profile ?? NO_PROFILE
   // Senders without a profile have nothing to open
@@ -27,6 +29,8 @@ export default function ThreadView({ musicianId, onBack, onViewProfile }: Props)
   const messages = threads[musicianId] ?? []
   const [body, setBody] = useState('')
   const [sending, setSending] = useState(false)
+  const [confirmBlock, setConfirmBlock] = useState(false)
+  const [reportThenBlock, setReportThenBlock] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -53,6 +57,13 @@ export default function ThreadView({ musicianId, onBack, onViewProfile }: Props)
 
   return (
     <div className="flex flex-col h-full">
+      {reportThenBlock && profile && (
+        <ReportModal
+          profileId={musicianId}
+          displayName={profile.displayName}
+          onClose={() => { setReportThenBlock(false); blockUser(musicianId) }}
+        />
+      )}
       {/* Header */}
       <div className="flex-shrink-0 flex items-center gap-3 px-4 h-14 border-b-2 border-ink">
         <button
@@ -87,7 +98,26 @@ export default function ThreadView({ musicianId, onBack, onViewProfile }: Props)
             </button>
           )}
         </div>
+        {!profile?.isTest && (
+          <button
+            onClick={() => setConfirmBlock(c => !c)}
+            className="flex items-center gap-1.5 h-8 px-2 text-[12px] font-semibold text-neutral-500 hover:text-accent-700 hover:bg-accent-100 transition-colors flex-shrink-0"
+          >
+            <Ban size={13} />
+            Block
+          </button>
+        )}
       </div>
+      {confirmBlock && (
+        <div className="flex-shrink-0 p-3 border-b-2 border-ink">
+          <BlockConfirm
+            displayName={profile ? musician.displayName : 'this member'}
+            onCancel={() => setConfirmBlock(false)}
+            onBlock={() => blockUser(musicianId)}
+            onBlockAndReport={profile ? () => { setConfirmBlock(false); setReportThenBlock(true) } : undefined}
+          />
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-2">

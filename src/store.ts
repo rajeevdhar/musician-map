@@ -142,6 +142,15 @@ interface AppStore {
   markThreadRead: (userId: string) => Promise<void>
   setActiveThreadId: (id: string | null) => void
 
+  // ── Blocking ──────────────────────────────────────────────────────────────
+  // Users I've blocked. RLS stops messages/requests both ways and hides my profile
+  // from them; hiding them from me is done here, so their name stays available
+  // (blockedProfiles) for the Blocked musicians list.
+  blocked: Record<string, true>
+  blockedProfiles: Record<string, Pick<Musician, 'displayName' | 'avatarUrl'>>
+  blockUser: (userId: string) => Promise<boolean>
+  unblockUser: (userId: string) => Promise<void>
+
   // ── Contact requests ──────────────────────────────────────────────────────
   contactRequests: {
     outgoing: Record<string, ContactRequestStatus>
@@ -227,6 +236,8 @@ export const useStore = create<AppStore>()((set, get) => ({
           activeThreadId: null,
           contactRequests: { outgoing: {}, incoming: {} },
           revealedContacts: {},
+          blocked: {},
+          blockedProfiles: {},
         })
         get().fetchMusicians()
       }
@@ -257,10 +268,17 @@ export const useStore = create<AppStore>()((set, get) => ({
   musicians: [],
 
   fetchMusicians: async () => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select(PUBLIC_PROFILE_COLUMNS)
-      .order('created_at', { ascending: true })
+    const me = get().currentUser
+    const [{ data, error }, blocksResult] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select(PUBLIC_PROFILE_COLUMNS)
+        .order('created_at', { ascending: true }),
+      // Re-read with profiles so blocks made on another device apply here too
+      me
+        ? supabase.from('blocks').select('blocked_id').eq('blocker_id', me.id)
+        : Promise.resolve({ data: [] as { blocked_id: string }[], error: null }),
+    ])
 
     if (!error) {
       const dbMusicians: Musician[] = (data ?? []).map((row: any) => ({
@@ -298,7 +316,6 @@ export const useStore = create<AppStore>()((set, get) => ({
         audioUrl: row.audio_url ?? undefined,
       }))
       // Merge the signed-in user's OWN private contact details (RLS: owner-only row)
-      const me = get().currentUser
       if (me) {
         const { data: own } = await supabase
           .from('profile_contacts')
@@ -312,7 +329,14 @@ export const useStore = create<AppStore>()((set, get) => ({
           mine.phone = own?.phone ?? undefined
         }
       }
-      set({ musicians: dbMusicians })
+      // Keep the previous block list if that read failed, rather than unhiding everyone
+      const blocked: Record<string, true> = blocksResult.error ? get().blocked : {}
+      if (!blocksResult.error) blocksResult.data?.forEach(r => { blocked[r.blocked_id] = true })
+      const blockedProfiles: AppStore['blockedProfiles'] = {}
+      dbMusicians.forEach(m => {
+        if (blocked[m.id]) blockedProfiles[m.id] = { displayName: m.displayName, avatarUrl: m.avatarUrl }
+      })
+      set({ musicians: dbMusicians.filter(m => !blocked[m.id]), blocked, blockedProfiles })
     }
   },
 
@@ -691,6 +715,7 @@ export const useStore = create<AppStore>()((set, get) => ({
           const row = payload.new as { id: string; from_id: string; to_id: string; body: string; created_at: string }
           const msg: Message = { id: row.id, fromId: row.from_id, toId: row.to_id, body: row.body, createdAt: row.created_at }
           const otherId = row.from_id
+          if (get().blocked[otherId]) return
           // activeThreadId survives leaving the Messages tab, so check the tab too
           const isViewing = get().activeTab === 'messages' && get().activeThreadId === otherId
           if (isViewing) {
@@ -710,8 +735,48 @@ export const useStore = create<AppStore>()((set, get) => ({
   },
 
   unreadCount: () => {
-    const { unread, contactRequests } = get()
-    return Object.keys(unread).length + Object.keys(contactRequests.incoming).length
+    const { unread, contactRequests, blocked } = get()
+    return Object.keys(unread).filter(id => !blocked[id]).length
+      + Object.keys(contactRequests.incoming).filter(id => !blocked[id]).length
+  },
+
+  // ── Blocking ──────────────────────────────────────────────────────────────
+  blocked: {},
+  blockedProfiles: {},
+
+  blockUser: async (userId) => {
+    const user = get().currentUser
+    if (!user || userId === user.id) return false
+    const { error } = await supabase.from('blocks').insert({ blocker_id: user.id, blocked_id: userId })
+    // 23505 = already blocked (e.g. from another device)
+    if (error && error.code !== '23505') { get().showToast('Could not block — please try again'); return false }
+    set(s => {
+      const musician = s.musicians.find(m => m.id === userId)
+      const revealedContacts = { ...s.revealedContacts }
+      delete revealedContacts[userId]
+      return {
+        blocked: { ...s.blocked, [userId]: true },
+        blockedProfiles: musician
+          ? { ...s.blockedProfiles, [userId]: { displayName: musician.displayName, avatarUrl: musician.avatarUrl } }
+          : s.blockedProfiles,
+        musicians: s.musicians.filter(m => m.id !== userId),
+        revealedContacts,
+        selectedId: s.selectedId === userId ? null : s.selectedId,
+        activeThreadId: s.activeThreadId === userId ? null : s.activeThreadId,
+      }
+    })
+    get().showToast('Blocked')
+    return true
+  },
+
+  unblockUser: async (userId) => {
+    const user = get().currentUser
+    if (!user) return
+    const { error } = await supabase.from('blocks').delete().eq('blocker_id', user.id).eq('blocked_id', userId)
+    if (error) { get().showToast('Could not unblock — please try again'); return }
+    // Refetch so their profile and any shared contact details come back
+    await Promise.all([get().fetchMusicians(), get().fetchContactRequests()])
+    get().showToast('Unblocked')
   },
 
   // ── Toast ─────────────────────────────────────────────────────────────────

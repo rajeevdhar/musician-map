@@ -23,6 +23,7 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ DE
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 -- Anyone can read profiles (public musician map)
+-- (Section 10 replaces this to hide a profile from users its owner has blocked)
 DROP POLICY IF EXISTS "profiles_select_public" ON public.profiles;
 CREATE POLICY "profiles_select_public"
   ON public.profiles FOR SELECT
@@ -94,6 +95,7 @@ ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "messages_select" ON public.messages;
 CREATE POLICY "messages_select" ON public.messages
   FOR SELECT USING (auth.uid() = from_id OR auth.uid() = to_id);
+-- (Section 10 replaces messages_insert, requests_insert and contacts_accepted_read with block-aware versions)
 DROP POLICY IF EXISTS "messages_insert" ON public.messages;
 CREATE POLICY "messages_insert" ON public.messages
   FOR INSERT WITH CHECK (auth.uid() = from_id);
@@ -246,3 +248,89 @@ DROP TRIGGER IF EXISTS profiles_strip_hidden_location ON public.profiles;
 CREATE TRIGGER profiles_strip_hidden_location
   BEFORE INSERT OR UPDATE ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION public.strip_hidden_location();
+
+-- Section 10: User blocking (see migrations/2026-10-30_user_blocks.sql)
+-- One row per (blocker, blocked). Blocked pairs can't message or send contact requests,
+-- accepted requests stop revealing contacts, and a blocker's profile is hidden from the
+-- people they blocked. Helpers live in the non-API `private` schema so nobody can RPC
+-- them to learn who blocked them.
+
+CREATE TABLE IF NOT EXISTS public.blocks (
+  blocker_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  blocked_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (blocker_id, blocked_id),
+  CHECK (blocker_id <> blocked_id)
+);
+CREATE INDEX IF NOT EXISTS blocks_blocked_id_idx ON public.blocks (blocked_id);
+
+ALTER TABLE public.blocks ENABLE ROW LEVEL SECURITY;
+-- Users see, add and remove only their own blocks; nobody can see who blocked them
+DROP POLICY IF EXISTS "blocks_select_own" ON public.blocks;
+CREATE POLICY "blocks_select_own" ON public.blocks
+  FOR SELECT USING (auth.uid() = blocker_id);
+DROP POLICY IF EXISTS "blocks_insert_own" ON public.blocks;
+CREATE POLICY "blocks_insert_own" ON public.blocks
+  FOR INSERT WITH CHECK (auth.uid() = blocker_id);
+DROP POLICY IF EXISTS "blocks_delete_own" ON public.blocks;
+CREATE POLICY "blocks_delete_own" ON public.blocks
+  FOR DELETE USING (auth.uid() = blocker_id);
+REVOKE UPDATE ON public.blocks FROM anon, authenticated;
+
+CREATE SCHEMA IF NOT EXISTS private;
+GRANT USAGE ON SCHEMA private TO anon, authenticated;
+
+-- Everyone the current user has blocked or been blocked by
+CREATE OR REPLACE FUNCTION private.block_set()
+RETURNS UUID[] LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT coalesce(array_agg(other), '{}') FROM (
+    SELECT blocked_id AS other FROM public.blocks WHERE blocker_id = auth.uid()
+    UNION
+    SELECT blocker_id FROM public.blocks WHERE blocked_id = auth.uid()
+  ) s
+$$;
+
+-- Only the users who have blocked the current user
+CREATE OR REPLACE FUNCTION private.blocked_by_set()
+RETURNS UUID[] LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT coalesce(array_agg(blocker_id), '{}') FROM public.blocks WHERE blocked_id = auth.uid()
+$$;
+
+REVOKE EXECUTE ON FUNCTION private.block_set() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION private.blocked_by_set() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION private.block_set() TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION private.blocked_by_set() TO anon, authenticated;
+
+-- Profiles: hidden from anyone the owner has blocked (signed-out visitors get an empty set)
+DROP POLICY IF EXISTS "profiles_select_public" ON public.profiles;
+CREATE POLICY "profiles_select_public"
+  ON public.profiles FOR SELECT
+  USING (NOT (id = ANY ((SELECT private.blocked_by_set())::uuid[])));
+
+-- Messages: can't message someone in a blocked pair
+DROP POLICY IF EXISTS "messages_insert" ON public.messages;
+CREATE POLICY "messages_insert" ON public.messages
+  FOR INSERT WITH CHECK (
+    auth.uid() = from_id AND NOT (to_id = ANY ((SELECT private.block_set())::uuid[]))
+  );
+
+-- Contact requests: same rule, on top of the 'pending'-only lock
+DROP POLICY IF EXISTS "requests_insert" ON public.contact_requests;
+CREATE POLICY "requests_insert" ON public.contact_requests
+  FOR INSERT WITH CHECK (
+    auth.uid() = from_id AND status = 'pending' AND from_id <> to_id
+    AND NOT (to_id = ANY ((SELECT private.block_set())::uuid[]))
+  );
+
+-- Private contacts: blocking revokes access that an accepted request granted
+DROP POLICY IF EXISTS "contacts_accepted_read" ON public.profile_contacts;
+CREATE POLICY "contacts_accepted_read" ON public.profile_contacts
+  FOR SELECT USING (
+    NOT (profile_contacts.id = ANY ((SELECT private.block_set())::uuid[]))
+    AND EXISTS (
+      SELECT 1 FROM public.contact_requests r
+      WHERE r.status = 'accepted'
+        AND ((r.from_id = auth.uid() AND r.to_id = profile_contacts.id)
+          OR (r.to_id   = auth.uid() AND r.from_id = profile_contacts.id))
+    )
+  );

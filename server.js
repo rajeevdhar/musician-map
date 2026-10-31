@@ -147,6 +147,19 @@ app.get('/api/admin/contacts', requireAdmin, async (req, res) => {
   })
 })
 
+// Admin: all profiles via the service role. Reading with the admin's own JWT would let
+// anyone hide from the admin panel by blocking the admin account (RLS on profiles).
+const ADMIN_PROFILE_COLUMNS = 'id, display_name, bio, instruments, genres, lat, lng, location_name, looking_for, avatar_url, created_at, last_seen_at, is_test, offers_lessons'
+app.get('/api/admin/profiles', requireAdmin, async (req, res) => {
+  if (!supabaseAdmin) return res.status(503).json({ error: 'Admin client not configured' })
+  const { data, error } = await supabaseAdmin
+    .from('profiles')
+    .select(ADMIN_PROFILE_COLUMNS)
+    .order('created_at', { ascending: false })
+  if (error) return res.status(500).json({ error: error.message })
+  res.json({ profiles: data })
+})
+
 // Admin: update any profile (bypasses RLS via service role)
 app.patch('/api/admin/profile/:id', requireAdmin, async (req, res) => {
   if (!supabaseAdmin) return res.status(503).json({ error: 'Admin client not configured' })

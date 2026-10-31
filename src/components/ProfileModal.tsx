@@ -8,6 +8,7 @@ import { STATE_ABBR } from '../lib/musicianUtils'
 import { moderateImage, blobToImg } from '../lib/moderateImage'
 import { removeOwnFiles } from '../lib/storageCleanup'
 import L from 'leaflet'
+import BlockedList from './BlockedList'
 
 type Precision = 'exact' | 'area' | 'hidden'
 type GeoStatus = 'idle' | 'searching' | 'found' | 'error'
@@ -1268,6 +1269,8 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
             )}
           </div>
         )}
+
+        {!isAdminMode && <BlockedList />}
 
         {/* Dangerous actions */}
         {source && (

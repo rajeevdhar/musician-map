@@ -4,7 +4,6 @@ import type { Musician } from '../types'
 import { useStore } from '../store'
 import ProfileModal from './ProfileModal'
 import { isOnline, presenceText } from '../lib/presence'
-import { PUBLIC_PROFILE_COLUMNS } from '../lib/profileColumns'
 
 interface Props {
   onClose: () => void
@@ -109,7 +108,7 @@ export default function AdminPanel({ onClose }: Props) {
   const loadAll = async () => {
     setIsLoading(true)
     const [profilesResult, statsResult, contactsResult] = await Promise.all([
-      supabase.from('profiles').select(PUBLIC_PROFILE_COLUMNS).order('created_at', { ascending: false }),
+      adminFetch('/api/admin/profiles', 'GET'),
       adminFetch('/api/admin/user-stats', 'GET'),
       adminFetch('/api/admin/contacts', 'GET'),
     ])
@@ -118,7 +117,7 @@ export default function AdminPanel({ onClose }: Props) {
     const contactById: Record<string, { email?: string; contactEmail?: string; phone?: string | null }> = {}
     for (const c of contactsResult.contacts ?? []) contactById[c.id] = c
 
-    setDbProfiles(((profilesResult.data ?? []) as any[]).map(row => ({
+    setDbProfiles(((profilesResult.profiles ?? []) as any[]).map(row => ({
       id: row.id,
       email: contactById[row.id]?.email,
       displayName: row.display_name,

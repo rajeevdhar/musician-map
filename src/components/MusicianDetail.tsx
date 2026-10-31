@@ -1,10 +1,11 @@
 import { useRef, useState } from 'react'
 import type { Musician } from '../types'
 import { useStore } from '../store'
-import { ArrowLeft, X, Heart, MapPin, Pencil, MessageSquare, Globe, Instagram, Youtube, Music, Play, Pause, Tent, Video, Flag } from 'lucide-react'
+import { ArrowLeft, X, Heart, MapPin, Pencil, MessageSquare, Globe, Instagram, Youtube, Music, Play, Pause, Tent, Video, Flag, Ban } from 'lucide-react'
 import { getInitials, cityStateLocation } from '../lib/musicianUtils'
 import { isOnline, presenceText } from '../lib/presence'
 import ReportModal from './ReportModal'
+import BlockConfirm from './BlockConfirm'
 
 interface Props {
   musician: Musician
@@ -15,7 +16,7 @@ interface Props {
 }
 
 export default function MusicianDetail({ musician, onClose, isMobile = false, onEditProfile, onOpenMessages }: Props) {
-  const { currentUser, saved, toggleSaved, contactRequests, revealedContacts, requestContact } = useStore()
+  const { currentUser, saved, toggleSaved, contactRequests, revealedContacts, requestContact, blockUser } = useStore()
   const isOwnProfile = currentUser?.id === musician.id
   const initials = getInitials(musician.displayName)
   const online = isOnline(musician.lastSeenAt)
@@ -26,6 +27,9 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
   const audioRef = useRef<HTMLAudioElement>(null)
   const [playing, setPlaying] = useState(false)
   const [showReport, setShowReport] = useState(false)
+  const [confirmBlock, setConfirmBlock] = useState(false)
+  // "Block and report": block once the report modal closes, since blocking unmounts this view
+  const [blockAfterReport, setBlockAfterReport] = useState(false)
 
   const toggleAudio = () => {
     if (!audioRef.current) return
@@ -48,7 +52,10 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
       <ReportModal
         profileId={musician.id}
         displayName={musician.displayName}
-        onClose={() => setShowReport(false)}
+        onClose={() => {
+          setShowReport(false)
+          if (blockAfterReport) blockUser(musician.id)
+        }}
       />
     )}
     <div className="flex flex-col h-full">
@@ -246,16 +253,33 @@ export default function MusicianDetail({ musician, onClose, isMobile = false, on
           </div>
         )}
 
-        {/* Report link — logged-in users only, not own profile, not seed profiles */}
+        {/* Report / block — logged-in users only, not own profile, not seed profiles */}
         {currentUser && !isOwnProfile && !isSeed && (
-          <div className="px-4 pt-6 pb-2">
-            <button
-              onClick={() => setShowReport(true)}
-              className="flex items-center gap-1.5 text-[11px] font-semibold text-neutral-400 hover:text-accent-700 transition-colors"
-            >
-              <Flag size={11} />
-              Report this profile
-            </button>
+          <div className="px-4 pt-6 pb-2 space-y-3">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setShowReport(true)}
+                className="flex items-center gap-1.5 text-[11px] font-semibold text-neutral-400 hover:text-accent-700 transition-colors"
+              >
+                <Flag size={11} />
+                Report this profile
+              </button>
+              <button
+                onClick={() => setConfirmBlock(true)}
+                className="flex items-center gap-1.5 text-[11px] font-semibold text-neutral-400 hover:text-accent-700 transition-colors"
+              >
+                <Ban size={11} />
+                Block
+              </button>
+            </div>
+            {confirmBlock && (
+              <BlockConfirm
+                displayName={musician.displayName}
+                onCancel={() => setConfirmBlock(false)}
+                onBlock={() => blockUser(musician.id)}
+                onBlockAndReport={() => { setConfirmBlock(false); setBlockAfterReport(true); setShowReport(true) }}
+              />
+            )}
           </div>
         )}
 
