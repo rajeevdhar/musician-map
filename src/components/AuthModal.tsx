@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../store'
 import { supabase } from '../lib/supabase'
-import GoogleButton, { OrDivider } from './GoogleButton'
+import GoogleButton, { OrDivider, googleSignInEnabled } from './GoogleButton'
 
 interface Props {
   onClose: () => void
@@ -47,12 +47,14 @@ export default function AuthModal({ onClose, onSignedUp }: Props) {
     setLoading(false)
   }
 
-  const handleGoogle = async () => {
+  // App opens onboarding after sign-in if the account has no profile yet
+  const handleGoogle = async (idToken: string, nonce: string) => {
     setError('')
-    if (tab === 'register' && !ageConfirmed) { setError('You must confirm you are 16 or older to register'); return }
     setLoading(true)
-    const result = await loginWithGoogle()
-    if (!result.ok) { setLoading(false); setError(result.error ?? 'Google sign-in failed') }
+    const result = await loginWithGoogle(idToken, nonce)
+    setLoading(false)
+    if (result.ok) onClose()
+    else setError(result.error ?? 'Google sign-in failed')
   }
 
   return (
@@ -180,10 +182,15 @@ export default function AuthModal({ onClose, onSignedUp }: Props) {
                 <span>→</span>
               </button>
 
-              {tab !== 'forgot' && (
+              {tab !== 'forgot' && googleSignInEnabled && (
                 <>
                   <OrDivider />
-                  <GoogleButton onClick={handleGoogle} disabled={loading} />
+                  <GoogleButton
+                    onCredential={handleGoogle}
+                    blocked={tab === 'register' && !ageConfirmed}
+                    onBlockedClick={() => setError('You must confirm you are 16 or older to register')}
+                    disabled={loading}
+                  />
                   {tab === 'login' && (
                     <p className="text-xs text-center text-neutral-500">
                       New to MusicianMapper? Continuing with Google creates an account and confirms you are 16 or older.

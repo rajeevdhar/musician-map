@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useStore } from '../store'
-import GoogleButton, { OrDivider } from './GoogleButton'
+import GoogleButton, { OrDivider, googleSignInEnabled } from './GoogleButton'
 
 interface FormProps {
   gap?: string
@@ -16,14 +16,15 @@ interface FormProps {
   error: string
   loading: boolean
   onSubmit: (e: React.FormEvent) => void
-  onGoogle: () => void
+  onGoogle: (idToken: string, nonce: string) => void
   onLogin: () => void
   onSkip: () => void
+  onAgeRequired: () => void
   sentTo: string | null
   onChangeEmail: () => void
 }
 
-function SignupForm({ gap = 'gap-3.5', titleSize = 'text-[40px]', displayName, onDisplayName, email, onEmail, password, onPassword, ageConfirmed, onToggleAge, error, loading, onSubmit, onGoogle, onLogin, onSkip, sentTo, onChangeEmail }: FormProps) {
+function SignupForm({ gap = 'gap-3.5', titleSize = 'text-[40px]', displayName, onDisplayName, email, onEmail, password, onPassword, ageConfirmed, onToggleAge, error, loading, onSubmit, onGoogle, onLogin, onSkip, onAgeRequired, sentTo, onChangeEmail }: FormProps) {
   if (sentTo) return (
     <div className={`flex flex-col ${gap}`}>
       <h2 className={`${titleSize} font-extrabold text-ink leading-none`}>Check your email</h2>
@@ -89,8 +90,12 @@ function SignupForm({ gap = 'gap-3.5', titleSize = 'text-[40px]', displayName, o
         <span>{loading ? 'Creating account…' : 'Create account'}</span>
         <span>→</span>
       </button>
-      <OrDivider />
-      <GoogleButton onClick={onGoogle} disabled={loading} />
+      {googleSignInEnabled && (
+        <>
+          <OrDivider />
+          <GoogleButton onCredential={onGoogle} blocked={!ageConfirmed} onBlockedClick={onAgeRequired} disabled={loading} />
+        </>
+      )}
       <p className="text-[13px] text-neutral-700">
         Have an account?{' '}
         <button type="button" onClick={onLogin} className="font-extrabold text-ink underline underline-offset-2 hover:text-accent-700">
@@ -136,15 +141,16 @@ export default function SignupScreen({ onSignedUp, onLogin, onSkip }: Props) {
     onSignedUp()
   }
 
-  const handleGoogle = async () => {
+  // Signing in hides this screen; App opens onboarding if the account has no profile yet
+  const handleGoogle = async (idToken: string, nonce: string) => {
     setError('')
-    if (!ageConfirmed) { setError('You must confirm you are 16 or older to register'); return }
     setLoading(true)
-    const { ok, error: err } = await loginWithGoogle()
-    if (!ok) { setLoading(false); setError(err ?? 'Google sign-in failed') }
+    const { ok, error: err } = await loginWithGoogle(idToken, nonce)
+    setLoading(false)
+    if (!ok) setError(err ?? 'Google sign-in failed')
   }
 
-  const formProps = { displayName, onDisplayName: setDisplayName, email, onEmail: setEmail, password, onPassword: setPassword, ageConfirmed, onToggleAge: () => setAgeConfirmed(v => !v), error, loading, onSubmit: handleSubmit, onGoogle: handleGoogle, onLogin, onSkip, sentTo, onChangeEmail: () => setSentTo(null) }
+  const formProps = { displayName, onDisplayName: setDisplayName, email, onEmail: setEmail, password, onPassword: setPassword, ageConfirmed, onToggleAge: () => setAgeConfirmed(v => !v), error, loading, onSubmit: handleSubmit, onGoogle: handleGoogle, onLogin, onSkip, onAgeRequired: () => setError('You must confirm you are 16 or older to register'), sentTo, onChangeEmail: () => setSentTo(null) }
 
   return (
     <div className="fixed inset-0 z-[2000] bg-ground">

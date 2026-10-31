@@ -1,24 +1,50 @@
+import { useEffect, useRef, useState } from 'react'
+import { googleSignInEnabled, renderGoogleButton } from '../lib/googleIdentity'
+
 interface Props {
-  onClick: () => void
+  onCredential: (idToken: string, nonce: string) => void
+  // When set, clicks go to onBlockedClick instead of opening Google (e.g. 16+ box unticked)
+  blocked?: boolean
+  onBlockedClick?: () => void
   disabled?: boolean
 }
 
-export default function GoogleButton({ onClick, disabled }: Props) {
+export default function GoogleButton({ onCredential, blocked, onBlockedClick, disabled }: Props) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const handlerRef = useRef(onCredential)
+  handlerRef.current = onCredential
+  const [failed, setFailed] = useState(false)
+
+  // Google's button has a fixed pixel width, so re-render it when the container
+  // resizes (or first becomes visible: the signup screen has a hidden mobile copy)
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    let renderedWidth = 0
+    const observer = new ResizeObserver(() => {
+      const width = Math.round(el.clientWidth)
+      if (!width || width === renderedWidth) return
+      renderedWidth = width
+      renderGoogleButton(el, width, (token, nonce) => handlerRef.current(token, nonce)).catch(() => setFailed(true))
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  if (failed) return <p className="text-xs text-center text-neutral-500">Google sign-in couldn't load. Check your connection or ad blocker.</p>
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className="w-full h-[52px] bg-white hover:bg-accent-100 disabled:opacity-60 border-2 border-ink text-ink font-bold text-[15px] flex items-center justify-center gap-3 px-4 transition-colors"
-    >
-      <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
-        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
-        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
-        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
-        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
-      </svg>
-      <span>Continue with Google</span>
-    </button>
+    <div className={`relative h-[44px] ${disabled ? 'opacity-60 pointer-events-none' : ''}`}>
+      <div ref={containerRef} className="flex justify-center w-full" />
+      {blocked && (
+        <button
+          type="button"
+          aria-label="Continue with Google"
+          onClick={onBlockedClick}
+          className="absolute inset-0 w-full cursor-pointer"
+        />
+      )}
+    </div>
   )
 }
 
@@ -31,3 +57,5 @@ export function OrDivider() {
     </div>
   )
 }
+
+export { googleSignInEnabled }

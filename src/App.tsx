@@ -62,7 +62,7 @@ export default function App() {
       setSignupDismissed(false)
       setShowOnboarding(false)
     }
-    // Back from Google or an email confirmation link: a brand-new account has no profile yet, so onboard it
+    // After Google sign-in or an email confirmation link: a brand-new account has no profile yet, so onboard it
     if (!prevUserRef.current && currentUser && consumeOnboardPending()) {
       const uid = currentUser.id
       supabase.from('profiles').select('id').eq('id', uid).maybeSingle().then(({ data, error }) => {

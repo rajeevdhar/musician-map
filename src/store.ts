@@ -128,7 +128,7 @@ interface AppStore {
   initAuth: () => void
   register: (email: string, password: string, displayName: string) => Promise<{ ok: boolean; needsConfirmation?: boolean; error?: string }>
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>
-  loginWithGoogle: () => Promise<{ ok: boolean; error?: string }>
+  loginWithGoogle: (idToken: string, nonce: string) => Promise<{ ok: boolean; error?: string }>
   logout: () => Promise<void>
 
   // ── Musician profiles ─────────────────────────────────────────────────────
@@ -282,13 +282,12 @@ export const useStore = create<AppStore>()((set, get) => ({
   },
 
   // Redirects away to Google; the session is picked up from the URL on return
-  loginWithGoogle: async () => {
+  // ID token from Google's own button (lib/googleIdentity.ts); no redirect, so the
+  // SIGNED_IN event that follows is what opens onboarding for a new account
+  loginWithGoogle: async (idToken, nonce) => {
     markOnboardPending()
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin },
-    })
-    if (error) return { ok: false, error: error.message }
+    const { error } = await supabase.auth.signInWithIdToken({ provider: 'google', token: idToken, nonce })
+    if (error) { consumeOnboardPending(); return { ok: false, error: error.message } }
     return { ok: true }
   },
 
