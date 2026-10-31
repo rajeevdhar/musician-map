@@ -14,14 +14,17 @@ export default function BlockConfirm({ displayName, onCancel, onBlock, onBlockAn
         They won't be able to message you, send contact requests, see your profile or see contact details
         you've shared. They won't be told. You can unblock them from your profile settings.
       </p>
-      <div className="flex gap-2">
-        <button type="button" onClick={onCancel} className="flex-1 h-10 border-2 border-ink text-[13px] font-bold text-ink hover:bg-accent-200">Cancel</button>
-        <button type="button" onClick={onBlock} className="flex-1 h-10 bg-accent hover:bg-accent-600 text-white font-bold text-[13px]">Block</button>
+      {/* Reporting gets a full button, not a link: it's what someone being harassed most needs to see */}
+      <div className="grid grid-cols-2 gap-2">
+        <button type="button" onClick={onBlock} className="h-10 bg-accent hover:bg-accent-600 text-white font-bold text-[13px]">Block</button>
+        {onBlockAndReport ? (
+          <button type="button" onClick={onBlockAndReport} className="h-10 bg-ink hover:bg-neutral-800 text-white font-bold text-[13px]">Block and report</button>
+        ) : (
+          <button type="button" onClick={onCancel} className="h-10 border-2 border-ink text-[13px] font-bold text-ink hover:bg-accent-200">Cancel</button>
+        )}
       </div>
       {onBlockAndReport && (
-        <button type="button" onClick={onBlockAndReport} className="text-[12px] font-bold text-accent-700 hover:underline">
-          Block and report to the admin
-        </button>
+        <button type="button" onClick={onCancel} className="w-full h-10 border-2 border-ink text-[13px] font-bold text-ink hover:bg-accent-200">Cancel</button>
       )}
     </div>
   )
