@@ -68,10 +68,10 @@ export default function Header({ onShowAuth, onShowProfile, onShowAdmin, isAdmin
   return (
     <header className="bg-accent flex-shrink-0 relative z-[1100]">
       {/* Desktop: full accent bar grid */}
-      <div className="hidden lg:grid h-[68px]" style={{ gridTemplateColumns: '260px 1fr auto' }}>
+      <div className="hidden lg:grid h-[68px]" style={{ gridTemplateColumns: '310px 1fr auto' }}>
         {/* Left: wordmark */}
         <div className="flex items-center px-5">
-          <span className="text-white text-[18px] font-extrabold tracking-tight">MUSICIANMAPPER.</span>
+          <a href="/" className="text-white text-[23px] font-extrabold tracking-tight">MUSICIANMAPPER.</a>
         </div>
 
         {/* Center: search */}
@@ -212,7 +212,7 @@ export default function Header({ onShowAuth, onShowProfile, onShowAdmin, isAdmin
 
       {/* Mobile: wordmark + search + filter button */}
       <div className="lg:hidden flex items-center gap-2 h-14 px-3">
-        <span className="text-white text-[15px] font-extrabold tracking-tight flex-shrink-0">MUSICIANMAPPER.</span>
+        <a href="/" className="text-white text-[15px] font-extrabold tracking-tight flex-shrink-0">MUSICIANMAPPER.</a>
         <div className="flex-1 relative" data-tour="mobile-search">
           <Search size={16} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" />
           <input
