@@ -122,4 +122,5 @@ npm run dev                         # starts Vite (port 5173) + Express (port 30
 ## Deploying
 Push to `main` — Railway auto-deploys. Watch the build log; common issues:
 - Node version: must be 22+ (engines field in package.json handles this)
+- `tsc: not found`: devDependencies weren't installed. `nixpacks.toml` forces `npm ci --include=dev`; keep it
 - VITE_* vars must exist before `npm run build` runs

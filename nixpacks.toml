@@ -1,0 +1,4 @@
+# The build needs devDependencies (tsc, vite). Railway's NODE_ENV=production can make
+# a plain `npm ci` skip them, so ask for them explicitly.
+[phases.install]
+cmds = ["npm ci --include=dev"]
