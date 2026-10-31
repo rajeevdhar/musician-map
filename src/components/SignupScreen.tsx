@@ -19,12 +19,11 @@ interface FormProps {
   onGoogle: (idToken: string, nonce: string) => void
   onLogin: () => void
   onSkip: () => void
-  onAgeRequired: () => void
   sentTo: string | null
   onChangeEmail: () => void
 }
 
-function SignupForm({ gap = 'gap-3.5', titleSize = 'text-[40px]', displayName, onDisplayName, email, onEmail, password, onPassword, ageConfirmed, onToggleAge, error, loading, onSubmit, onGoogle, onLogin, onSkip, onAgeRequired, sentTo, onChangeEmail }: FormProps) {
+function SignupForm({ gap = 'gap-3.5', titleSize = 'text-[40px]', displayName, onDisplayName, email, onEmail, password, onPassword, ageConfirmed, onToggleAge, error, loading, onSubmit, onGoogle, onLogin, onSkip, sentTo, onChangeEmail }: FormProps) {
   if (sentTo) return (
     <div className={`flex flex-col ${gap}`}>
       <h2 className={`${titleSize} font-extrabold text-ink leading-none`}>Check your email</h2>
@@ -93,7 +92,7 @@ function SignupForm({ gap = 'gap-3.5', titleSize = 'text-[40px]', displayName, o
       {googleSignInEnabled && (
         <>
           <OrDivider />
-          <GoogleButton onCredential={onGoogle} blocked={!ageConfirmed} onBlockedClick={onAgeRequired} disabled={loading} />
+          <GoogleButton onCredential={onGoogle} disabled={loading} />
         </>
       )}
       <p className="text-[13px] text-neutral-700">
@@ -141,7 +140,7 @@ export default function SignupScreen({ onSignedUp, onLogin, onSkip }: Props) {
     onSignedUp()
   }
 
-  // Signing in hides this screen; App opens onboarding if the account has no profile yet
+  // Signing in hides this screen; App opens onboarding (which asks 16+) if the account has no profile yet
   const handleGoogle = async (idToken: string, nonce: string) => {
     setError('')
     setLoading(true)
@@ -150,7 +149,7 @@ export default function SignupScreen({ onSignedUp, onLogin, onSkip }: Props) {
     if (!ok) setError(err ?? 'Google sign-in failed')
   }
 
-  const formProps = { displayName, onDisplayName: setDisplayName, email, onEmail: setEmail, password, onPassword: setPassword, ageConfirmed, onToggleAge: () => setAgeConfirmed(v => !v), error, loading, onSubmit: handleSubmit, onGoogle: handleGoogle, onLogin, onSkip, onAgeRequired: () => setError('You must confirm you are 16 or older to register'), sentTo, onChangeEmail: () => setSentTo(null) }
+  const formProps = { displayName, onDisplayName: setDisplayName, email, onEmail: setEmail, password, onPassword: setPassword, ageConfirmed, onToggleAge: () => setAgeConfirmed(v => !v), error, loading, onSubmit: handleSubmit, onGoogle: handleGoogle, onLogin, onSkip, sentTo, onChangeEmail: () => setSentTo(null) }
 
   return (
     <div className="fixed inset-0 z-[2000] bg-ground">

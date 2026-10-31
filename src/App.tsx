@@ -62,8 +62,9 @@ export default function App() {
       setSignupDismissed(false)
       setShowOnboarding(false)
     }
-    // After Google sign-in or an email confirmation link: a brand-new account has no profile yet, so onboard it
-    if (!prevUserRef.current && currentUser && consumeOnboardPending()) {
+    // After Google sign-in or an email confirmation link: a brand-new account has no profile yet, so onboard it.
+    // Also catches a Google account that closed the tab before confirming 16+ in onboarding.
+    if (!prevUserRef.current && currentUser && (consumeOnboardPending() || !currentUser.ageConfirmed)) {
       const uid = currentUser.id
       supabase.from('profiles').select('id').eq('id', uid).maybeSingle().then(({ data, error }) => {
         if (!error && !data) setShowOnboarding(true)

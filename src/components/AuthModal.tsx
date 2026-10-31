@@ -47,7 +47,7 @@ export default function AuthModal({ onClose, onSignedUp }: Props) {
     setLoading(false)
   }
 
-  // App opens onboarding after sign-in if the account has no profile yet
+  // App opens onboarding (which asks 16+) after sign-in if the account has no profile yet
   const handleGoogle = async (idToken: string, nonce: string) => {
     setError('')
     setLoading(true)
@@ -185,17 +185,7 @@ export default function AuthModal({ onClose, onSignedUp }: Props) {
               {tab !== 'forgot' && googleSignInEnabled && (
                 <>
                   <OrDivider />
-                  <GoogleButton
-                    onCredential={handleGoogle}
-                    blocked={tab === 'register' && !ageConfirmed}
-                    onBlockedClick={() => setError('You must confirm you are 16 or older to register')}
-                    disabled={loading}
-                  />
-                  {tab === 'login' && (
-                    <p className="text-xs text-center text-neutral-500">
-                      New to MusicianMapper? Continuing with Google creates an account and confirms you are 16 or older.
-                    </p>
-                  )}
+                  <GoogleButton onCredential={handleGoogle} disabled={loading} />
                 </>
               )}
 

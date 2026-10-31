@@ -59,7 +59,11 @@ async function geocodeCity(query: string): Promise<{ lat: number; lng: number; d
 function roundCoord(n: number) { return Math.round(n * 100) / 100 }
 
 export default function OnboardingFlow({ onComplete, onBack }: Props) {
-  const { saveProfile, currentUser } = useStore()
+  const { saveProfile, currentUser, confirmAge, logout } = useStore()
+  // Google sign-ups haven't ticked "16 or older" yet (email sign-ups did on the form)
+  const needsAge = !!currentUser && !currentUser.ageConfirmed
+  const [ageTicked, setAgeTicked] = useState(false)
+  const [ageError, setAgeError] = useState('')
   const [step, setStep] = useState(1)
   const [data, setData] = useState<Data>({
     instruments: [],
@@ -118,7 +122,7 @@ export default function OnboardingFlow({ onComplete, onBack }: Props) {
   }
 
   const canContinue =
-    step === 1 ? data.instruments.length > 0 :
+    step === 1 ? data.instruments.length > 0 && (!needsAge || ageTicked) :
     step === 2 ? data.genres.length > 0 :
     step === 3 ? (data.locationPrecision === 'hidden' || data.lat !== null) :
     data.lookingFor.length > 0
@@ -151,8 +155,22 @@ export default function OnboardingFlow({ onComplete, onBack }: Props) {
     onComplete()
   }
 
-  const goBack = () => step > 1 ? setStep(s => s - 1) : onBack()
-  const goNext = () => canContinue && (step < 4 ? setStep(s => s + 1) : handleComplete())
+  // Leaving before confirming 16+ signs the new account out again, so it can't be used unconfirmed
+  const goBack = () => {
+    if (step > 1) { setStep(s => s - 1); return }
+    onBack()
+    if (needsAge) logout()
+  }
+
+  const goNext = async () => {
+    if (!canContinue) return
+    if (step === 1 && needsAge) {
+      setAgeError('')
+      if (!await confirmAge()) { setAgeError("Couldn't save that — please try again."); return }
+    }
+    if (step < 4) setStep(s => s + 1)
+    else handleComplete()
+  }
 
   return (
     <div className="fixed inset-0 z-[2000] bg-ground flex flex-col">
@@ -186,6 +204,21 @@ export default function OnboardingFlow({ onComplete, onBack }: Props) {
                 </button>
               ))}
             </div>
+            {needsAge && (
+              <button type="button" role="checkbox" aria-checked={ageTicked} onClick={() => setAgeTicked(v => !v)} className="flex items-start gap-3 text-left mt-6">
+                <span className={`mt-0.5 w-5 h-5 flex-shrink-0 border-2 border-ink flex items-center justify-center transition-colors ${ageTicked ? 'bg-ink' : 'hover:bg-accent-100'}`}>
+                  {ageTicked && (
+                    <svg width="11" height="9" viewBox="0 0 11 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M1 4L4 7.5L10 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
+                </span>
+                <span className="text-[13px] text-neutral-700 leading-snug">
+                  I confirm that I am <strong className="text-ink">16 years of age or older</strong>
+                </span>
+              </button>
+            )}
+            {ageError && <p className="mt-3 text-sm text-accent-700">{ageError}</p>}
           </>
         )}
 

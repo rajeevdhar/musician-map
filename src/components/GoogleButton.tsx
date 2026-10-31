@@ -3,13 +3,10 @@ import { googleSignInEnabled, renderGoogleButton } from '../lib/googleIdentity'
 
 interface Props {
   onCredential: (idToken: string, nonce: string) => void
-  // When set, clicks go to onBlockedClick instead of opening Google (e.g. 16+ box unticked)
-  blocked?: boolean
-  onBlockedClick?: () => void
   disabled?: boolean
 }
 
-export default function GoogleButton({ onCredential, blocked, onBlockedClick, disabled }: Props) {
+export default function GoogleButton({ onCredential, disabled }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const handlerRef = useRef(onCredential)
   handlerRef.current = onCredential
@@ -34,16 +31,8 @@ export default function GoogleButton({ onCredential, blocked, onBlockedClick, di
   if (failed) return <p className="text-xs text-center text-neutral-500">Google sign-in couldn't load. Check your connection or ad blocker.</p>
 
   return (
-    <div className={`relative h-[44px] ${disabled ? 'opacity-60 pointer-events-none' : ''}`}>
+    <div className={`h-[44px] ${disabled ? 'opacity-60 pointer-events-none' : ''}`}>
       <div ref={containerRef} className="flex justify-center w-full" />
-      {blocked && (
-        <button
-          type="button"
-          aria-label="Continue with Google"
-          onClick={onBlockedClick}
-          className="absolute inset-0 w-full cursor-pointer"
-        />
-      )}
     </div>
   )
 }

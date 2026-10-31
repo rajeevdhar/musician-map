@@ -90,6 +90,8 @@ export interface AppUser {
   id: string
   email: string
   displayName: string
+  // Ticked "16 or older". Email sign-up asks on the form; Google sign-in asks in onboarding
+  ageConfirmed: boolean
 }
 
 // Email sign-up stores `displayName`; Google sends `full_name` / `name`. The last
@@ -100,6 +102,7 @@ function toAppUser(u: User): AppUser {
     id: u.id,
     email: u.email!,
     displayName: meta.displayName ?? meta.full_name ?? meta.name ?? u.email!.split('@')[0],
+    ageConfirmed: meta.ageConfirmed === true,
   }
 }
 
@@ -133,6 +136,7 @@ interface AppStore {
   register: (email: string, password: string, displayName: string) => Promise<{ ok: boolean; needsConfirmation?: boolean; error?: string }>
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>
   loginWithGoogle: (idToken: string, nonce: string) => Promise<{ ok: boolean; error?: string }>
+  confirmAge: () => Promise<boolean>
   logout: () => Promise<void>
 
   // ── Musician profiles ─────────────────────────────────────────────────────
@@ -273,7 +277,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { displayName }, emailRedirectTo: window.location.origin },
+      options: { data: { displayName, ageConfirmed: true }, emailRedirectTo: window.location.origin },
     })
     if (error) { consumeOnboardPending(); return { ok: false, error: error.message } }
     return { ok: true, needsConfirmation: !data.session }
@@ -285,7 +289,6 @@ export const useStore = create<AppStore>()((set, get) => ({
     return { ok: true }
   },
 
-  // Redirects away to Google; the session is picked up from the URL on return
   // ID token from Google's own button (lib/googleIdentity.ts); no redirect, so the
   // SIGNED_IN event that follows is what opens onboarding for a new account
   loginWithGoogle: async (idToken, nonce) => {
@@ -293,6 +296,12 @@ export const useStore = create<AppStore>()((set, get) => ({
     const { error } = await supabase.auth.signInWithIdToken({ provider: 'google', token: idToken, nonce })
     if (error) { consumeOnboardPending(); return { ok: false, error: error.message } }
     return { ok: true }
+  },
+
+  // Fires USER_UPDATED, which refreshes currentUser
+  confirmAge: async () => {
+    const { error } = await supabase.auth.updateUser({ data: { ageConfirmed: true } })
+    return !error
   },
 
   logout: async () => {
