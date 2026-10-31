@@ -19,9 +19,27 @@ interface FormProps {
   onGoogle: () => void
   onLogin: () => void
   onSkip: () => void
+  sentTo: string | null
+  onChangeEmail: () => void
 }
 
-function SignupForm({ gap = 'gap-3.5', titleSize = 'text-[40px]', displayName, onDisplayName, email, onEmail, password, onPassword, ageConfirmed, onToggleAge, error, loading, onSubmit, onGoogle, onLogin, onSkip }: FormProps) {
+function SignupForm({ gap = 'gap-3.5', titleSize = 'text-[40px]', displayName, onDisplayName, email, onEmail, password, onPassword, ageConfirmed, onToggleAge, error, loading, onSubmit, onGoogle, onLogin, onSkip, sentTo, onChangeEmail }: FormProps) {
+  if (sentTo) return (
+    <div className={`flex flex-col ${gap}`}>
+      <h2 className={`${titleSize} font-extrabold text-ink leading-none`}>Check your email</h2>
+      <p className="text-[15px] text-neutral-700 leading-snug">
+        We sent a confirmation link to <strong className="text-ink break-all">{sentTo}</strong>. Click it to finish creating your account, then you can add yourself to the map.
+      </p>
+      <p className="text-[13px] text-neutral-500">Not there? Check your spam folder.</p>
+      <button type="button" onClick={onChangeEmail} className="text-[13px] text-neutral-500 hover:text-neutral-700 underline underline-offset-2 text-left">
+        Use a different email
+      </button>
+      <button type="button" onClick={onSkip} className="text-[13px] text-neutral-500 hover:text-neutral-700 underline underline-offset-2 text-left">
+        Browse map while you wait →
+      </button>
+    </div>
+  )
+
   return (
     <form onSubmit={onSubmit} className={`flex flex-col ${gap}`}>
       <h2 className={`${titleSize} font-extrabold text-ink leading-none`}>Join the map</h2>
@@ -103,6 +121,7 @@ export default function SignupScreen({ onSignedUp, onLogin, onSkip }: Props) {
   const [ageConfirmed, setAgeConfirmed] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [sentTo, setSentTo] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -110,9 +129,10 @@ export default function SignupScreen({ onSignedUp, onLogin, onSkip }: Props) {
     if (!ageConfirmed) { setError('You must confirm you are 16 or older to register'); return }
     if (password.length < 6) { setError('Password must be at least 6 characters'); return }
     setLoading(true)
-    const { ok, error: err } = await register(email, password, displayName.trim())
+    const { ok, needsConfirmation, error: err } = await register(email, password, displayName.trim())
     setLoading(false)
     if (!ok) { setError(err ?? 'Sign-up failed'); return }
+    if (needsConfirmation) { setSentTo(email); return }
     onSignedUp()
   }
 
@@ -124,7 +144,7 @@ export default function SignupScreen({ onSignedUp, onLogin, onSkip }: Props) {
     if (!ok) { setLoading(false); setError(err ?? 'Google sign-in failed') }
   }
 
-  const formProps = { displayName, onDisplayName: setDisplayName, email, onEmail: setEmail, password, onPassword: setPassword, ageConfirmed, onToggleAge: () => setAgeConfirmed(v => !v), error, loading, onSubmit: handleSubmit, onGoogle: handleGoogle, onLogin, onSkip }
+  const formProps = { displayName, onDisplayName: setDisplayName, email, onEmail: setEmail, password, onPassword: setPassword, ageConfirmed, onToggleAge: () => setAgeConfirmed(v => !v), error, loading, onSubmit: handleSubmit, onGoogle: handleGoogle, onLogin, onSkip, sentTo, onChangeEmail: () => setSentTo(null) }
 
   return (
     <div className="fixed inset-0 z-[2000] bg-ground">

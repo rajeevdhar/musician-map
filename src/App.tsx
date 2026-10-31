@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useStore, consumeOAuthPending } from './store'
+import { useStore, consumeOnboardPending } from './store'
 import { supabase } from './lib/supabase'
 import { startTour, hasSeenTour } from './lib/tour'
 import { Map, List, Heart, MessageSquare, User, Shield, Pencil, MapPin, LogOut } from 'lucide-react'
@@ -62,8 +62,8 @@ export default function App() {
       setSignupDismissed(false)
       setShowOnboarding(false)
     }
-    // Back from Google sign-in: a brand-new account has no profile yet, so onboard it
-    if (!prevUserRef.current && currentUser && consumeOAuthPending()) {
+    // Back from Google or an email confirmation link: a brand-new account has no profile yet, so onboard it
+    if (!prevUserRef.current && currentUser && consumeOnboardPending()) {
       const uid = currentUser.id
       supabase.from('profiles').select('id').eq('id', uid).maybeSingle().then(({ data, error }) => {
         if (!error && !data) setShowOnboarding(true)

@@ -16,6 +16,7 @@ export default function AuthModal({ onClose, onSignedUp }: Props) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [resetSent, setResetSent] = useState(false)
+  const [confirmSent, setConfirmSent] = useState(false)
   const [ageConfirmed, setAgeConfirmed] = useState(false)
   const { login, register, loginWithGoogle } = useStore()
 
@@ -28,7 +29,8 @@ export default function AuthModal({ onClose, onSignedUp }: Props) {
       if (!ageConfirmed) { setError('You must confirm you are 16 or older to register'); setLoading(false); return }
       if (password.length < 6) { setError('Password must be at least 6 characters'); setLoading(false); return }
       const result = await register(email, password, name.trim())
-      if (result.ok) { onSignedUp ? onSignedUp() : onClose() }
+      if (result.ok && result.needsConfirmation) setConfirmSent(true)
+      else if (result.ok) { onSignedUp ? onSignedUp() : onClose() }
       else setError(result.error ?? 'Sign-up failed')
     } else if (tab === 'login') {
       const result = await login(email, password)
@@ -63,6 +65,22 @@ export default function AuthModal({ onClose, onSignedUp }: Props) {
           <button onClick={onClose} className="text-neutral-500 hover:text-ink text-2xl leading-none">×</button>
         </div>
 
+        {confirmSent ? (
+          <div className="p-6 space-y-3">
+            <p className="text-sm font-bold text-ink">Check your email!</p>
+            <p className="text-xs text-neutral-700">
+              We sent a confirmation link to {email}. Click it to finish creating your account, then you can add yourself to the map. Not there? Check your spam folder.
+            </p>
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full flex items-center justify-between h-[52px] bg-accent hover:bg-accent-600 text-white font-bold px-4 text-sm transition-colors"
+            >
+              <span>Got it</span>
+              <span>→</span>
+            </button>
+          </div>
+        ) : (
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {tab === 'register' && (
             <div>
@@ -216,6 +234,7 @@ export default function AuthModal({ onClose, onSignedUp }: Props) {
             <a href="/privacy.html" target="_blank" rel="noopener" className="text-neutral-500 hover:text-ink underline underline-offset-2">Privacy policy</a>
           </p>
         </form>
+        )}
       </div>
     </div>
   )

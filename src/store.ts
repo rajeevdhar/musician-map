@@ -103,14 +103,19 @@ function toAppUser(u: User): AppUser {
   }
 }
 
-// Set before redirecting to Google, so on return the app knows this sign-in may be
-// a brand-new account that still needs onboarding.
-const OAUTH_PENDING_KEY = 'mm-oauth-pending'
+// Set before redirecting to Google or signing up by email, so when the user lands back
+// signed in (from Google or the confirmation link) the app knows this may be a
+// brand-new account that still needs onboarding.
+const ONBOARD_PENDING_KEY = 'mm-onboard-pending'
 
-export function consumeOAuthPending(): boolean {
+function markOnboardPending() {
+  try { localStorage.setItem(ONBOARD_PENDING_KEY, '1') } catch { /* onboarding just won't auto-open */ }
+}
+
+export function consumeOnboardPending(): boolean {
   try {
-    const pending = localStorage.getItem(OAUTH_PENDING_KEY) !== null
-    localStorage.removeItem(OAUTH_PENDING_KEY)
+    const pending = localStorage.getItem(ONBOARD_PENDING_KEY) !== null
+    localStorage.removeItem(ONBOARD_PENDING_KEY)
     return pending
   } catch { return false }
 }
@@ -121,7 +126,7 @@ interface AppStore {
   isAuthReady: boolean
   needsPasswordReset: boolean
   initAuth: () => void
-  register: (email: string, password: string, displayName: string) => Promise<{ ok: boolean; error?: string }>
+  register: (email: string, password: string, displayName: string) => Promise<{ ok: boolean; needsConfirmation?: boolean; error?: string }>
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>
   loginWithGoogle: () => Promise<{ ok: boolean; error?: string }>
   logout: () => Promise<void>
@@ -257,14 +262,17 @@ export const useStore = create<AppStore>()((set, get) => ({
     })
   },
 
+  // With "Confirm email" on, signUp returns no session: the user must click the emailed
+  // link first, which lands them back here signed in.
   register: async (email, password, displayName) => {
-    const { error } = await supabase.auth.signUp({
+    markOnboardPending()
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { displayName } },
+      options: { data: { displayName }, emailRedirectTo: window.location.origin },
     })
-    if (error) return { ok: false, error: error.message }
-    return { ok: true }
+    if (error) { consumeOnboardPending(); return { ok: false, error: error.message } }
+    return { ok: true, needsConfirmation: !data.session }
   },
 
   login: async (email, password) => {
@@ -275,7 +283,7 @@ export const useStore = create<AppStore>()((set, get) => ({
 
   // Redirects away to Google; the session is picked up from the URL on return
   loginWithGoogle: async () => {
-    try { localStorage.setItem(OAUTH_PENDING_KEY, '1') } catch { /* onboarding just won't auto-open */ }
+    markOnboardPending()
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: window.location.origin },
