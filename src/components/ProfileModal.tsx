@@ -4,10 +4,9 @@ import { useStore } from '../store'
 import { INSTRUMENT_OPTIONS, GENRE_OPTIONS, LOOKING_FOR_OPTIONS } from '../types'
 import type { Musician, Level } from '../types'
 import { supabase } from '../lib/supabase'
-import { STATE_ABBR } from '../lib/musicianUtils'
 import { moderateImage, blobToImg } from '../lib/moderateImage'
 import { removeOwnFiles } from '../lib/storageCleanup'
-import L from 'leaflet'
+import LocationPinMap, { fetchSuggestions, nominatimCityState, type Suggestion } from './LocationPinMap'
 import BlockedList from './BlockedList'
 import EmailNotifications from './EmailNotifications'
 
@@ -21,95 +20,6 @@ const SLOTS = ['Morning', 'Afternoon', 'Evening']
 function roundCoord(n: number) { return Math.round(n * 100) / 100 }
 function emptyAvail(): boolean[][] { return Array.from({ length: 7 }, () => [false, false, false]) }
 function titleCase(s: string): string { return s.replace(/\b\w/g, c => c.toUpperCase()) }
-
-// Extract "City, ST" (US) or "City, Country" (non-US) from a Nominatim address object
-function nominatimCityState(addr: Record<string, string>): string {
-  const city = addr.city ?? addr.town ?? addr.village ?? addr.hamlet ?? addr.suburb ?? ''
-  const state = addr.state ? (STATE_ABBR[addr.state] ?? addr.state) : ''
-  if (city && state) return `${city}, ${state}`
-  return city || state || ''
-}
-
-function nominatimDisplay(addr: Record<string, string>, fallback: string): string {
-  const city = addr.city ?? addr.town ?? addr.village ?? addr.hamlet ?? addr.suburb ?? ''
-  const isUS = addr.country_code === 'us'
-  const state = isUS && addr.state ? (STATE_ABBR[addr.state] ?? addr.state) : ''
-  const country = !isUS ? (addr.country ?? '') : ''
-  const parts = [city, state || country].filter(Boolean)
-  return parts.length ? parts.join(', ') : fallback.split(',').slice(0, 2).join(', ')
-}
-
-type Suggestion = { lat: number; lng: number; display: string; locationName: string }
-
-async function fetchSuggestions(query: string): Promise<Suggestion[]> {
-  if (query.length < 3) return []
-  try {
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`
-    const res = await fetch(url, { headers: { 'User-Agent': 'MusicianMap/1.0' } })
-    const data = await res.json() as Array<{ lat: string; lon: string; display_name: string; address?: Record<string, string> }>
-    return data.map(r => ({
-      lat: parseFloat(r.lat),
-      lng: parseFloat(r.lon),
-      display: r.address ? nominatimDisplay(r.address, r.display_name) : r.display_name.split(',').slice(0, 2).join(', '),
-      locationName: r.address ? nominatimCityState(r.address) : r.display_name.split(',').slice(0, 2).join(', '),
-    }))
-  } catch { return [] }
-}
-
-function LocationPinMap({ lat, lng, onChange, onAddress }: {
-  lat: number; lng: number
-  onChange: (lat: number, lng: number) => void
-  onAddress?: (display: string, locationName: string) => void
-}) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const mapRef = useRef<L.Map | null>(null)
-  const markerRef = useRef<L.Marker | null>(null)
-  const onAddressRef = useRef(onAddress)
-  useEffect(() => { onAddressRef.current = onAddress })
-  useEffect(() => {
-    if (!containerRef.current || isNaN(lat) || isNaN(lng)) return
-    const map = L.map(containerRef.current, { zoomControl: true }).setView([lat, lng], 14)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap',
-      maxZoom: 19,
-    }).addTo(map)
-    const icon = new L.DivIcon({
-      className: '',
-      html: '<div style="width:14px;height:14px;background:var(--color-accent);border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.4);"></div>',
-      iconSize: [14, 14],
-      iconAnchor: [7, 7],
-    })
-    const marker = L.marker([lat, lng], { draggable: true, icon }).addTo(map)
-    marker.on('dragend', async () => {
-      const pos = marker.getLatLng()
-      onChange(pos.lat, pos.lng)
-      if (onAddressRef.current) {
-        try {
-          const url = `https://nominatim.openstreetmap.org/reverse?lat=${pos.lat}&lon=${pos.lng}&format=json&addressdetails=1`
-          const res = await fetch(url, { headers: { 'User-Agent': 'MusicianMap/1.0' } })
-          const data = await res.json()
-          const cityState = data.address ? nominatimCityState(data.address as Record<string, string>) : ''
-          const display = data.display_name?.split(',').slice(0, 4).join(', ') ?? ''
-          onAddressRef.current(display, cityState || display)
-        } catch { /* keep existing address on error */ }
-      }
-    })
-    mapRef.current = map
-    markerRef.current = marker
-    setTimeout(() => { if (mapRef.current) map.invalidateSize() }, 100)
-    return () => { map.remove(); mapRef.current = null; markerRef.current = null }
-  }, []) // eslint-disable-line
-
-  useEffect(() => {
-    if (!mapRef.current || !markerRef.current || isNaN(lat) || isNaN(lng)) return
-    const c = mapRef.current.getCenter()
-    if (Math.abs(c.lat - lat) < 1e-9 && Math.abs(c.lng - lng) < 1e-9) return
-    markerRef.current.setLatLng([lat, lng])
-    mapRef.current.setView([lat, lng], 14, { animate: true, duration: 0.6 })
-  }, [lat, lng])
-
-  return <div ref={containerRef} style={{ height: '260px' }} className="border-2 border-ink mt-2" />
-}
 
 async function resizeImage(file: File): Promise<Blob> {
   const MAX_DIM = 1400

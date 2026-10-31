@@ -3,6 +3,7 @@ import { MapPin, Loader2 } from 'lucide-react'
 import { useStore } from '../store'
 import { INSTRUMENT_OPTIONS, GENRE_OPTIONS, LOOKING_FOR_OPTIONS } from '../types'
 import type { Level } from '../types'
+import LocationPinMap, { nominatimCityState } from './LocationPinMap'
 
 type Precision = 'exact' | 'area' | 'hidden'
 
@@ -32,9 +33,7 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
       { headers: { 'Accept-Language': 'en' } }
     )
     const d = await res.json()
-    const a = d.address ?? {}
-    const city = a.city || a.town || a.village || a.county || ''
-    return [city, a.state].filter(Boolean).join(', ') || 'Unknown location'
+    return nominatimCityState(d.address ?? {}) || 'Unknown location'
   } catch {
     return 'Unknown location'
   }
@@ -47,9 +46,7 @@ async function geocodeCity(query: string): Promise<{ lat: number; lng: number; d
     const results = await res.json()
     if (!results?.length) return null
     const r = results[0]
-    const a = r.address ?? {}
-    const city = a.city || a.town || a.village || a.county || ''
-    const display = [city, a.state, a.country_code === 'us' ? null : a.country].filter(Boolean).join(', ') || r.display_name.split(',').slice(0, 2).join(',').trim()
+    const display = nominatimCityState(r.address ?? {}) || r.display_name.split(',').slice(0, 2).join(',').trim()
     return { lat: parseFloat(r.lat), lng: parseFloat(r.lon), display }
   } catch {
     return null
@@ -262,67 +259,52 @@ export default function OnboardingFlow({ onComplete, onBack }: Props) {
           <>
             <h2 className="text-[36px] font-extrabold text-ink mb-4 leading-tight">How should others see where you are?</h2>
 
-            {/* Location getter */}
-            {data.lat ? (
-              <p className="text-[14px] font-semibold text-ink mb-4 flex items-center gap-2">
-                <MapPin size={14} className="text-accent flex-shrink-0" />
-                {data.locationName}
-                <button
-                  onClick={() => setData(d => ({ ...d, lat: null, lng: null, locationName: '' }))}
-                  className="ml-1 text-neutral-500 underline text-[13px] font-normal"
-                >
-                  Change
-                </button>
-              </p>
+            <form onSubmit={handleCitySubmit} className="flex gap-2">
+              <input
+                ref={cityRef}
+                type="text"
+                value={cityInput}
+                onChange={e => setCityInput(e.target.value)}
+                placeholder={data.lat !== null ? 'Change: city, zip code, or address…' : 'City, zip code, or address…'}
+                className="flex-1 min-w-0 h-12 bg-white border-2 border-ink px-3 text-[15px] text-ink focus:outline-none"
+              />
+              <button type="submit" disabled={geoLoading} className="h-12 px-4 bg-ink text-white font-extrabold text-sm hover:bg-neutral-800 transition-colors disabled:opacity-60">
+                Set
+              </button>
+            </form>
+            <button
+              onClick={requestGeo}
+              disabled={geoLoading}
+              className="w-full h-10 mt-2 border-2 border-ink text-[13px] font-extrabold flex items-center gap-2 px-3 hover:bg-accent-100 transition-colors disabled:opacity-60 text-neutral-600"
+            >
+              {geoLoading ? <Loader2 size={14} className="animate-spin" /> : <MapPin size={14} />}
+              {geoLoading ? 'Getting location…' : 'Use my current location'}
+            </button>
+            {geoError && <p className="text-sm text-accent-700 mt-2">{geoError}</p>}
+
+            {/* Map: drag the pin to fine-tune; the circle is roughly what others see */}
+            {data.locationPrecision !== 'hidden' && data.lat !== null && data.lng !== null ? (
+              <div className="mt-4 mb-5">
+                <p className="text-[14px] font-semibold text-ink flex items-center gap-2">
+                  <MapPin size={14} className="text-accent flex-shrink-0" />
+                  {data.locationName}
+                </p>
+                <LocationPinMap
+                  lat={data.lat}
+                  lng={data.lng}
+                  onChange={(lat, lng) => setData(d => ({ ...d, lat, lng }))}
+                  onAddress={(_, locationName) => setData(d => ({ ...d, locationName }))}
+                  areaRadius={1000}
+                />
+                <p className="text-[12px] text-neutral-500 mt-1.5">Drag the pin to adjust. Others only see the shaded area, never your exact spot.</p>
+              </div>
             ) : (
-              <div className="mb-5 flex flex-col gap-2">
-                <form onSubmit={handleCitySubmit} className="flex gap-2">
-                  <input
-                    ref={cityRef}
-                    type="text"
-                    value={cityInput}
-                    onChange={e => setCityInput(e.target.value)}
-                    placeholder="City, zip code, or address…"
-                    className="flex-1 h-12 bg-white border-2 border-ink px-3 text-[15px] text-ink focus:outline-none"
-                  />
-                  <button type="submit" disabled={geoLoading} className="h-12 px-4 bg-ink text-white font-extrabold text-sm hover:bg-neutral-800 transition-colors disabled:opacity-60">
-                    Set
-                  </button>
-                </form>
-                {geoError && <p className="text-sm text-accent-700">{geoError}</p>}
-                <button
-                  onClick={requestGeo}
-                  disabled={geoLoading}
-                  className="w-full h-10 border-2 border-ink text-[13px] font-extrabold flex items-center gap-2 px-3 hover:bg-accent-100 transition-colors disabled:opacity-60 text-neutral-600"
-                >
-                  {geoLoading ? <Loader2 size={14} className="animate-spin" /> : <MapPin size={14} />}
-                  {geoLoading ? 'Getting location…' : 'Use my current location instead'}
-                </button>
+              <div className="h-[140px] border-2 border-ink bg-neutral-200 mt-4 mb-5 flex items-center justify-center px-4 text-center">
+                <p className="text-neutral-500 text-sm font-semibold">
+                  {data.locationPrecision === 'hidden' ? 'Hidden from map' : 'Set your location to see it on the map'}
+                </p>
               </div>
             )}
-
-            {/* Map preview */}
-            <div className="h-[140px] border-2 border-ink bg-neutral-200 relative overflow-hidden mb-5 flex-shrink-0">
-              <div className="absolute inset-0 flex items-center justify-center">
-                {data.locationPrecision === 'area' && (
-                  <div
-                    className="w-[110px] h-[110px]"
-                    style={{
-                      border: '2px dashed var(--color-accent)',
-                      background: 'rgba(236,48,19,.12)',
-                      transition: 'all .25s',
-                    }}
-                  />
-                )}
-                {data.locationPrecision === 'hidden' && (
-                  <p className="text-neutral-400 text-sm font-semibold">Hidden from map</p>
-                )}
-              </div>
-              <div className="absolute bottom-0 left-0 bg-ink text-white text-[11px] font-extrabold px-2 py-1">
-                Others see:{' '}
-                {data.locationPrecision === 'area' ? 'City / zip area' : 'Nothing'}
-              </div>
-            </div>
 
             {/* Radio rows */}
             <div className="flex flex-col gap-2">

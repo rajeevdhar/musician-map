@@ -53,6 +53,7 @@ src/
     MusicianDetail.tsx — profile view for a selected musician (shows online status)
     ProfileModal.tsx   — edit own profile; admin mode via `adminTarget` prop
     SignupScreen.tsx / OnboardingFlow.tsx — signed-out landing and first profile setup
+    LocationPinMap.tsx — Leaflet map with a draggable location pin (onboarding + ProfileModal) and Nominatim helpers
     SavedTab.tsx       — saved musicians with notes
     InboxTab.tsx / ThreadView.tsx — message threads and contact requests
     ReportModal.tsx    — report a profile
