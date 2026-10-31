@@ -27,6 +27,7 @@ Set in Railway dashboard and locally in `.env.local` (gitignored):
 - `ADMIN_EMAIL` — same admin email, read server-side
 - `OPENAI_API_KEY` — used only for the free Moderation API (text screening of bio/name on profile save). Leave unset to skip text moderation. Get a key at https://platform.openai.com/api-keys
 - `FRONTEND_URL` — optional extra CORS origin in production (the app itself is same-origin, so normally unset)
+- `RESEND_API_KEY`, `NOTIFY_FROM_EMAIL`, `NOTIFY_SECRET` — email notifications (all three needed, otherwise `/api/notify` returns 503 and nothing is sent). `NOTIFY_FROM_EMAIL` must be on a domain verified in Resend. Optional: `APP_URL` (email links, default https://musicianmapper.com), `NOTIFY_DELAY_MS` (default 120000)
 
 **Important**: VITE_* vars are baked in at build time. Changing them in Railway requires a fresh redeploy (not just a restart).
 
@@ -56,6 +57,7 @@ src/
     InboxTab.tsx / ThreadView.tsx — message threads and contact requests
     ReportModal.tsx    — report a profile
     BlockConfirm.tsx / BlockedList.tsx — block confirmation (detail + thread) and the unblock list in ProfileModal
+    EmailNotifications.tsx — email notification on/off checkbox in ProfileModal
     AuthModal.tsx      — sign in / register / forgot password tabs
     ResetPasswordModal.tsx — shown after clicking a password reset email link
     AdminPanel.tsx     — admin-only panel: all profiles, online status, reports, edit/delete
@@ -80,7 +82,9 @@ scripts/               — seed-test-profiles.js, update-avatars.js (read .env.l
 
 - **Blocking** (`blocks` table, migration `2026-10-30_user_blocks.sql`): enforced by RLS, since the browser talks to Supabase directly. A blocked pair can't insert `messages` or `contact_requests` in either direction, accepted requests stop revealing `profile_contacts`, and a blocker's profile is hidden from people they blocked. The helpers `private.block_set()` / `private.blocked_by_set()` live in the `private` schema (not exposed over the API, so no one can RPC who blocked them) and are wrapped in `(SELECT …)` in policies so they run once per query. The blocker hides the blocked person **client-side** (`store.ts` filters `musicians`, inbox threads/requests), so their name stays available for the Blocked musicians list. Old messages are kept as evidence. The admin panel reads profiles through `GET /api/admin/profiles` (service role) so blocking the admin can't hide anyone from it. Each admin profile row shows a "Blocked by N people" badge (`GET /api/admin/block-counts`); the admin never sees who blocked whom. Blocking stops contact, not viewing: profiles stay public to signed-out visitors.
 
-- **Privacy policy** (`public/privacy.html`) lists what the app stores and every third-party service (Supabase, Railway, Google sign-in + Fonts, OpenAI moderation, OpenStreetMap tiles/Nominatim). Update it whenever you add a new kind of user data or an outside service.
+- **Privacy policy** (`public/privacy.html`) lists what the app stores and every third-party service (Supabase, Railway, Resend, Google sign-in + Fonts, OpenAI moderation, OpenStreetMap tiles/Nominatim). Update it whenever you add a new kind of user data or an outside service.
+
+- **Email notifications** (migration `2026-10-31_email_notifications.sql`): the browser inserts messages and contact requests directly into Supabase, so the server learns about them from **Supabase Database Webhooks** (Database → Webhooks), which POST to `/api/notify` with an `x-webhook-secret: <NOTIFY_SECRET>` header. Two webhooks: `messages` on INSERT, and `contact_requests` on INSERT + UPDATE (the update emails the requester when a request is accepted). The server waits `NOTIFY_DELAY_MS`, then skips the email if the message was already read or the request answered in the app, if the recipient turned emails off (`notification_settings`, owner-only, no row = on, toggle in `EmailNotifications.tsx`), if either one blocked the other, or if the recipient is an `is_test` profile. `notification_log` (server-only) limits it to one email per recipient per person per kind every 30 min. Emails go to the Auth account email via Resend's HTTP API (no SDK). Unsubscribe links are an HMAC of the user id (`/api/unsubscribe`, GET for the footer link, POST for one-click `List-Unsubscribe`). Queued emails live in a `setTimeout`, so a redeploy drops any still waiting. No text/SMS notifications: US carriers require A2P 10DLC registration, and phone numbers were collected for sharing, not texting.
 
 - **No Craigslist data** (removed Oct 2026): the app previously pulled posts from Craigslist's musicians RSS feed. Removed because Craigslist's terms prohibit scraping and it has sued apps for republishing listings (Craigslist v. 3Taps/PadMapper). Don't reintroduce scraping; listings should come from users of this app.
 
@@ -101,6 +105,8 @@ All admin endpoints require `Authorization: Bearer <jwt>` where the JWT belongs 
 | DELETE | `/api/self-delete` | User deletes their own account and uploaded files |
 | POST | `/api/report/:profileId` | Signed-in user reports a profile |
 | POST | `/api/moderate` | Screen text for hate/sexual/violence via OpenAI Moderation API (signed-in users) |
+| POST | `/api/notify` | Supabase Database Webhook target; queues notification emails (`x-webhook-secret` header) |
+| GET/POST | `/api/unsubscribe` | Turns off a user's notification emails (signed `u` + `t` query params) |
 | GET | `/api/health` | Railway healthcheck (`railway.json`) |
 
 Unknown `/api/*` paths return a JSON 404.

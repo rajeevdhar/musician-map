@@ -43,13 +43,14 @@
       <li>When you were last active, used to show an "online" indicator</li>
     </ul>
     <p><strong>Private contact details.</strong> The contact email and phone number you add are not public. Only you can see them, plus anyone whose contact request you accept.</p>
-    <p><strong>Messages and activity.</strong> We store the messages you send and receive, contact requests, the musicians you save (and any notes on them), the people you block, and any reports you file. Messages are visible to you and the other person. The site administrator can access stored data when needed to investigate a report or abuse, or when required by law.</p>
+    <p><strong>Messages and activity.</strong> We store the messages you send and receive, contact requests, the musicians you save (and any notes on them), the people you block, any reports you file, whether you want notification emails, and when we last emailed you about each person. Messages are visible to you and the other person. The site administrator can access stored data when needed to investigate a report or abuse, or when required by law.</p>
     <p><strong>On your device.</strong> Your browser stores your sign-in session and a few display preferences (theme, text size, whether you've seen the intro tour). These are needed for the site to work and aren't used for tracking.</p>
 
     <h2>How we use it</h2>
     <ul>
       <li>To show your profile on the map and let other musicians find and contact you</li>
       <li>To deliver messages and contact requests</li>
+      <li>To email you when someone messages you, sends you a contact request, or accepts yours (at most one email per person every 30 minutes). Message emails include the start of the message. You can turn these emails off in your profile settings or with the link at the bottom of any email.</li>
       <li>To keep the site safe: new photos are checked for nudity on your own device before upload, your name and bio are screened for hateful, sexual or violent content when you save your profile, and we review reports from other users</li>
     </ul>
 
@@ -57,6 +58,7 @@
     <ul>
       <li><strong>Supabase</strong> stores the database, accounts, photos and audio (servers in the eastern US).</li>
       <li><strong>Railway</strong> hosts the website.</li>
+      <li><strong>Resend</strong> sends notification emails. It receives your account email address, the sender's display name and, for messages, the start of the message.</li>
       <li><strong>Google</strong> handles sign-in if you choose "Continue with Google". Google's sign-in button and the site's font are loaded from Google's servers, so Google sees your IP address when those pages load, even if you don't use Google sign-in.</li>
       <li><strong>OpenAI</strong> screens your display name and bio for harmful content when you save your profile. OpenAI says it doesn't use data sent to its API to train its models.</li>
       <li><strong>OpenStreetMap</strong> provides the map images and location search. When you search for a place or use your current location, the search text or coordinates are sent to OpenStreetMap's servers.</li>

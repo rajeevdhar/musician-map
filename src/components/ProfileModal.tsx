@@ -9,6 +9,7 @@ import { moderateImage, blobToImg } from '../lib/moderateImage'
 import { removeOwnFiles } from '../lib/storageCleanup'
 import L from 'leaflet'
 import BlockedList from './BlockedList'
+import EmailNotifications from './EmailNotifications'
 
 type Precision = 'exact' | 'area' | 'hidden'
 type GeoStatus = 'idle' | 'searching' | 'found' | 'error'
@@ -1270,6 +1271,7 @@ export default function ProfileModal({ onClose, adminTarget, onAdminSaved }: Pro
           </div>
         )}
 
+        {!isAdminMode && <EmailNotifications />}
         {!isAdminMode && <BlockedList />}
 
         {/* Dangerous actions */}
